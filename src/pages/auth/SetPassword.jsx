@@ -204,7 +204,7 @@ export default function SetPassword() {
                 AO
               </div>
               <p className="text-sm font-bold text-gray-800">Abdulhameed Olamilekan</p>
-              <p className="text-xs text-gray-400 mt-0.5 mb-1">abdulhameed@gmail.com</p>
+              <p className="text-xs text-gray-400 mt-0.5 mb-2">abdulhameed@gmail.com</p>
               <p className="text-xs text-[#2563EB] font-semibold mb-5">Trainer · Data Analytics</p>
 
               <button
