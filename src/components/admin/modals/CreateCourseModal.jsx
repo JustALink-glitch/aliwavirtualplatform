@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
+import { coursesAPI } from '../../../services'
 
 export default function CreateCourseModal({ isOpen, onClose }) {
   const [form, setForm] = useState({
@@ -8,9 +9,19 @@ export default function CreateCourseModal({ isOpen, onClose }) {
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSubmit = () => {
-    console.log('Course created:', form)
-    onClose()
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true)
+      const res = await coursesAPI.create(form)
+      console.log('Course created:', res)
+      onClose()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -105,9 +116,10 @@ export default function CreateCourseModal({ isOpen, onClose }) {
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            Create Course
+            {loading ? 'Creating…' : 'Create Course'}
           </button>
         </div>
 

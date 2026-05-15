@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
 import { Upload, X } from 'lucide-react'
+import { studentsAPI } from '../../../services'
 
 export default function OnboardStudentModal({ isOpen, onClose }) {
   const [tab, setTab] = useState('single')
@@ -10,9 +11,19 @@ export default function OnboardStudentModal({ isOpen, onClose }) {
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSubmit = () => {
-    console.log('Student onboarded:', form)
-    onClose()
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true)
+      const res = await studentsAPI.onboard(form)
+      console.log('Student onboarded:', res)
+      onClose()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -180,9 +191,10 @@ export default function OnboardStudentModal({ isOpen, onClose }) {
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            {tab === 'single' ? 'Onboard Student' : 'Upload & Onboard'}
+            {loading ? 'Processing…' : (tab === 'single' ? 'Onboard Student' : 'Upload & Onboard')}
           </button>
         </div>
 

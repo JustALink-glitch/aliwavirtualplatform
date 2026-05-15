@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
+import { cohortsAPI } from '../../../services'
 
 export default function CreateCohortModal({ isOpen, onClose }) {
   const [form, setForm] = useState({
@@ -7,6 +8,21 @@ export default function CreateCohortModal({ isOpen, onClose }) {
   })
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true)
+      const res = await cohortsAPI.create(form)
+      console.log('Cohort created:', res)
+      onClose()
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create a New Cohort">
@@ -56,9 +72,10 @@ export default function CreateCohortModal({ isOpen, onClose }) {
             className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg py-2.5 hover:bg-gray-50 transition-colors">
             Cancel
           </button>
-          <button onClick={onClose}
-            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors">
-            Create Cohort
+          <button onClick={handleSubmit}
+            disabled={loading}
+            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-60">
+            {loading ? 'Creating…' : 'Create Cohort'}
           </button>
         </div>
 

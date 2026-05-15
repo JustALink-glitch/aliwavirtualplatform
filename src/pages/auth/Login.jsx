@@ -1,12 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Mail, Eye, EyeOff } from 'lucide-react'
-
-function detectRole(email) {
-  if (email.includes('admin')) return 'admin'
-  if (email.includes('trainer')) return 'trainer'
-  return 'student'
-}
+import { useAuth } from '../../context/AuthContext'
 
 const roleRoutes = {
   admin: '/admin/dashboard',
@@ -19,16 +14,33 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { login } = useAuth()
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError('Please enter your email and password.')
       return
     }
     setError('')
-    const role = detectRole(email)
-    navigate(roleRoutes[role])
+    setLoading(true)
+    try {
+      const user = await login(email, password)
+      if (user.isFirstLogin) {
+        navigate('/set-password')
+      } else {
+        navigate(roleRoutes[user.role] || '/login')
+      }
+    } catch (err) {
+      setError(err.message || 'Login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleLogin()
   }
 
   return (
@@ -56,6 +68,7 @@ export default function Login() {
             <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
               <input type="email" value={email}
                 onChange={e => setEmail(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Enter your email"
                 className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent" />
               <Mail size={16} className="text-gray-400" />
@@ -70,6 +83,7 @@ export default function Login() {
             <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
               <input type={showPassword ? 'text' : 'password'} value={password}
                 onChange={e => setPassword(e.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Enter your password"
                 className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent" />
               <button onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
@@ -80,7 +94,9 @@ export default function Login() {
 
           {/* Error */}
           {error && (
-            <p className="text-xs text-red-500 font-medium mt-1 mb-2">{error}</p>
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mt-2 mb-2">
+              <p className="text-xs text-red-600 font-medium">{error}</p>
+            </div>
           )}
 
           {/* Forgot password */}
@@ -91,9 +107,11 @@ export default function Login() {
           </div>
 
           {/* Sign In Button */}
-          <button onClick={handleLogin}
-            className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition mb-4">
-            Sign in
+          <button onClick={handleLogin} disabled={loading}
+            className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition mb-4 ${
+              loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-blue-700'
+            }`}>
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
           {/* Divider */}
@@ -123,12 +141,10 @@ export default function Login() {
 
         {/* Demo hint */}
         <div className="mt-4 bg-white border border-gray-200 rounded-xl p-4 w-full max-w-sm">
-          <p className="text-xs font-bold text-gray-600 mb-2">🔑 Demo Login Hints</p>
+          <p className="text-xs font-bold text-gray-600 mb-2">🔑 Demo Credentials</p>
           <div className="space-y-1">
-            <p className="text-xs text-gray-500">Admin: <span className="font-medium text-gray-700">admin@training.com</span></p>
-            <p className="text-xs text-gray-500">Trainer: <span className="font-medium text-gray-700">trainer@training.com</span></p>
-            <p className="text-xs text-gray-500">Student: <span className="font-medium text-gray-700">student@training.com</span></p>
-            <p className="text-xs text-gray-400 mt-1">Any password works for now</p>
+            <p className="text-xs text-gray-500">Email: <span className="font-medium text-gray-700">admin@trainingops.com</span></p>
+            <p className="text-xs text-gray-500">Password: <span className="font-medium text-gray-700">Admin@1234</span></p>
           </div>
         </div>
       </div>
