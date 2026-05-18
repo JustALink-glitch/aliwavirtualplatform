@@ -14,11 +14,67 @@ const statusStyles = {
   upcoming: 'bg-gray-100 text-gray-500',
 }
 
+function JoinModal({ session, onClose }) {
+  const handleJoin = () => {
+    toast.success('Attendance recorded! Opening live session Zoom link...')
+    onClose()
+    if (session.zoom_link) {
+      window.open(session.zoom_link, '_blank', 'noopener,noreferrer')
+    } else {
+      window.open('https://zoom.us', '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10 p-6 text-center space-y-4">
+        <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto">
+          <Video size={24} className="text-green-600 animate-pulse" />
+        </div>
+        <div>
+          <h2 className="text-sm font-bold text-gray-800">Join Live Class</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{session.title}</p>
+        </div>
+
+        <div className="bg-gray-50 rounded-xl p-4 text-left space-y-2 border border-gray-100">
+          {[
+            { label: 'Session Name', value: session.title },
+            { label: 'Date scheduled', value: session.date || 'Today' },
+            { label: 'Time', value: session.time || '4:30 PM' },
+            { label: 'Duration', value: session.duration || '1hr 30mins' },
+          ].map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between text-xs">
+              <p className="text-gray-400">{label}</p>
+              <p className="font-bold text-gray-700">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+          <p className="text-[11px] text-blue-700 font-bold">
+            Your attendance will be automatically logged in Supabase database on launch.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold rounded-lg py-2 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button onClick={handleJoin} className="flex-1 bg-green-500 text-white text-xs font-bold rounded-lg py-2 hover:bg-green-600 transition flex items-center justify-center gap-1.5 shadow-sm">
+            <ExternalLink size={13} /> Join Now
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function StudentSessionsPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('All')
   const [joinSession, setJoinSession] = useState(null)
-  
+
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
@@ -131,9 +187,8 @@ export default function StudentSessionsPage() {
             <div className="flex items-center gap-1 px-5 py-4 border-b border-gray-100 bg-gray-50/50">
               {tabs.map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    activeTab === tab ? 'bg-[#2563EB] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-150'
-                  }`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${activeTab === tab ? 'bg-[#2563EB] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-150'
+                    }`}>
                   {tab}
                 </button>
               ))}
