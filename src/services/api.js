@@ -29,6 +29,8 @@ export const authAPI = {
   login: (data) => apiCall('/auth/login', 'POST', data),
   setPassword: (data) => apiCall('/auth/set-password', 'POST', data),
   forgotPassword: (data) => apiCall('/auth/forgot-password', 'POST', data),
+  verifyOtp: (data) => apiCall('/auth/verify-otp', 'POST', data),
+  resetPassword: (data) => apiCall('/auth/reset-password', 'POST', data),
   getMe: () => apiCall('/auth/me'),
 }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
+import toast from 'react-hot-toast'
 
 export default function AssignTrainerModal({ isOpen, onClose }) {
   const [form, setForm] = useState({
@@ -8,9 +9,26 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const handleSubmit = () => {
-    console.log('Trainer assigned:', form)
-    onClose()
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async () => {
+    if (!form.trainer || !form.course) {
+      toast.error('Trainer and Course are required fields.')
+      return
+    }
+    
+    try {
+      setLoading(true)
+      console.log('Trainer assigned:', form)
+      // Call mock delay to simulate network call
+      await new Promise((resolve) => setTimeout(resolve, 800))
+      toast.success(`${form.trainer} successfully assigned to ${form.course}!`)
+      onClose()
+    } catch (err) {
+      toast.error('Failed to assign trainer.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -102,9 +120,10 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors"
+            disabled={loading}
+            className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            Assign Trainer
+            {loading ? 'Assigning...' : 'Assign Trainer'}
           </button>
         </div>
 

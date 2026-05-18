@@ -1,52 +1,136 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import StudentSidebar from '../../components/student/StudentSidebar'
 import StudentTopBar from '../../components/student/StudentTopBar'
-import { BookOpen, Video, FileText, Link as LinkIcon, CheckCircle, Lock, Play } from 'lucide-react'
+import { BookOpen, Video, FileText, Link as LinkIcon, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { coursesAPI, assignmentsAPI, resourcesAPI, submissionsAPI } from '../../services'
+import toast from 'react-hot-toast'
 
-const tabs = ['Overview', 'Lessons', 'Resources', 'Assignments']
-
-const lessons = [
-  { id: 1, title: 'Introduction to Data Analytics', duration: '45 mins', type: 'Lesson', completed: true },
-  { id: 2, title: 'Setting up Python Environment', duration: '30 mins', type: 'Lesson', completed: true },
-  { id: 3, title: 'Data Types and Variables', duration: '50 mins', type: 'Lesson', completed: true },
-  { id: 4, title: 'Introduction to Pandas', duration: '1hr', type: 'Live Class', completed: false, current: true },
-  { id: 5, title: 'Data Cleaning Techniques', duration: '45 mins', type: 'Lesson', completed: false },
-  { id: 6, title: 'SQL Fundamentals', duration: '1hr 30mins', type: 'Live Class', completed: false },
-  { id: 7, title: 'Data Visualization Basics', duration: '50 mins', type: 'Lesson', completed: false },
-]
-
-const resources = [
-  { id: 1, name: 'Week 1 Lecture Slides', type: 'PDF', size: '2.4 MB', date: 'Apr 1, 2026' },
-  { id: 2, name: 'Week 1 Recording', type: 'Video', size: '245 MB', date: 'Apr 2, 2026' },
-  { id: 3, name: 'Python Cheat Sheet', type: 'PDF', size: '1.1 MB', date: 'Apr 3, 2026' },
-  { id: 4, name: 'Kaggle Dataset Link', type: 'Link', size: '--', date: 'Apr 5, 2026' },
-  { id: 5, name: 'Week 2 Recording', type: 'Video', size: '312 MB', date: 'Apr 8, 2026' },
-]
-
-const assignments = [
-  { id: 1, title: 'Hero Section Design', due: 'Apr 15, 2026', status: 'Submitted', grade: '85/100' },
-  { id: 2, title: 'Navigation Bar Component', due: 'Apr 20, 2026', status: 'Pending', grade: '--' },
-  { id: 3, title: 'Responsive Layout', due: 'Apr 25, 2026', status: 'Not Submitted', grade: '--' },
-]
+const tabs = ['Overview', 'Resources', 'Assignments']
 
 const typeStyles = {
-  PDF: { bg: 'bg-red-50', color: 'text-red-500', icon: FileText },
-  Video: { bg: 'bg-purple-50', color: 'text-purple-500', icon: Video },
-  Link: { bg: 'bg-blue-50', color: 'text-blue-500', icon: LinkIcon },
+  pdf: { bg: 'bg-red-50', color: 'text-red-500', icon: FileText },
+  video: { bg: 'bg-purple-50', color: 'text-purple-500', icon: Video },
+  link: { bg: 'bg-blue-50', color: 'text-blue-500', icon: LinkIcon },
 }
 
 const assignmentStyles = {
-  'Submitted': 'bg-green-50 text-green-700 border border-green-200',
-  'Pending': 'bg-blue-50 text-blue-600 border border-blue-200',
-  'Not Submitted': 'bg-gray-100 text-gray-500 border border-gray-200',
+  Graded: 'bg-green-50 text-green-700 border border-green-200',
+  Submitted: 'bg-amber-50 text-amber-600 border border-amber-200',
+  Pending: 'bg-blue-50 text-blue-600 border border-blue-200',
+  Overdue: 'bg-red-50 text-red-600 border border-red-200',
 }
 
 export default function StudentCoursePage() {
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
+  const [courses, setCourses] = useState([])
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  
+  const [assignments, setAssignments] = useState([])
+  const [resources, setResources] = useState([])
+  
+  const [loading, setLoading] = useState(true)
+  const [loadingDetails, setLoadingDetails] = useState(false)
+  const { user } = useAuth()
 
-  const completed = lessons.filter(l => l.completed).length
-  const progress = Math.round((completed / lessons.length) * 100)
+  const fetchCourses = async () => {
+    try {
+      setLoading(true)
+      const res = await coursesAPI.list()
+      if (res.success || res.courses) {
+        const list = res.courses || res || []
+        setCourses(list)
+        if (list.length > 0) {
+          setSelectedCourse(list[0])
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to load enrolled courses')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCourseDetails = async () => {
+    if (!selectedCourse || !user) return
+    try {
+      setLoadingDetails(true)
+      const [assignmentsRes, resourcesRes, submissionsRes] = await Promise.all([
+        assignmentsAPI.list({ courseId: selectedCourse.id }),
+        resourcesAPI.list({ courseId: selectedCourse.id }),
+        submissionsAPI.list({ studentId: user.id })
+      ])
+
+      const listSubs = submissionsRes.submissions || []
+
+      if (resourcesRes.success || resourcesRes.resources) {
+        setResources(resourcesRes.resources || [])
+      }
+
+      if (assignmentsRes.success || assignmentsRes.assignments) {
+        const listAsn = (assignmentsRes.assignments || []).map(a => {
+          const matchSub = listSubs.find(s => s.assignment_id === a.id)
+          let status = 'Pending'
+          if (matchSub) {
+            status = matchSub.grade !== null ? 'Graded' : 'Submitted'
+          } else if (a.due_date && new Date(a.due_date) < new Date()) {
+            status = 'Overdue'
+          }
+          return {
+            ...a,
+            status,
+            submission: matchSub
+          }
+        })
+        setAssignments(listAsn)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
+  useEffect(() => {
+    fetchCourseDetails()
+  }, [selectedCourse, user])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
+        <StudentSidebar collapsed={collapsed} />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <StudentTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#2563EB]"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!selectedCourse) {
+    return (
+      <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
+        <StudentSidebar collapsed={collapsed} />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <StudentTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <BookOpen size={48} className="text-gray-300 mb-2" />
+            <p className="text-xs font-bold text-gray-700">No Enrolled Courses Found</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const completedCount = assignments.filter(a => a.status === 'Graded' || a.status === 'Submitted').length
+  const progressPercent = assignments.length > 0 ? Math.round((completedCount / assignments.length) * 100) : 100
 
   return (
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
@@ -55,52 +139,68 @@ export default function StudentCoursePage() {
         <StudentTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Header course switcher */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Select Course:</label>
+              <select
+                value={selectedCourse.id}
+                onChange={e => setSelectedCourse(courses.find(c => c.id === e.target.value))}
+                className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-[#2563EB]"
+              >
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Course banner */}
-          <div className="rounded-2xl overflow-hidden border border-gray-100">
+          <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             <div style={{ background: 'linear-gradient(135deg, #60a5fa, #6366f1)', height: '110px' }} />
             <div className="bg-white px-6 py-4">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-bold text-gray-900">Data Analytics</h1>
-                    <span className="bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200">Active</span>
+                    <h1 className="text-lg font-bold text-gray-900">{selectedCourse.name}</h1>
+                    <span className="bg-green-50 text-green-700 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-green-200 uppercase">
+                      {selectedCourse.status || 'Active'}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-500">Data analysis fundamentals with Python, Pandas, SQL and Visualization.</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                    <span>👨‍🏫 Abdulhameed Olamilekan</span>
-                    <span>📚 Cohort 1</span>
-                    <span>📅 Jan 1 → Mar 31, 2026</span>
+                  <p className="text-xs text-gray-500">{selectedCourse.description || 'No description provided.'}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 font-bold">
+                    <span>📚 Cohort: {selectedCourse.cohort_id || 'Global'}</span>
+                    <span>📅 Timeline: {selectedCourse.duration || 'Flexible'}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Stats */}
+          {/* Stats summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Progress', value: `${progress}%`, icon: BookOpen, bg: 'bg-blue-50', color: 'text-[#2563EB]' },
-              { label: 'Lessons Done', value: `${completed}/${lessons.length}`, icon: CheckCircle, bg: 'bg-green-50', color: 'text-green-600' },
-              { label: 'Assignments', value: '8/12', icon: FileText, bg: 'bg-amber-50', color: 'text-amber-600' },
-              { label: 'Avg Score', value: '82%', icon: Video, bg: 'bg-purple-50', color: 'text-purple-600' },
+              { label: 'Work Progress', value: `${progressPercent}%`, icon: BookOpen, bg: 'bg-blue-50', color: 'text-[#2563EB]' },
+              { label: 'Completed Tasks', value: `${completedCount}/${assignments.length}`, icon: CheckCircle, bg: 'bg-green-50', color: 'text-green-600' },
+              { label: 'Total Course Materials', value: resources.length, icon: FileText, bg: 'bg-amber-50', color: 'text-amber-600' },
+              { label: 'Timeline Duration', value: selectedCourse.duration || 'Ongoing', icon: Video, bg: 'bg-purple-50', color: 'text-purple-600' },
             ].map(({ label, value, icon: Icon, bg, color }) => (
-              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
                 <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
                   <Icon size={15} className={color} />
                 </div>
                 <p className="text-xl font-bold text-gray-800">{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5 font-bold">{label}</p>
               </div>
             ))}
           </div>
 
           {/* Tabs */}
-          <div className="bg-white rounded-xl border border-gray-100">
-            <div className="flex items-center border-b border-gray-100 px-4">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center border-b border-gray-100 px-4 bg-gray-50/50">
               {tabs.map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-3.5 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  className={`px-4 py-3.5 text-xs font-bold whitespace-nowrap transition-all border-b-2 ${
                     activeTab === tab ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}>
                   {tab}
@@ -109,146 +209,118 @@ export default function StudentCoursePage() {
             </div>
 
             <div className="p-5">
-
-              {/* OVERVIEW */}
-              {activeTab === 'Overview' && (
-                <div className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-bold text-gray-700">Course Progress</p>
-                      <span className="text-xs font-bold text-[#2563EB]">{progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3">
-                      <div className="bg-[#2563EB] h-3 rounded-full" style={{ width: `${progress}%` }} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Next Lesson</p>
-                      <p className="text-sm font-bold text-gray-800">Introduction to Pandas</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Lesson 4 · Live Class · Today 4:30 PM</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Trainer</p>
-                      <p className="text-sm font-bold text-gray-800">Abdulhameed Olamilekan</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Data Analytics Expert</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Pending Assignments</p>
-                      <p className="text-2xl font-bold text-amber-500">4</p>
-                      <p className="text-xs text-amber-400 mt-0.5">Due this week</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Attendance Rate</p>
-                      <p className="text-2xl font-bold text-green-600">76%</p>
-                      <p className="text-xs text-green-400 mt-0.5">22 of 29 sessions</p>
-                    </div>
-                  </div>
+              {loadingDetails ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
                 </div>
-              )}
-
-              {/* LESSONS */}
-              {activeTab === 'Lessons' && (
-                <div className="space-y-2">
-                  {lessons.map((lesson, i) => (
-                    <div key={lesson.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
-                        lesson.current ? 'border-[#2563EB] bg-blue-50' :
-                        lesson.completed ? 'border-gray-100 bg-gray-50' : 'border-gray-100 bg-white'
-                      }`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        lesson.completed ? 'bg-green-100' :
-                        lesson.current ? 'bg-[#2563EB]' : 'bg-gray-100'
-                      }`}>
-                        {lesson.completed ? <CheckCircle size={16} className="text-green-600" /> :
-                         lesson.current ? <Play size={14} className="text-white" /> :
-                         <Lock size={14} className="text-gray-400" />}
+              ) : (
+                <>
+                  {/* OVERVIEW */}
+                  {activeTab === 'Overview' && (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider mb-2">Category</p>
+                        <p className="text-xs font-bold text-gray-700 capitalize">{selectedCourse.category || 'General study'}</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold ${lesson.current ? 'text-[#2563EB]' : 'text-gray-800'}`}>
-                          Lesson {lesson.id} · {lesson.title}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-0.5">{lesson.type} · {lesson.duration}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <p className="text-[10px] text-gray-400 mb-1 font-black uppercase tracking-wider">Duration</p>
+                          <p className="text-xs font-bold text-gray-800">{selectedCourse.duration || 'Flexible timeline'}</p>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                          <p className="text-[10px] text-gray-400 mb-1 font-black uppercase tracking-wider">Cohort Status</p>
+                          <p className="text-xs font-bold text-green-600 uppercase">ACTIVE ENROLLMENT</p>
+                        </div>
                       </div>
-                      {lesson.current && (
-                        <span className="text-[10px] font-bold bg-[#2563EB] text-white px-2 py-0.5 rounded-full">Current</span>
-                      )}
-                      {lesson.completed && (
-                        <span className="text-[10px] font-semibold text-green-600">Completed</span>
-                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )}
 
-              {/* RESOURCES */}
-              {activeTab === 'Resources' && (
-                <div className="overflow-x-auto">
-<table className="w-full min-w-[400px]">
-  <thead>
-    <tr className="bg-gray-50">
-      {['Resource', 'Type', 'Size', 'Date'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {resources.map(r => {
-                      const TypeIcon = typeStyles[r.type]?.icon || FileText
-                      return (
-                        <tr key={r.id} className="hover:bg-gray-50 cursor-pointer">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-7 h-7 rounded-lg ${typeStyles[r.type]?.bg} flex items-center justify-center`}>
-                                <TypeIcon size={13} className={typeStyles[r.type]?.color} />
-                              </div>
-                              <p className="text-xs font-semibold text-gray-800">{r.name}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeStyles[r.type]?.bg} ${typeStyles[r.type]?.color}`}>
-                              {r.type}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">{r.size}</td>
-                          <td className="px-4 py-3 text-xs text-gray-500">{r.date}</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-                </div>
-              )}
+                  {/* RESOURCES */}
+                  {activeTab === 'Resources' && (
+                    resources.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-6 font-bold">No study materials attached to this course yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Resource', 'Type', 'Web Link'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {resources.map(r => {
+                              const TypeStyle = typeStyles[r.file_type?.toLowerCase()] || typeStyles.link
+                              const TypeIcon = TypeStyle.icon
+                              return (
+                                <tr key={r.id} className="hover:bg-gray-50 transition">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className={`w-7 h-7 rounded-lg ${TypeStyle.bg} flex items-center justify-center flex-shrink-0`}>
+                                        <TypeIcon size={13} className={TypeStyle.color} />
+                                      </div>
+                                      <p className="text-xs font-bold text-gray-800">{r.name}</p>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase ${TypeStyle.bg} ${TypeStyle.color}`}>
+                                      {r.file_type || 'link'}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2563EB] font-bold hover:underline truncate max-w-[250px] inline-block">
+                                      {r.url}
+                                    </a>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
 
-              {/* ASSIGNMENTS */}
-              {activeTab === 'Assignments' && (
-                <div className="overflow-x-auto">
-<table className="w-full min-w-[400px]">
-  <thead>
-    <tr className="bg-gray-50">
-      {['Assignment', 'Due date', 'Grade', 'Status'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {assignments.map(a => (
-                      <tr key={a.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-xs font-semibold text-gray-800">{a.title}</td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{a.due}</td>
-                        <td className="px-4 py-3 text-xs font-bold text-gray-700">{a.grade}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${assignmentStyles[a.status]}`}>
-                            {a.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
+                  {/* ASSIGNMENTS */}
+                  {activeTab === 'Assignments' && (
+                    assignments.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-6 font-bold">No assignments scheduled for this course yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Assignment Name', 'Due date', 'Points', 'Status'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {assignments.map(a => (
+                              <tr key={a.id} className="hover:bg-gray-50 transition">
+                                <td className="px-4 py-3">
+                                  <p className="text-xs font-bold text-gray-800">{a.title}</p>
+                                  <p className="text-[10px] text-gray-400 font-semibold truncate max-w-[200px]">{a.description}</p>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-650 font-semibold">
+                                  {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'Flexible'}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-bold text-gray-700">{a.total_points} pts</td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-[9px] font-black px-2.5 py-0.5 rounded-full border uppercase ${assignmentStyles[a.status]}`}>
+                                    {a.status}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
+                </>
               )}
-
             </div>
           </div>
         </div>

@@ -1,152 +1,174 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import TrainerSidebar from '../../components/trainer/TrainerSidebar'
 import TrainerTopBar from '../../components/trainer/TrainerTopBar'
-import { Users, Video, ClipboardList, BookOpen, Plus, MoreHorizontal, Upload, X, FileText, Link as LinkIcon } from 'lucide-react'
+import { Users, Video, ClipboardList, BookOpen, Plus, Upload, X, FileText, Link as LinkIcon } from 'lucide-react'
+import { coursesAPI, studentsAPI, assignmentsAPI, resourcesAPI, sessionsAPI } from '../../services'
+import toast from 'react-hot-toast'
 
 const tabs = ['Overview', 'Students', 'Assignments', 'Resources', 'Sessions']
 
-const students = [
-  { id: 'STU-001', name: 'Abdulhameed Olamilekan', attendance: 94, assignments: '10/12', grade: 'A', status: 'On track', color: 'bg-orange-400' },
-  { id: 'STU-002', name: 'Michael Kaine', attendance: 48, assignments: '4/12', grade: 'D', status: 'At Risk', color: 'bg-blue-500' },
-  { id: 'STU-003', name: 'Oyindamola', attendance: 76, assignments: '9/12', grade: 'B', status: 'On track', color: 'bg-red-400' },
-  { id: 'STU-004', name: 'Bewaji Daniels', attendance: 54, assignments: '7/12', grade: 'C', status: 'At Risk', color: 'bg-teal-500' },
-  { id: 'STU-005', name: 'Mojoyinola Rahman', attendance: 90, assignments: '12/12', grade: 'A', status: 'On track', color: 'bg-purple-500' },
+const cardColors = [
+  'bg-orange-400',
+  'bg-blue-500',
+  'bg-red-400',
+  'bg-teal-500',
+  'bg-purple-500',
+  'bg-green-500',
+  'bg-indigo-500',
+  'bg-pink-500',
 ]
 
-const assignments = [
-  { id: 'ASN-001', title: 'Hero Section Design', due: 'Apr 15, 2026', submitted: 45, total: 52, status: 'Active' },
-  { id: 'ASN-002', title: 'Navigation Bar Component', due: 'Apr 20, 2026', submitted: 30, total: 52, status: 'Active' },
-  { id: 'ASN-003', title: 'Responsive Layout', due: 'Apr 10, 2026', submitted: 52, total: 52, status: 'Closed' },
-]
+function AddAssignmentModal({ courseId, onClose, onCreated }) {
+  const [form, setForm] = useState({ title: '', due_date: '', description: '', total_points: '100' })
+  const [submitting, setSubmitting] = useState(false)
 
-const resources = [
-  { id: 'RES-001', name: 'Week 1 Lecture Slides', type: 'PDF', size: '2.4 MB', date: 'Apr 1, 2026' },
-  { id: 'RES-002', name: 'Week 1 Recording', type: 'Video', size: '245 MB', date: 'Apr 2, 2026' },
-  { id: 'RES-003', name: 'Figma Design Kit', type: 'Link', size: '--', date: 'Apr 3, 2026' },
-]
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.title) return toast.error('Please enter a title')
+    try {
+      setSubmitting(true)
+      const res = await assignmentsAPI.create({
+        title: form.title,
+        description: form.description,
+        total_points: parseInt(form.total_points) || 100,
+        due_date: form.due_date ? new Date(form.due_date).toISOString() : null,
+        course_id: courseId
+      })
+      if (res.success || res.assignment) {
+        toast.success('Assignment added successfully!')
+        if (onCreated) onCreated()
+        onClose()
+      } else {
+        toast.error(res.message || 'Failed to add assignment')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Error occurred')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-const sessions = [
-  { id: 1, title: 'Lesson 1 - Introduction', date: 'Apr 1, 2026', time: '4:30 PM', duration: '1hr 30mins', status: 'Completed', attendance: 48 },
-  { id: 2, title: 'Lesson 2 - Core Concepts', date: 'Apr 8, 2026', time: '4:30 PM', duration: '1hr 30mins', status: 'Completed', attendance: 45 },
-  { id: 3, title: 'Lesson 3 - Practical', date: 'Apr 15, 2026', time: '4:30 PM', duration: '1hr 30mins', status: 'Live', attendance: 50 },
-  { id: 4, title: 'Lesson 4 - Advanced', date: 'Apr 22, 2026', time: '4:30 PM', duration: '1hr 30mins', status: 'Upcoming', attendance: 0 },
-]
-
-const statusStyles = {
-  'On track': 'bg-green-50 text-green-700 border border-green-200',
-  'At Risk': 'bg-red-50 text-red-600 border border-red-200',
-}
-
-const assignmentStatusStyles = {
-  Active: 'bg-green-50 text-green-700 border border-green-200',
-  Closed: 'bg-gray-100 text-gray-500 border border-gray-200',
-}
-
-const sessionStatusStyles = {
-  Live: 'bg-green-100 text-green-700',
-  Completed: 'bg-blue-50 text-blue-600',
-  Upcoming: 'bg-gray-100 text-gray-500',
-}
-
-function AddAssignmentModal({ onClose }) {
-  const [form, setForm] = useState({ title: '', due: '', description: '', points: '' })
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+      <form onSubmit={handleSubmit} className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10 p-6 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-800">Add Assignment</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+            <X size={16} />
+          </button>
         </div>
-        <div className="px-6 py-5 space-y-4">
+        <div>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">TITLE *</label>
+          <input name="title" required value={form.title} onChange={handle} placeholder="e.g. Hero Section Design"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">TITLE <span className="text-red-500">*</span></label>
-            <input name="title" value={form.title} onChange={handle} placeholder="e.g. Hero Section Design"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">DUE DATE</label>
-              <input type="date" name="due" value={form.due} onChange={handle}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] text-gray-600" />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">TOTAL POINTS</label>
-              <input name="points" value={form.points} onChange={handle} placeholder="e.g. 100"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-            </div>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">DUE DATE</label>
+            <input type="date" name="due_date" value={form.due_date} onChange={handle}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] text-gray-600 font-semibold" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">DESCRIPTION</label>
-            <textarea name="description" value={form.description} onChange={handle} rows={3}
-              placeholder="Assignment instructions..."
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] resize-none" />
-          </div>
-          <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg py-2.5 hover:bg-gray-50">Cancel</button>
-            <button onClick={onClose} className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700">Add Assignment</button>
+            <label className="block text-[11px] font-bold text-gray-700 mb-1">TOTAL POINTS</label>
+            <input name="total_points" value={form.total_points} onChange={handle} placeholder="e.g. 100"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-bold text-gray-700" />
           </div>
         </div>
-      </div>
+        <div>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">DESCRIPTION</label>
+          <textarea name="description" value={form.description} onChange={handle} rows={3} placeholder="Assignment instructions..."
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] resize-none font-semibold text-gray-700" />
+        </div>
+        <div className="flex gap-2 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold rounded-lg py-2 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" disabled={submitting} className="flex-1 bg-[#2563EB] text-white text-xs font-bold rounded-lg py-2 hover:bg-blue-700 transition-colors">
+            {submitting ? 'Adding...' : 'Add Assignment'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
 
-function UploadResourceModal({ onClose }) {
-  const [tab, setTab] = useState('file')
+function UploadResourceModal({ courseId, onClose, onCreated }) {
+  const [tab, setTab] = useState('link')
+  const [form, setForm] = useState({ name: '', url: '', file_type: 'link' })
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.name || !form.url) return toast.error('Please fill in all fields')
+    try {
+      setSubmitting(true)
+      const res = await resourcesAPI.create({
+        name: form.name,
+        url: form.url,
+        file_type: form.file_type,
+        course_id: courseId
+      })
+      if (res.success || res.resource) {
+        toast.success('Study resource uploaded successfully!')
+        if (onCreated) onCreated()
+        onClose()
+      } else {
+        toast.error(res.message || 'Failed to add resource')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Error occurred')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-bold text-gray-800">Upload Resource</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+      <form onSubmit={handleSubmit} className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10 p-6 space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+          <h2 className="text-sm font-bold text-gray-800">Add Study Resource</h2>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+            <X size={16} />
+          </button>
         </div>
-        <div className="px-6 py-5 space-y-4">
-          <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-            {['file', 'link'].map(t => (
-              <button key={t} onClick={() => setTab(t)}
-                className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-all capitalize ${
-                  tab === t ? 'bg-white text-[#2563EB] shadow-sm' : 'text-gray-500'
-                }`}>
-                {t === 'file' ? 'Upload File' : 'Add Link'}
-              </button>
-            ))}
-          </div>
-          {tab === 'file' ? (
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center gap-2 hover:border-[#2563EB] cursor-pointer transition-colors">
-              <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center">
-                <Upload size={18} className="text-[#2563EB]" />
-              </div>
-              <p className="text-xs font-semibold text-gray-700">Click to upload file</p>
-              <p className="text-[11px] text-gray-400">PDF, MP4, DOCX up to 500MB</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">RESOURCE NAME</label>
-                <input placeholder="e.g. Figma Design Kit"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">URL</label>
-                <input placeholder="https://..."
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-              </div>
-            </div>
-          )}
-          <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm font-semibold rounded-lg py-2.5 hover:bg-gray-50">Cancel</button>
-            <button onClick={onClose} className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700">
-              {tab === 'file' ? 'Upload' : 'Add Link'}
+
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+          {['link', 'pdf', 'video'].map(t => (
+            <button type="button" key={t} onClick={() => setForm(prev => ({ ...prev, file_type: t }))}
+              className={`flex-1 text-xs font-bold py-1.5 rounded-md transition-all capitalize ${
+                form.file_type === t ? 'bg-white text-[#2563EB] shadow-sm' : 'text-gray-500'
+              }`}>
+              {t}
             </button>
-          </div>
+          ))}
         </div>
-      </div>
+
+        <div>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">RESOURCE NAME *</label>
+          <input name="name" required value={form.name} onChange={handle} placeholder="e.g. Figma Design Kit"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">URL LINK *</label>
+          <input name="url" required value={form.url} onChange={handle} placeholder="https://..."
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-xs font-bold rounded-lg py-2 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" disabled={submitting} className="flex-1 bg-[#2563EB] text-white text-xs font-bold rounded-lg py-2 hover:bg-blue-700 transition-colors">
+            {submitting ? 'Adding...' : 'Add Resource'}
+          </button>
+        </div>
+      </form>
     </div>
   )
 }
@@ -154,8 +176,103 @@ function UploadResourceModal({ onClose }) {
 export default function TrainerCoursePage() {
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
+  const [courses, setCourses] = useState([])
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  
+  const [students, setStudents] = useState([])
+  const [assignments, setAssignments] = useState([])
+  const [resources, setResources] = useState([])
+  const [sessions, setSessions] = useState([])
+  
+  const [loading, setLoading] = useState(true)
+  const [loadingDetails, setLoadingDetails] = useState(false)
   const [showAddAssignment, setShowAddAssignment] = useState(false)
   const [showUploadResource, setShowUploadResource] = useState(false)
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true)
+      const res = await coursesAPI.list()
+      if (res.success || res.courses) {
+        const list = res.courses || res || []
+        setCourses(list)
+        if (list.length > 0) {
+          setSelectedCourse(list[0])
+        }
+      }
+    } catch (err) {
+      toast.error('Failed to load courses')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCourseDetails = async () => {
+    if (!selectedCourse) return
+    try {
+      setLoadingDetails(true)
+      const [studentsRes, assignmentsRes, resourcesRes, sessionsRes] = await Promise.all([
+        studentsAPI.list(selectedCourse.cohort_id ? { cohort_id: selectedCourse.cohort_id } : {}),
+        assignmentsAPI.list({ courseId: selectedCourse.id }),
+        resourcesAPI.list({ courseId: selectedCourse.id }),
+        sessionsAPI.list({ courseId: selectedCourse.id })
+      ])
+
+      if (studentsRes.success || studentsRes.students) {
+        setStudents(studentsRes.students || [])
+      }
+      if (assignmentsRes.success || assignmentsRes.assignments) {
+        setAssignments(assignmentsRes.assignments || [])
+      }
+      if (resourcesRes.success || resourcesRes.resources) {
+        setResources(resourcesRes.resources || [])
+      }
+      if (sessionsRes.success || sessionsRes.sessions) {
+        setSessions(sessionsRes.sessions || [])
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingDetails(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchCourses()
+  }, [])
+
+  useEffect(() => {
+    fetchCourseDetails()
+  }, [selectedCourse])
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
+        <TrainerSidebar collapsed={collapsed} activePath="/trainer/course" />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <TrainerTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#2563EB]"></div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!selectedCourse) {
+    return (
+      <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
+        <TrainerSidebar collapsed={collapsed} activePath="/trainer/course" />
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <TrainerTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <BookOpen size={48} className="text-gray-300 mb-2" />
+            <p className="text-sm font-bold text-gray-700">No Courses Assigned Yet</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
@@ -164,31 +281,48 @@ export default function TrainerCoursePage() {
         <TrainerTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {/* Selector header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-black text-gray-500 uppercase">Select Course:</label>
+              <select
+                value={selectedCourse.id}
+                onChange={e => setSelectedCourse(courses.find(c => c.id === e.target.value))}
+                className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-[#2563EB]"
+              >
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {/* Course banner */}
-          <div className="rounded-2xl overflow-hidden border border-gray-100">
+          <div className="rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             <div style={{ background: 'linear-gradient(135deg, #60a5fa, #6366f1)', height: '110px' }} />
             <div className="bg-white px-6 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-bold text-gray-900">Data Analytics</h1>
-                    <span className="bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-200">Active</span>
+                    <h1 className="text-lg font-bold text-gray-900">{selectedCourse.name}</h1>
+                    <span className="bg-green-50 text-green-700 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-green-200 uppercase">
+                      {selectedCourse.status || 'Active'}
+                    </span>
                   </div>
-                  <p className="text-xs text-gray-500">Data analysis fundamentals with Python, Pandas, SQL and Visualization.</p>
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                    <span>👥 52 Students</span>
-                    <span>📚 Cohort 1</span>
-                    <span>📅 Jan 1 → Mar 31, 2026</span>
+                  <p className="text-xs text-gray-500">{selectedCourse.description || 'No description provided.'}</p>
+                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 font-bold">
+                    <span>👥 {students.length} Students</span>
+                    <span>📚 Cohort: {selectedCourse.cohort_id || 'Global'}</span>
+                    <span>📅 Duration: {selectedCourse.duration || 'N/A'}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => setShowUploadResource(true)}
-                    className="flex items-center gap-2 border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg px-3 py-2 hover:bg-gray-50">
+                    className="flex items-center gap-2 border border-gray-200 text-gray-700 text-xs font-bold rounded-lg px-3 py-2 hover:bg-gray-50 bg-white transition shadow-sm">
                     <Upload size={13} /> Upload Resource
                   </button>
                   <button onClick={() => setShowAddAssignment(true)}
-                    className="flex items-center gap-2 bg-[#2563EB] text-white text-xs font-semibold rounded-lg px-3 py-2 hover:bg-blue-700">
+                    className="flex items-center gap-2 bg-[#2563EB] text-white text-xs font-bold rounded-lg px-3 py-2 hover:bg-blue-700 transition shadow-sm">
                     <Plus size={13} /> Add Assignment
                   </button>
                 </div>
@@ -196,30 +330,30 @@ export default function TrainerCoursePage() {
             </div>
           </div>
 
-          {/* Stat cards */}
+          {/* Stats summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Students', value: '52', icon: Users, bg: 'bg-blue-50', color: 'text-[#2563EB]' },
-              { label: 'Sessions', value: '42/48', icon: Video, bg: 'bg-purple-50', color: 'text-purple-600' },
-              { label: 'Assignments', value: '12', icon: ClipboardList, bg: 'bg-amber-50', color: 'text-amber-600' },
-              { label: 'Avg Attendance', value: '87%', icon: BookOpen, bg: 'bg-green-50', color: 'text-green-600' },
+              { label: 'Students Roster', value: students.length, icon: Users, bg: 'bg-blue-50', color: 'text-[#2563EB]' },
+              { label: 'Live Classes', value: sessions.length, icon: Video, bg: 'bg-purple-50', color: 'text-purple-600' },
+              { label: 'Assignments Created', value: assignments.length, icon: ClipboardList, bg: 'bg-amber-50', color: 'text-amber-600' },
+              { label: 'Study Resources', value: resources.length, icon: BookOpen, bg: 'bg-green-50', color: 'text-green-600' },
             ].map(({ label, value, icon: Icon, bg, color }) => (
-              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 text-center">
+              <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 text-center shadow-sm">
                 <div className={`w-8 h-8 ${bg} rounded-lg flex items-center justify-center mx-auto mb-2`}>
                   <Icon size={15} className={color} />
                 </div>
                 <p className="text-xl font-bold text-gray-800">{value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{label}</p>
+                <p className="text-xs text-gray-400 mt-0.5 font-bold">{label}</p>
               </div>
             ))}
           </div>
 
-          {/* Tabs */}
-          <div className="bg-white rounded-xl border border-gray-100">
-            <div className="flex items-center border-b border-gray-100 px-4 overflow-x-auto">
+          {/* Tabs Workspace */}
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-center border-b border-gray-100 px-4 overflow-x-auto bg-gray-50/50">
               {tabs.map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-3.5 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 ${
+                  className={`px-4 py-3.5 text-xs font-bold whitespace-nowrap transition-all border-b-2 ${
                     activeTab === tab
                       ? 'border-[#2563EB] text-[#2563EB]'
                       : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -230,234 +364,219 @@ export default function TrainerCoursePage() {
             </div>
 
             <div className="p-5">
-
-              {/* OVERVIEW TAB */}
-              {activeTab === 'Overview' && (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-bold text-gray-700 mb-3">Course Progress</p>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 bg-gray-100 rounded-full h-2.5">
-                        <div className="bg-[#2563EB] h-2.5 rounded-full" style={{ width: '90%' }} />
+              {loadingDetails ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
+                </div>
+              ) : (
+                <>
+                  {/* OVERVIEW TAB */}
+                  {activeTab === 'Overview' && (
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-xs font-black text-gray-700 uppercase tracking-wide mb-2">Category</p>
+                        <p className="text-sm font-semibold text-gray-600 capitalize">{selectedCourse.category || 'General'}</p>
                       </div>
-                      <span className="text-sm font-bold text-gray-700">90%</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider mb-1">Duration</p>
+                          <p className="text-sm font-bold text-gray-800">{selectedCourse.duration || 'Flexible timeline'}</p>
+                        </div>
+                        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4">
+                          <p className="text-[10px] text-gray-400 uppercase font-black tracking-wider mb-1">Status</p>
+                          <p className="text-sm font-bold text-gray-800 capitalize">{selectedCourse.status}</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">At Risk Students</p>
-                      <p className="text-2xl font-bold text-red-500">5</p>
-                      <p className="text-xs text-red-400 mt-0.5">Below 60% attendance</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Pending Grades</p>
-                      <p className="text-2xl font-bold text-amber-500">18</p>
-                      <p className="text-xs text-amber-400 mt-0.5">Assignments to grade</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Next Session</p>
-                      <p className="text-sm font-bold text-gray-800">Today, 4:30 PM</p>
-                      <p className="text-xs text-gray-400 mt-0.5">Lesson 3 · Module 2</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-xs text-gray-400 mb-1">Avg Student Grade</p>
-                      <p className="text-2xl font-bold text-green-600">B+</p>
-                      <p className="text-xs text-green-400 mt-0.5">Above cohort average</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  )}
 
-              {/* STUDENTS TAB */}
-              {activeTab === 'Students' && (
-                <div className="overflow-x-auto">
-<table className="w-full min-w-[500px]">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      {['Student', 'Attendance', 'Assignments', 'Grade', 'Status'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {students.map(s => (
-                      <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className={`w-7 h-7 rounded-full ${s.color} flex items-center justify-center text-white text-[10px] font-bold`}>
-                              {s.name[0]}
-                            </div>
-                            <div>
-                              <p className="text-xs font-semibold text-gray-800">{s.name}</p>
-                              <p className="text-[10px] text-gray-400">{s.id}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-bold ${s.attendance >= 70 ? 'text-green-600' : 'text-red-500'}`}>
-                            {s.attendance}%
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-600">{s.assignments}</td>
-                        <td className="px-4 py-3 text-xs font-bold text-gray-700">{s.grade}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyles[s.status]}`}>
-                            {s.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
-              )}
+                  {/* STUDENTS TAB */}
+                  {activeTab === 'Students' && (
+                    students.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-6">No students enrolled in this cohort yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Student Name', 'Email', 'Role', 'Status'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {students.map((s, idx) => {
+                              const sName = `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'Student'
+                              return (
+                                <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className={`w-7 h-7 rounded-full ${cardColors[idx % cardColors.length]} flex items-center justify-center text-white text-[10px] font-bold`}>
+                                        {sName[0]}
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-bold text-gray-800">{sName}</p>
+                                        <p className="text-[9px] text-gray-400 font-semibold">{s.id}</p>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-4 py-3 text-xs text-gray-600 font-semibold">{s.email}</td>
+                                  <td className="px-4 py-3 text-xs text-gray-500 font-bold capitalize">{s.role}</td>
+                                  <td className="px-4 py-3">
+                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full border bg-green-50 text-green-700 border-green-100 uppercase">
+                                      {s.status || 'Active'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
 
-              {/* ASSIGNMENTS TAB */}
-              {activeTab === 'Assignments' && (
-                <div>
-                  <div className="flex justify-end mb-4">
-                    <button onClick={() => setShowAddAssignment(true)}
-                      className="flex items-center gap-2 bg-[#2563EB] text-white text-xs font-semibold rounded-lg px-3 py-2 hover:bg-blue-700">
-                      <Plus size={13} /> Add Assignment
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto">
-<table className="w-full min-w-[500px]">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        {['Assignment', 'Due Date', 'Submissions', 'Status', 'Action'].map(h => (
-                          <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {assignments.map(a => (
-                        <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3">
-                            <p className="text-xs font-semibold text-gray-800">{a.title}</p>
-                            <p className="text-[10px] text-gray-400">{a.id}</p>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-600">{a.due}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-16 bg-gray-100 rounded-full h-1.5">
-                                <div className="bg-[#2563EB] h-1.5 rounded-full"
-                                  style={{ width: `${(a.submitted / a.total) * 100}%` }} />
-                              </div>
-                              <span className="text-xs text-gray-500">{a.submitted}/{a.total}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${assignmentStatusStyles[a.status]}`}>
-                              {a.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <button className="text-xs text-[#2563EB] font-semibold hover:underline">Grade</button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  </div>
-                </div>
-              )}
+                  {/* ASSIGNMENTS TAB */}
+                  {activeTab === 'Assignments' && (
+                    assignments.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-xs text-gray-400 font-bold mb-2">No assignments added yet</p>
+                        <button onClick={() => setShowAddAssignment(true)} className="text-xs font-black text-[#2563EB] hover:underline">
+                          Create your first assignment
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Title', 'Due Date', 'Total Points', 'Created At'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {assignments.map(a => (
+                              <tr key={a.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3">
+                                  <p className="text-xs font-bold text-gray-800">{a.title}</p>
+                                  <p className="text-[10px] text-gray-400 font-semibold truncate max-w-[200px]">{a.description}</p>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-600 font-semibold">
+                                  {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date'}
+                                </td>
+                                <td className="px-4 py-3 text-xs font-bold text-gray-800">{a.total_points} pts</td>
+                                <td className="px-4 py-3 text-xs text-gray-500 font-semibold">
+                                  {new Date(a.created_at).toLocaleDateString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
 
-              {/* RESOURCES TAB */}
-              {activeTab === 'Resources' && (
-                <div>
-                  <div className="flex justify-end mb-4">
-                    <button onClick={() => setShowUploadResource(true)}
-                      className="flex items-center gap-2 bg-[#2563EB] text-white text-xs font-semibold rounded-lg px-3 py-2 hover:bg-blue-700">
-                      <Upload size={13} /> Upload Resource
-                    </button>
-                  </div>
-                  <div className="overflow-x-auto">
-<table className="w-full min-w-[500px]">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        {['Resource', 'Type', 'Size', 'Date', 'Action'].map(h => (
-                          <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                      {resources.map(r => (
-                        <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                                r.type === 'PDF' ? 'bg-red-50' : r.type === 'Video' ? 'bg-purple-50' : 'bg-blue-50'
-                              }`}>
-                                {r.type === 'PDF' ? <FileText size={13} className="text-red-500" /> :
-                                 r.type === 'Video' ? <Video size={13} className="text-purple-500" /> :
-                                 <LinkIcon size={13} className="text-blue-500" />}
-                              </div>
-                              <p className="text-xs font-semibold text-gray-800">{r.name}</p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                              r.type === 'PDF' ? 'bg-red-50 text-red-600' :
-                              r.type === 'Video' ? 'bg-purple-50 text-purple-600' :
-                              'bg-blue-50 text-blue-600'
-                            }`}>{r.type}</span>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-500">{r.size}</td>
-                          <td className="px-4 py-3 text-xs text-gray-500">{r.date}</td>
-                          <td className="px-4 py-3">
-                            <button className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-100">
-                              <MoreHorizontal size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  </div>
-                </div>
-              )}
+                  {/* RESOURCES TAB */}
+                  {activeTab === 'Resources' && (
+                    resources.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-xs text-gray-400 font-bold mb-2">No resources uploaded yet</p>
+                        <button onClick={() => setShowUploadResource(true)} className="text-xs font-black text-[#2563EB] hover:underline">
+                          Add course material
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Resource Name', 'Type', 'Web Link'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {resources.map(r => (
+                              <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 text-[#2563EB]">
+                                      {r.file_type === 'video' ? <Video size={13} /> : r.file_type === 'pdf' ? <FileText size={13} /> : <LinkIcon size={13} />}
+                                    </div>
+                                    <p className="text-xs font-bold text-gray-800">{r.name}</p>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-600 font-semibold uppercase">{r.file_type}</td>
+                                <td className="px-4 py-3">
+                                  <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2563EB] font-bold hover:underline truncate max-w-[250px] inline-block">
+                                    {r.url}
+                                  </a>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
 
-              {/* SESSIONS TAB */}
-              {activeTab === 'Sessions' && (
-                <div className="overflow-x-auto">
-<table className="w-full min-w-[500px]">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      {['Session', 'Date', 'Time', 'Duration', 'Attendance', 'Status'].map(h => (
-                        <th key={h} className="text-left text-xs font-semibold text-gray-500 px-4 py-3">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {sessions.map(s => (
-                      <tr key={s.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 text-xs font-semibold text-gray-800">{s.title}</td>
-                        <td className="px-4 py-3 text-xs text-gray-600">{s.date}</td>
-                        <td className="px-4 py-3 text-xs text-gray-600">{s.time}</td>
-                        <td className="px-4 py-3 text-xs text-gray-600">{s.duration}</td>
-                        <td className="px-4 py-3 text-xs text-gray-600">
-                          {s.status === 'Upcoming' ? '--' : `${s.attendance} students`}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${sessionStatusStyles[s.status]}`}>
-                            {s.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                </div>
+                  {/* SESSIONS TAB */}
+                  {activeTab === 'Sessions' && (
+                    sessions.length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-6">No sessions scheduled for this course yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-100">
+                              {['Session Title', 'Scheduled At', 'Duration', 'Zoom Access Link'].map(h => (
+                                <th key={h} className="text-left text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3">{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-50 bg-white">
+                            {sessions.map(s => (
+                              <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-xs font-bold text-gray-800">{s.title}</td>
+                                <td className="px-4 py-3 text-xs text-gray-600 font-semibold">
+                                  {new Date(s.scheduled_at).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-xs text-gray-600 font-semibold">{s.duration || '1 hour'}</td>
+                                <td className="px-4 py-3">
+                                  <a href={s.zoom_link} target="_blank" rel="noopener noreferrer" className="text-xs text-[#2563EB] font-bold hover:underline truncate max-w-[200px] inline-block">
+                                    {s.zoom_link}
+                                  </a>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  )}
+                </>
               )}
-
             </div>
           </div>
         </div>
       </div>
 
-      {showAddAssignment && <AddAssignmentModal onClose={() => setShowAddAssignment(false)} />}
-      {showUploadResource && <UploadResourceModal onClose={() => setShowUploadResource(false)} />}
+      {showAddAssignment && (
+        <AddAssignmentModal
+          courseId={selectedCourse.id}
+          onClose={() => setShowAddAssignment(false)}
+          onCreated={fetchCourseDetails}
+        />
+      )}
+
+      {showUploadResource && (
+        <UploadResourceModal
+          courseId={selectedCourse.id}
+          onClose={() => setShowUploadResource(false)}
+          onCreated={fetchCourseDetails}
+        />
+      )}
     </div>
   )
 }

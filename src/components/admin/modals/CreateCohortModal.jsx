@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
 import { cohortsAPI } from '../../../services'
+import toast from 'react-hot-toast'
 
-export default function CreateCohortModal({ isOpen, onClose }) {
+export default function CreateCohortModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({
     name: '', description: '', startDate: '', endDate: '', status: 'Ongoing'
   })
@@ -15,9 +16,12 @@ export default function CreateCohortModal({ isOpen, onClose }) {
     try {
       setLoading(true)
       const res = await cohortsAPI.create(form)
+      toast.success('Cohort created successfully!')
       console.log('Cohort created:', res)
+      if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
+      toast.error(err.message || 'Failed to create cohort')
       console.error(err)
     } finally {
       setLoading(false)

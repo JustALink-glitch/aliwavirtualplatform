@@ -21,9 +21,23 @@ const sessions = [
   { course: 'UX Design', time: '5:00 PM', day: 'Friday', status: 'Upcoming' },
 ]
 
-export default function RightPanel() {
+export default function RightPanel({ sessions: propSessions }) {
   const [modal, setModal] = useState(null)
   const navigate = useNavigate()
+
+  // Use props if they exist and are non-empty, otherwise fallback to template data
+  const upcomingSessions = propSessions && propSessions.length > 0
+    ? propSessions.slice(0, 5).map(s => {
+        const date = new Date(s.scheduled_at)
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        return {
+          course: s.course?.name || s.title || 'Course Session',
+          time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          day: days[date.getDay()],
+          status: new Date() >= date ? 'Live' : 'Upcoming'
+        }
+      })
+    : sessions
 
   return (
     <div className="w-full space-y-4">
@@ -92,7 +106,7 @@ export default function RightPanel() {
         <h3 className="text-sm font-bold text-gray-800">Upcoming Sessions</h3>
         <p className="text-[11px] text-gray-400 mb-3">Next 5 scheduled</p>
         <div className="space-y-3">
-          {sessions.map(({ course, time, day, status }, i) => (
+          {upcomingSessions.map(({ course, time, day, status }, i) => (
             <div key={i} className="flex items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-800 truncate uppercase leading-tight">{course}</p>

@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
 import { User, Building, Bell, Shield, Palette, Save, Camera, Trash2, AlertTriangle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { trainersAPI } from '../../services'
+import toast from 'react-hot-toast'
 
 const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -11,52 +14,94 @@ const tabs = [
   { id: 'appearance', label: 'Appearance', icon: Palette },
 ]
 
-function ProfileTab() {
+function ProfileTab({ user, onUpdate }) {
   const [form, setForm] = useState({
-    firstName: 'Admin', lastName: 'User', email: 'admin@training.com',
-    phone: '+234 913 634 5555', role: 'Administrator', bio: ''
+    firstName: '', lastName: '', email: '',
+    phone: '', role: 'Administrator', bio: ''
   })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        firstName: user.first_name || '',
+        lastName: user.last_name || '',
+        email: user.email || '',
+        phone: user.phone_number || '',
+        role: user.role === 'admin' ? 'Administrator' : user.role,
+        bio: user.bio || ''
+      })
+    }
+  }, [user])
+
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!form.firstName || !form.lastName) return toast.error('First and Last Name are required')
+    try {
+      setSaving(true)
+      const res = await trainersAPI.update(user.id, {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        phone_number: form.phone,
+        bio: form.bio
+      })
+      if (res.success || res.user) {
+        toast.success('Profile updated successfully!')
+        onUpdate(res.user || { ...user, first_name: form.firstName, last_name: form.lastName, phone_number: form.phone, bio: form.bio })
+      } else {
+        toast.error(res.message || 'Failed to update profile')
+      }
+    } catch (err) {
+      toast.error(err.message || 'Error occurred while updating profile')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const initials = `${form.firstName[0] || ''}${form.lastName[0] || ''}`.toUpperCase()
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <div>
         <h3 className="text-sm font-bold text-gray-800 mb-1">Profile Settings</h3>
         <p className="text-xs text-gray-400">Update your personal information</p>
       </div>
 
       {/* Avatar */}
-<div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
-  <div className="relative flex-shrink-0">
-    <div className="w-16 h-16 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xl font-bold">AF</div>
-    <button className="absolute bottom-0 right-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50">
-      <Camera size={11} className="text-gray-500" />
-    </button>
-  </div>
-  <div>
-    <p className="text-sm font-semibold text-gray-800">Profile Photo</p>
-    <p className="text-xs text-gray-400 mt-0.5">JPG or PNG, max 2MB</p>
-    <button className="text-xs text-[#2563EB] font-semibold mt-1 hover:underline">Upload new photo</button>
-  </div>
-</div>
+      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+        <div className="relative flex-shrink-0">
+          <div className="w-16 h-16 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xl font-bold">
+            {initials || 'AD'}
+          </div>
+          <button type="button" className="absolute bottom-0 right-0 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50">
+            <Camera size={11} className="text-gray-500" />
+          </button>
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-gray-800">Profile Photo</p>
+          <p className="text-xs text-gray-400 mt-0.5">Assigned profile avatar</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">FIRST NAME</label>
-          <input name="firstName" value={form.firstName} onChange={handle}
+          <input name="firstName" value={form.firstName} onChange={handle} required
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">LAST NAME</label>
-          <input name="lastName" value={form.lastName} onChange={handle}
+          <input name="lastName" value={form.lastName} onChange={handle} required
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
         </div>
       </div>
 
       <div>
         <label className="block text-xs font-semibold text-gray-700 mb-1">EMAIL ADDRESS</label>
-        <input name="email" type="email" value={form.email} onChange={handle}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+        <input name="email" type="email" value={form.email} disabled
+          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-gray-50 text-gray-400 cursor-not-allowed" />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -67,7 +112,7 @@ function ProfileTab() {
         </div>
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">ROLE</label>
-          <input name="role" value={form.role} onChange={handle} disabled
+          <input name="role" value={form.role} disabled
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none bg-gray-50 text-gray-400 cursor-not-allowed" />
         </div>
       </div>
@@ -80,11 +125,11 @@ function ProfileTab() {
       </div>
 
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
-          <Save size={14} /> Save Changes
+        <button type="submit" disabled={saving} className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
+          <Save size={14} /> {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
-    </div>
+    </form>
   )
 }
 
@@ -334,6 +379,22 @@ function AppearanceTab() {
 export default function SettingsPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
+  const { user, updateUser } = useAuth()
+  const [currentUser, setCurrentUser] = useState(user)
+
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user)
+    } else {
+      const saved = localStorage.getItem('user')
+      if (saved) setCurrentUser(JSON.parse(saved))
+    }
+  }, [user])
+
+  const handleUpdateUser = (updated) => {
+    setCurrentUser(updated)
+    updateUser(updated)
+  }
 
   return (
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
@@ -365,7 +426,7 @@ export default function SettingsPage() {
 
             {/* Right — Content */}
             <div className="flex-1 min-w-0 bg-white rounded-xl border border-gray-100 p-4 md:p-6">
-              {activeTab === 'profile' && <ProfileTab />}
+              {activeTab === 'profile' && <ProfileTab user={currentUser} onUpdate={handleUpdateUser} />}
               {activeTab === 'organization' && <OrganizationTab />}
               {activeTab === 'notifications' && <NotificationsTab />}
               {activeTab === 'security' && <SecurityTab />}

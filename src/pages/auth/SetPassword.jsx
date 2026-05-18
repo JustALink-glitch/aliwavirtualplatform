@@ -1,15 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, CheckCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
+
+const ROLE_ROUTES = {
+  admin: '/admin/dashboard',
+  trainer: '/trainer/dashboard',
+  student: '/student/dashboard',
+}
 
 export default function SetPassword() {
   const [step, setStep] = useState('welcome')
   const [showTemp, setShowTemp] = useState(false)
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
-  const [form, setForm] = useState({ temp: '', password: '', confirm: '' })
-  const [role, setRole] = useState('trainer')
+  const [form, setForm] = useState({ email: '', temp: '', password: '', confirm: '' })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [savedUser, setSavedUser] = useState(null)
+
   const navigate = useNavigate()
+  const { setPassword, user } = useAuth()
+
+  // Pre-fill email from auth context if available
+  const emailToUse = form.email || user?.email || ''
+
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const passwordChecks = [
@@ -18,6 +34,42 @@ export default function SetPassword() {
     { label: 'Contains uppercase letter', pass: /[A-Z]/.test(form.password) },
     { label: 'Passwords match', pass: form.password === form.confirm && form.confirm !== '' },
   ]
+
+  const allChecksPassed = passwordChecks.every(c => c.pass)
+
+  const handleSetPassword = async () => {
+    if (!emailToUse) {
+      setError('Email is required. Please enter your email.')
+      return
+    }
+    if (!allChecksPassed) {
+      setError('Please ensure all password requirements are met.')
+      return
+    }
+    setError('')
+    setLoading(true)
+    try {
+      const updatedUser = await setPassword({
+        email: emailToUse,
+        tempPassword: form.temp,
+        newPassword: form.password,
+      })
+      toast.success('Password set successfully!')
+      setSavedUser(updatedUser)
+      setStep('success')
+    } catch (err) {
+      const message = err.message || 'Failed to set password. Please try again.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleGoToDashboard = () => {
+    const role = savedUser?.role || user?.role
+    navigate(ROLE_ROUTES[role] || '/login')
+  }
 
   return (
     <div className="min-h-screen bg-[#F1F5F9] flex flex-col font-[Manrope,sans-serif]">
@@ -40,45 +92,39 @@ export default function SetPassword() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Welcome to Training Ops!</h1>
             <p className="text-sm text-gray-500 mb-2 text-center max-w-sm">
-              You've been invited as a trainer by <span className="font-semibold text-gray-700">ALIWA Foundation</span>.
-            </p>
-            <p className="text-sm text-gray-500 mb-6 text-center max-w-sm">
-              To get started, please set a new password for your account.
+              Your account has been created. To get started, please set a new password.
             </p>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm p-6">
-
-              {/* Role selector */}
-<div className="mb-4">
-  <label className="block text-xs font-semibold text-gray-700 mb-2">YOUR ROLE</label>
-  <div className="grid grid-cols-2 gap-2">
-    {[
-      { value: 'trainer', label: 'Trainer', icon: '👨‍🏫' },
-      { value: 'student', label: 'Student', icon: '🎓' },
-    ].map(({ value, label, icon }) => (
-      <button key={value} onClick={() => setRole(value)}
-        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 transition-all text-xs font-semibold ${
-          role === value
-            ? 'border-[#2563EB] bg-blue-50 text-[#2563EB]'
-            : 'border-gray-200 text-gray-500 hover:border-gray-300'
-        }`}>
-        <span>{icon}</span> {label}
-      </button>
-    ))}
-  </div>
-</div>
-
-              {/* Trainer info */}
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl mb-5">
-                <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                  AO
+              {/* Email field (in case user arrived fresh, not from login) */}
+              {!user?.email && (
+                <div className="mb-4">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    YOUR EMAIL <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handle}
+                    placeholder="Enter your email"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]"
+                  />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-gray-800">Abdulhameed Olamilekan</p>
-                  <p className="text-xs text-gray-500">abdulhameed@gmail.com</p>
-                  <p className="text-xs text-[#2563EB] font-medium mt-0.5">Trainer · Data Analytics</p>
+              )}
+
+              {user && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl mb-5">
+                  <div className="w-10 h-10 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {user.firstName?.[0]}{user.lastName?.[0]}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-800">{user.firstName} {user.lastName}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-xs text-[#2563EB] font-medium mt-0.5 capitalize">{user.role}</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <button
                 onClick={() => setStep('set')}
@@ -174,15 +220,22 @@ export default function SetPassword() {
                 ))}
               </div>
 
+              {/* Error message */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <p className="text-xs text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
               <button
-                onClick={() => setStep('success')}
-                disabled={!passwordChecks.every(c => c.pass)}
+                onClick={handleSetPassword}
+                disabled={!allChecksPassed || loading}
                 className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition ${
-                  passwordChecks.every(c => c.pass)
+                  allChecksPassed && !loading
                     ? 'bg-[#2563EB] hover:bg-blue-700'
                     : 'bg-gray-300 cursor-not-allowed'
                 }`}>
-                Set Password & Continue
+                {loading ? 'Setting password...' : 'Set Password & Continue'}
               </button>
             </div>
           </>
@@ -196,19 +249,19 @@ export default function SetPassword() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Password set!</h1>
             <p className="text-sm text-gray-500 mb-6 text-center max-w-xs">
-              Your account is ready. Welcome to the Training Ops trainer dashboard!
+              Your account is ready. Welcome to Training Ops!
             </p>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm p-6 text-center">
               <div className="w-14 h-14 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
-                AO
+                {(savedUser || user) && `${(savedUser || user).firstName?.[0]}${(savedUser || user).lastName?.[0]}`}
               </div>
-              <p className="text-sm font-bold text-gray-800">Abdulhameed Olamilekan</p>
-              <p className="text-xs text-gray-400 mt-0.5 mb-2">abdulhameed@gmail.com</p>
-              <p className="text-xs text-[#2563EB] font-semibold mb-5">Trainer · Data Analytics</p>
+              <p className="text-sm font-bold text-gray-800">{(savedUser || user)?.firstName} {(savedUser || user)?.lastName}</p>
+              <p className="text-xs text-gray-400 mt-0.5 mb-2">{(savedUser || user)?.email}</p>
+              <p className="text-xs text-[#2563EB] font-semibold mb-5 capitalize">{(savedUser || user)?.role}</p>
 
               <button
-                onClick={() => navigate(role === 'trainer' ? '/trainer/dashboard' : '/student/dashboard')}
+                onClick={handleGoToDashboard}
                 className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition">
                 Go to My Dashboard →
               </button>

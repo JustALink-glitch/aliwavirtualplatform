@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
 import { coursesAPI } from '../../../services'
+import toast from 'react-hot-toast'
 
-export default function CreateCourseModal({ isOpen, onClose }) {
+export default function CreateCourseModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({
     name: '', trainer: '', category: '', duration: '', description: '', status: 'Ongoing'
   })
@@ -15,9 +16,12 @@ export default function CreateCourseModal({ isOpen, onClose }) {
     try {
       setLoading(true)
       const res = await coursesAPI.create(form)
+      toast.success('Course created successfully!')
       console.log('Course created:', res)
+      if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
+      toast.error(err.message || 'Failed to create course')
       console.error(err)
     } finally {
       setLoading(false)

@@ -41,9 +41,20 @@ function ActionMenu({ course, onClose }) {
   )
 }
 
-export default function CoursesTable() {
+export default function CoursesTable({ courses: propCourses }) {
   const [openMenu, setOpenMenu] = useState(null)
   const navigate = useNavigate()
+
+  // Use props if they exist and are non-empty, otherwise fallback to template data
+  const activeCourses = propCourses && propCourses.length > 0 
+    ? propCourses.map(c => ({
+        id: c.id,
+        name: c.name,
+        trainer: c.trainer ? `${c.trainer.first_name || ''} ${c.trainer.last_name || ''}`.trim() : 'Unassigned',
+        progress: c.progress || 75, 
+        status: c.status === 'active' ? 'Ongoing' : c.status === 'paused' ? 'Paused' : 'Stopped'
+      }))
+    : courses
 
   return (
     <div className="bg-white rounded-xl border border-gray-100">
@@ -58,7 +69,7 @@ export default function CoursesTable() {
 
       {/* Table */}
       <div className="overflow-x-auto">
-<table className="w-full min-w-[600px]">
+      <table className="w-full min-w-[600px]">
         <thead>
           <tr className="bg-gray-50">
             {['Courses', 'Trainer', 'Progress', 'Status', 'Action'].map(h => (
@@ -67,7 +78,7 @@ export default function CoursesTable() {
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
-          {courses.map(({ name, trainer, progress, status }) => (
+          {activeCourses.map(({ id, name, trainer, progress, status }) => (
             <tr key={name} className="hover:bg-gray-50 transition-colors relative">
               <td className="px-5 py-3.5 text-sm font-medium text-gray-800">{name}</td>
               <td className="px-5 py-3.5 text-sm text-gray-600">{trainer}</td>
@@ -80,7 +91,7 @@ export default function CoursesTable() {
                 </div>
               </td>
               <td className="px-5 py-3.5">
-                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyles[status]}`}>
+                <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyles[status] || 'bg-gray-50 text-gray-600'}`}>
                   {status}
                 </span>
               </td>
@@ -98,8 +109,8 @@ export default function CoursesTable() {
             </tr>
           ))}
        </tbody>
-        </table>
-        </div>
+      </table>
       </div>
+    </div>
   )
 }

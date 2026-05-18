@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import Modal from '../../common/Modal'
-import { Upload, X } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { studentsAPI } from '../../../services'
+import toast from 'react-hot-toast'
 
-export default function OnboardStudentModal({ isOpen, onClose }) {
+export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
   const [tab, setTab] = useState('single')
   const [form, setForm] = useState({
     fullName: '', email: '', phone: '', course: '', cohort: ''
@@ -17,9 +18,12 @@ export default function OnboardStudentModal({ isOpen, onClose }) {
     try {
       setLoading(true)
       const res = await studentsAPI.onboard(form)
+      toast.success('Student onboarded successfully!')
       console.log('Student onboarded:', res)
+      if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
+      toast.error(err.message || 'Failed to onboard student')
       console.error(err)
     } finally {
       setLoading(false)

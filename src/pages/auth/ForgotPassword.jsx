@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, ArrowLeft, KeyRound } from 'lucide-react'
+import { Mail, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { authAPI } from '../../services'
+import toast from 'react-hot-toast'
 
 export default function ForgotPassword() {
   const [step, setStep] = useState('email') // email → sent → reset → success
@@ -8,7 +10,78 @@ export default function ForgotPassword() {
   const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const navigate = useNavigate()
+
+  // Step 1 — send OTP
+  const handleSendCode = async () => {
+    if (!email) {
+      setError('Please enter your email address.')
+      return
+    }
+    setError('')
+    setLoading(true)
+    try {
+      await authAPI.forgotPassword({ email })
+      toast.success('Reset code sent to your email!')
+      setStep('sent')
+    } catch (err) {
+      const message = err.message || 'Failed to send reset code. Please try again.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Step 2 — verify OTP
+  const handleVerifyCode = async () => {
+    if (!otp || otp.length !== 6) {
+      setError('Please enter the 6-digit code.')
+      return
+    }
+    setError('')
+    setLoading(true)
+    try {
+      await authAPI.verifyOtp({ email, otp })
+      toast.success('Code verified successfully!')
+      setStep('reset')
+    } catch (err) {
+      const message = err.message || 'Invalid or expired code. Please try again.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Step 3 — reset password
+  const handleResetPassword = async () => {
+    if (!password || password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match.')
+      return
+    }
+    setError('')
+    setLoading(true)
+    try {
+      await authAPI.resetPassword({ email, otp, newPassword: password })
+      toast.success('Password reset successfully!')
+      setStep('success')
+    } catch (err) {
+      const message = err.message || 'Failed to reset password. Please try again.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F1F5F9] flex flex-col font-[Manrope,sans-serif]">
@@ -44,6 +117,7 @@ export default function ForgotPassword() {
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleSendCode()}
                     placeholder="Enter your email"
                     className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent"
                   />
@@ -51,10 +125,19 @@ export default function ForgotPassword() {
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-xs text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
               <button
-                onClick={() => setStep('sent')}
-                className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition mb-4">
-                Send Reset Code
+                onClick={handleSendCode}
+                disabled={loading}
+                className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition mb-4 ${
+                  loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-blue-700'
+                }`}>
+                {loading ? 'Sending...' : 'Send Reset Code'}
               </button>
 
               <Link to="/login" className="flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition">
@@ -64,7 +147,7 @@ export default function ForgotPassword() {
           </>
         )}
 
-        {/* STEP 2 — Code sent */}
+        {/* STEP 2 — Code sent, enter OTP */}
         {step === 'sent' && (
           <>
             <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
@@ -72,7 +155,7 @@ export default function ForgotPassword() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-1">Check your email</h1>
             <p className="text-sm text-gray-500 mb-6 text-center max-w-xs">
-              We sent a reset code to <span className="font-semibold text-gray-700">{email || 'your email'}</span>
+              We sent a reset code to <span className="font-semibold text-gray-700">{email}</span>
             </p>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm p-6">
@@ -83,25 +166,39 @@ export default function ForgotPassword() {
                 <input
                   type="text"
                   value={otp}
-                  onChange={e => setOtp(e.target.value)}
+                  onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   placeholder="Enter 6-digit code"
                   className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#2563EB] text-center tracking-widest"
                 />
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-xs text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
               <button
-                onClick={() => setStep('reset')}
-                className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition mb-4">
-                Verify Code
+                onClick={handleVerifyCode}
+                disabled={loading}
+                className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition mb-4 ${
+                  loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-blue-700'
+                }`}>
+                {loading ? 'Verifying...' : 'Verify Code'}
               </button>
 
               <p className="text-center text-xs text-gray-500">
                 Didn't receive it?{' '}
-                <button className="text-[#2563EB] font-semibold hover:underline">Resend code</button>
+                <button
+                  onClick={() => { setError(''); handleSendCode() }}
+                  className="text-[#2563EB] font-semibold hover:underline">
+                  Resend code
+                </button>
               </p>
 
               <div className="mt-3 text-center">
-                <button onClick={() => setStep('email')} className="flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition w-full">
+                <button onClick={() => { setStep('email'); setError('') }}
+                  className="flex items-center justify-center gap-2 text-xs text-gray-500 hover:text-gray-700 transition w-full">
                   <ArrowLeft size={13} /> Back
                 </button>
               </div>
@@ -125,32 +222,51 @@ export default function ForgotPassword() {
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   NEW PASSWORD <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
-                />
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+                  />
+                  <button onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
 
               <div className="mb-5">
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   CONFIRM PASSWORD <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="password"
-                  value={confirm}
-                  onChange={e => setConfirm(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#2563EB]"
-                />
+                <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
+                  <input
+                    type={showConfirm ? 'text' : 'password'}
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    placeholder="Confirm new password"
+                    className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent"
+                  />
+                  <button onClick={() => setShowConfirm(!showConfirm)} className="text-gray-400 hover:text-gray-600">
+                    {showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
               </div>
 
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">
+                  <p className="text-xs text-red-600 font-medium">{error}</p>
+                </div>
+              )}
+
               <button
-                onClick={() => setStep('success')}
-                className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition">
-                Reset Password
+                onClick={handleResetPassword}
+                disabled={loading}
+                className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition ${
+                  loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-blue-700'
+                }`}>
+                {loading ? 'Resetting...' : 'Reset Password'}
               </button>
             </div>
           </>

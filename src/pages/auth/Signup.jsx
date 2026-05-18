@@ -1,15 +1,57 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react'
+import { Mail, User, Eye, EyeOff, Building2 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 
-export default function Login() {
+export default function Signup() {
   const [showPassword, setShowPassword] = useState(false)
   const [showOTP, setShowOTP] = useState(false)
   const [otp, setOtp] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [otpError, setOtpError] = useState('')
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    organizationName: ''
+  })
   const navigate = useNavigate()
+  const { register } = useAuth()
+
+  const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleSignup = async () => {
+    const { firstName, lastName, email, password, organizationName } = form
+    if (!firstName || !lastName || !email || !password || !organizationName) {
+      setError('All fields are required.')
+      return
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
+      return
+    }
+    setError('')
+    setLoading(true)
+    try {
+      await register(form)
+      toast.success('Account created successfully!')
+      // Registration successful → go directly to admin dashboard
+      navigate('/admin/dashboard')
+    } catch (err) {
+      const message = err.message || 'Registration failed. Please try again.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] flex flex-col">
+    <div className="min-h-screen bg-[#F1F5F9] flex flex-col font-[Manrope,sans-serif]">
       {/* Navbar */}
       <nav className="bg-white px-6 py-4 flex items-center gap-2 shadow-sm">
         <div className="w-5 h-5 bg-[#2563EB] rounded-sm flex items-center justify-center">
@@ -20,20 +62,44 @@ export default function Login() {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10">
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Sign up</h1>
-        <p className="text-sm text-gray-500 mb-6">Enter your credentials to access your account.</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">Create Admin Account</h1>
+        <p className="text-sm text-gray-500 mb-6 text-center max-w-xs">
+          Set up your organization on Training Ops.
+        </p>
 
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 w-full max-w-sm p-6">
-          {/* Full Name */}
+
+          {/* First + Last Name */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                FIRST NAME <span className="text-red-500">*</span>
+              </label>
+              <input type="text" name="firstName" value={form.firstName} onChange={handle}
+                placeholder="First name"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                LAST NAME <span className="text-red-500">*</span>
+              </label>
+              <input type="text" name="lastName" value={form.lastName} onChange={handle}
+                placeholder="Last name"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+            </div>
+          </div>
+
+          {/* Organization */}
           <div className="mb-4">
             <label className="block text-xs font-semibold text-gray-700 mb-1">
-              FULL NAME <span className="text-red-500">*</span>
+              ORGANIZATION NAME <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
-              <input type="text" placeholder="Enter full name"
+              <input type="text" name="organizationName" value={form.organizationName} onChange={handle}
+                placeholder="e.g. ALIWA Foundation"
                 className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent" />
-              <User size={16} className="text-gray-400" />
+              <Building2 size={16} className="text-gray-400" />
             </div>
           </div>
 
@@ -43,7 +109,8 @@ export default function Login() {
               EMAIL ADDRESS <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
-              <input type="email" placeholder="Enter Email"
+              <input type="email" name="email" value={form.email} onChange={handle}
+                placeholder="Enter your work email"
                 className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent" />
               <Mail size={16} className="text-gray-400" />
             </div>
@@ -55,7 +122,8 @@ export default function Login() {
               PASSWORD <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-[#2563EB]">
-              <input type={showPassword ? 'text' : 'password'} placeholder="Create Password"
+              <input type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handle}
+                placeholder="Min. 8 characters"
                 className="flex-1 text-sm outline-none text-gray-700 placeholder-gray-400 bg-transparent" />
               <button onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-600">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -63,70 +131,34 @@ export default function Login() {
             </div>
           </div>
 
+          {/* Error */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">
+              <p className="text-xs text-red-600 font-medium">{error}</p>
+            </div>
+          )}
+
           {/* Sign Up Button */}
-          <button onClick={() => setShowOTP(true)}
-            className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition mb-4">
-            Sign up
-          </button>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">Or</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          {/* Google */}
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
-            <svg width="18" height="18" viewBox="0 0 48 48">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-              <path fill="none" d="M0 0h48v48H0z"/>
-            </svg>
-            Continue with Google
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            className={`w-full text-white text-sm font-semibold rounded-lg py-3 transition mb-4 ${
+              loading ? 'bg-blue-400 cursor-not-allowed' : 'bg-[#2563EB] hover:bg-blue-700'
+            }`}>
+            {loading ? 'Creating account...' : 'Create Account'}
           </button>
 
           {/* Sign in link */}
-          <p className="text-center text-xs text-gray-500 mt-4">
+          <p className="text-center text-xs text-gray-500">
             Already have an account?{' '}
             <Link to="/login" className="text-[#2563EB] font-semibold hover:underline">Sign in</Link>
           </p>
         </div>
 
-        <p className="text-xs text-gray-400 mt-4 text-center">
-          *Use your work email. You'll set up your organization next.
+        <p className="text-xs text-gray-400 mt-4 text-center max-w-xs">
+          This creates an admin account. Trainers and students are invited by the admin.
         </p>
       </div>
-
-      {/* OTP Modal */}
-      {showOTP && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 flex flex-col items-center">
-            {/* Icon */}
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
-              <Mail size={28} className="text-[#2563EB]" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Verify your email</h2>
-            <p className="text-sm text-gray-500 text-center mb-6">
-              We've sent a verification code to your@email.com
-            </p>
-            <input type="text" placeholder="Enter One Time Verification code"
-              value={otp} onChange={e => setOtp(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm outline-none focus:border-[#2563EB] mb-4 text-center" />
-            <button
-  onClick={() => navigate('/admin/dashboard')}
-  className="w-full bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-3 hover:bg-blue-700 transition mb-3">
-  Verify
-</button>
-            <p className="text-xs text-gray-500">
-              Didn't receive otp?{' '}
-              <button className="text-[#2563EB] font-semibold hover:underline">Resend</button>
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

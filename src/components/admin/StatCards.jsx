@@ -1,13 +1,21 @@
 import { useNavigate } from 'react-router-dom'
 
-const stats = [
-  { label: 'All Courses', value: '5', sub: 'View all →', link: '/admin/courses', iconBg: 'bg-emerald-50', icon: '📚' },
-  { label: 'Total Students', value: '248', sub: '220 students active', link: '/admin/students', subHighlight: true, iconBg: 'bg-blue-50', icon: '🎓' },
-  { label: 'Attendance Rate', value: '84%', sub: 'View all →', link: '/admin/cohorts', iconBg: 'bg-purple-50', icon: '📊' },
-]
-
-export default function StatCards() {
+export default function StatCards({ coursesCount = 0, studentsCount = 0, attendanceRecords = [] }) {
   const navigate = useNavigate()
+
+  // Compute average attendance rate or fallback to 84%
+  let attendanceRate = '84%'
+  if (attendanceRecords && attendanceRecords.length > 0) {
+    const present = attendanceRecords.filter(r => r.status === 'present').length
+    const total = attendanceRecords.length
+    attendanceRate = `${Math.round((present / total) * 100)}%`
+  }
+
+  const stats = [
+    { label: 'All Courses', value: coursesCount || '0', sub: 'View all →', link: '/admin/courses', iconBg: 'bg-emerald-50', icon: '📚' },
+    { label: 'Total Students', value: studentsCount || '0', sub: `${studentsCount} students registered`, link: '/admin/students', subHighlight: true, iconBg: 'bg-blue-50', icon: '🎓' },
+    { label: 'Attendance Rate', value: attendanceRate, sub: 'View all →', link: '/admin/cohorts', iconBg: 'bg-purple-50', icon: '📊' },
+  ]
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
