@@ -1,5 +1,4 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://lms-backend-production.up.railway.app/api'
-
 // Helper function for API calls
 const apiCall = async (endpoint, method = 'GET', data = null) => {
   const token = localStorage.getItem('token')
