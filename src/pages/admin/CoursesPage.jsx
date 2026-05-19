@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
 import CreateCourseModal from '../../components/admin/modals/CreateCourseModal'
-import { Plus, Filter, LayoutGrid, List, MoreHorizontal, Eye, Archive, Trash2, Upload, BookOpen } from 'lucide-react'
+import { Plus, LayoutGrid, List, MoreHorizontal, Eye, Archive, Trash2, Upload, BookOpen } from 'lucide-react'
 import { coursesAPI } from '../../services'
 import toast from 'react-hot-toast'
 

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Video, ClipboardList, Star, Settings, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Video, ClipboardList, Star, Settings, LogOut, X, HelpCircle } from 'lucide-react'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/student/dashboard' },
@@ -9,6 +9,7 @@ const navItems = [
   { icon: ClipboardList, label: 'My Assignments', path: '/student/assignments' },
   { icon: Star, label: 'My Grades', path: '/student/grades' },
   { icon: Settings, label: 'Settings', path: '/student/settings' },
+  { icon: HelpCircle, label: 'Help & FAQ', path: '/student/help' },
 ]
 
 function LogoutModal({ onConfirm, onCancel }) {

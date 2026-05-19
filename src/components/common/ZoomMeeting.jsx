@@ -58,7 +58,7 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
   const [retryCount, setRetryCount] = useState(0)
   const MAX_RETRIES = 3
 
-  const joinMeeting = useCallback(async (ZoomMtg, attempt = 1) => {
+  const joinMeeting = useCallback(async (ZoomMtg) => {
     setPhase('joining')
     setErrorMsg('')
 
@@ -73,18 +73,19 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
       //    Retries up to MAX_RETRIES — teacher may not be in meeting yet (Chaperone Rule)
       let obfToken = null
       if (teacherUserId) {
-        try {
-          const obfData = await zoomAPI.getOBFToken(teacherUserId)
-          obfToken = obfData.obfToken
-        } catch (obfErr) {
-          if (attempt < MAX_RETRIES) {
-            // Teacher not in yet — wait 15 seconds and retry
-            setErrorMsg(`Waiting for teacher to open the meeting… (attempt ${attempt}/${MAX_RETRIES})`)
-            await new Promise(r => setTimeout(r, 15000))
-            return joinMeeting(ZoomMtg, attempt + 1)
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const obfData = await zoomAPI.getOBFToken(teacherUserId)
+            obfToken = obfData.obfToken
+            break
+          } catch (obfErr) {
+            if (attempt < MAX_RETRIES) {
+              setErrorMsg(`Waiting for teacher to open the meeting… (attempt ${attempt}/${MAX_RETRIES})`)
+              await new Promise(r => setTimeout(r, 15000))
+            } else {
+              console.warn('[Zoom] Could not get OBF token after retries, joining without it')
+            }
           }
-          // After MAX_RETRIES without OBF, fall back to joining without it
-          console.warn('[Zoom] Could not get OBF token after retries, joining without it')
         }
       }
 
@@ -149,7 +150,11 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
       cancelled = true
       // Leave meeting on unmount
       if (window.ZoomMtg && phase === 'joined') {
-        try { window.ZoomMtg.leaveMeeting({}) } catch (_) {}
+        try {
+          window.ZoomMtg.leaveMeeting({})
+        } catch (_) {
+          // Ignore error since we are unmounting
+        }
       }
     }
   }, [retryCount]) // eslint-disable-line react-hooks/exhaustive-deps

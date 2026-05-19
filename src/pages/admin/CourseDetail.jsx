@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
-import { ChevronRight, Plus, Edit2, Users, BookOpen, Archive, Video, FileText, CheckCircle, HelpCircle } from 'lucide-react'
+import { ChevronRight, Edit2, BookOpen, Archive, Video, FileText, CheckCircle, HelpCircle } from 'lucide-react'
 import { coursesAPI, assignmentsAPI, sessionsAPI, resourcesAPI } from '../../services'
 import toast from 'react-hot-toast'
 

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
 import OnboardStudentModal from '../../components/admin/modals/OnboardStudentModal'
-import { Filter, MoreHorizontal, Eye, Mail, Trash2, X, ChevronDown, Check } from 'lucide-react'
+import { MoreHorizontal, Eye, Trash2, X, ChevronDown } from 'lucide-react'
 import { studentsAPI } from '../../services'
 import toast from 'react-hot-toast'
 

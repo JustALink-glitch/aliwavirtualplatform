@@ -19,7 +19,6 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const res = await studentsAPI.onboard(form)
       toast.success('Student onboarded successfully!')
-      console.log('Student onboarded:', res)
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {

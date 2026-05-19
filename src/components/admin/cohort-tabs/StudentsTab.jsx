@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, SlidersHorizontal, MoreHorizontal, X, ChevronDown, Eye, Pencil, UserCheck, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, MoreHorizontal, X, ChevronDown, Eye, Trash2 } from 'lucide-react'
 import { studentsAPI } from '../../../services'
 import toast from 'react-hot-toast'
 

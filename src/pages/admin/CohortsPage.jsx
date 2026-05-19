@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
 import CreateCohortModal from '../../components/admin/modals/CreateCohortModal'
-import { Plus, Filter, MoreHorizontal, Pencil, Trash2, PauseCircle, Check, Play } from 'lucide-react'
+import { Plus, Filter, MoreHorizontal, Trash2, PauseCircle, Check, Play } from 'lucide-react'
 import { cohortsAPI } from '../../services'
 import toast from 'react-hot-toast'
 

@@ -17,7 +17,6 @@ export default function CreateCourseModal({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const res = await coursesAPI.create(form)
       toast.success('Course created successfully!')
-      console.log('Course created:', res)
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {

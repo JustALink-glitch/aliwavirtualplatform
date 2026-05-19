@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import StudentSidebar from '../../components/student/StudentSidebar'
 import StudentTopBar from '../../components/student/StudentTopBar'
-import { Star, TrendingUp, Award, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { coursesAPI, assignmentsAPI, submissionsAPI } from '../../services'
 import toast from 'react-hot-toast'

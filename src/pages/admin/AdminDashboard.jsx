@@ -6,7 +6,6 @@ import CoursesTable from '../../components/admin/CoursesTable'
 import AttendanceTable from '../../components/admin/AttendanceTable'
 import RightPanel from '../../components/admin/RightPanel'
 import { coursesAPI, studentsAPI, sessionsAPI, attendanceAPI } from '../../services'
-import toast from 'react-hot-toast'
 
 export default function AdminDashboard() {
   const [collapsed, setCollapsed] = useState(false)

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, LayoutGrid, List, ChevronDown, Check, X, Calendar, AlertCircle } from 'lucide-react'
+import { Search, LayoutGrid, List, Check, X, Calendar } from 'lucide-react'
 import { coursesAPI, studentsAPI, sessionsAPI, attendanceAPI } from '../../../services'
 import toast from 'react-hot-toast'
 

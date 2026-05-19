@@ -17,7 +17,6 @@ export default function CreateCohortModal({ isOpen, onClose, onSuccess }) {
       setLoading(true)
       const res = await cohortsAPI.create(form)
       toast.success('Cohort created successfully!')
-      console.log('Cohort created:', res)
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {

@@ -36,6 +36,7 @@ import StudentSessionsPage from './pages/student/StudentSessionsPage'
 import StudentAssignmentsPage from './pages/student/StudentAssignmentsPage'
 import StudentGradesPage from './pages/student/StudentGradesPage'
 import StudentSettingsPage from './pages/student/StudentSettingsPage'
+import StudentHelpPage from './pages/student/StudentHelpPage'
 
 function App() {
   return (
@@ -124,6 +125,9 @@ function App() {
           } />
           <Route path="/student/settings" element={
             <ProtectedRoute allowedRoles={['student']}><StudentSettingsPage /></ProtectedRoute>
+          } />
+          <Route path="/student/help" element={
+            <ProtectedRoute allowedRoles={['student']}><StudentHelpPage /></ProtectedRoute>
           } />
 
           {/* Catch-all */}

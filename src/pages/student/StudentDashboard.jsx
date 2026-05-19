@@ -4,7 +4,7 @@ import StudentSidebar from '../../components/student/StudentSidebar'
 import StudentTopBar from '../../components/student/StudentTopBar'
 import { BookOpen, Video, ClipboardList, Star } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-import { cohortsAPI, coursesAPI, assignmentsAPI, sessionsAPI, submissionsAPI } from '../../services'
+import { cohortsAPI, coursesAPI, assignmentsAPI, submissionsAPI } from '../../services'
 import toast from 'react-hot-toast'
 
 export default function StudentDashboard() {

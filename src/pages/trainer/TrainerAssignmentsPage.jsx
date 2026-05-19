@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import TrainerSidebar from '../../components/trainer/TrainerSidebar'
 import TrainerTopBar from '../../components/trainer/TrainerTopBar'
-import { Search, MoreHorizontal, Eye, CheckCircle, X, Star, Download, ChevronDown, ClipboardList } from 'lucide-react'
+import { Search, X, ClipboardList } from 'lucide-react'
 import { submissionsAPI } from '../../services'
 import toast from 'react-hot-toast'
 

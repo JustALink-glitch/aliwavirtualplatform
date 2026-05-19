@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Upload, MoreHorizontal, Eye, Download, Trash2, X, FileText, Video, Link as LinkIcon } from 'lucide-react'
+import { Search, Upload, MoreHorizontal, Trash2, X, FileText, Video, Link as LinkIcon } from 'lucide-react'
 import { coursesAPI, resourcesAPI } from '../../../services'
 import toast from 'react-hot-toast'
 

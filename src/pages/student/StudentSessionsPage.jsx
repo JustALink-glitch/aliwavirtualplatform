@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import StudentSidebar from '../../components/student/StudentSidebar'
 import StudentTopBar from '../../components/student/StudentTopBar'
 import ZoomMeeting from '../../components/common/ZoomMeeting'
-import { Video, Calendar, Clock, CheckCircle, ExternalLink, Play } from 'lucide-react'
+import PreMeetingCheck from '../../components/student/PreMeetingCheck'
+import { Video, Calendar, CheckCircle, ExternalLink, Play } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { sessionsAPI } from '../../services'
 import toast from 'react-hot-toast'
@@ -73,6 +74,7 @@ function JoinModal({ session, onClose }) {
 export default function StudentSessionsPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('All')
+  const [preCheckSession, setPreCheckSession] = useState(null)
   const [joinSession, setJoinSession] = useState(null)
 
   const [sessions, setSessions] = useState([])
@@ -155,7 +157,7 @@ export default function StudentSessionsPage() {
                 <div className="bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 max-w-[180px] hidden md:block">
                   <p className="text-[10px] text-white/90 font-bold">Attendance logged on join ✓</p>
                 </div>
-                <button onClick={() => setJoinSession(liveSession)}
+                <button onClick={() => setPreCheckSession(liveSession)}
                   className="flex items-center gap-1.5 bg-white text-green-600 text-xs font-black rounded-xl px-5 py-2.5 hover:bg-green-50 shadow-sm transition">
                   <Play size={12} fill="currentColor" /> Join Now
                 </button>
@@ -226,7 +228,7 @@ export default function StudentSessionsPage() {
                         </td>
                         <td className="px-5 py-3.5">
                           {session.status === 'live' && (
-                            <button onClick={() => setJoinSession(session)}
+                            <button onClick={() => setPreCheckSession(session)}
                               className="text-xs bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
                               <ExternalLink size={11} /> Launch Class
                             </button>
@@ -254,6 +256,19 @@ export default function StudentSessionsPage() {
           session={joinSession}
           currentUser={user}
           onClose={() => setJoinSession(null)}
+        />
+      )}
+
+      {/* Pre-Meeting System Check Modal */}
+      {preCheckSession && (
+        <PreMeetingCheck
+          session={preCheckSession}
+          currentUser={user}
+          onClose={() => setPreCheckSession(null)}
+          onProceed={() => {
+            setJoinSession(preCheckSession)
+            setPreCheckSession(null)
+          }}
         />
       )}
     </div>

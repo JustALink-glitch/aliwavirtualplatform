@@ -19,7 +19,6 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
     
     try {
       setLoading(true)
-      console.log('Trainer assigned:', form)
       // Call mock delay to simulate network call
       await new Promise((resolve) => setTimeout(resolve, 800))
       toast.success(`${form.trainer} successfully assigned to ${form.course}!`)

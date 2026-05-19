@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
-import { LayoutGrid, List, Filter, UserPlus, MoreHorizontal, Eye, Pencil, Trash2, X, ChevronDown, Check } from 'lucide-react'
+import { UserPlus, MoreHorizontal, Eye, Trash2, X, ChevronDown } from 'lucide-react'
 import { trainersAPI } from '../../services'
 import toast from 'react-hot-toast'
 

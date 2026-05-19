@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://hemstitch-encourage-anguished.ngrok-free.dev/api'
 
 // Helper function for API calls
 const apiCall = async (endpoint, method = 'GET', data = null) => {
