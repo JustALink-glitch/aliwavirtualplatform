@@ -1,21 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from '../../common/Modal'
-import { coursesAPI } from '../../../services'
+import { cohortsAPI, coursesAPI, trainersAPI } from '../../../services'
 import toast from 'react-hot-toast'
 
 export default function CreateCourseModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({
-    name: '', trainer: '', category: '', duration: '', description: '', status: 'Ongoing'
+    name: '', trainerId: '', cohortId: '', category: '', duration: '', description: '', status: 'Ongoing'
   })
+  const [cohorts, setCohorts] = useState([])
+  const [trainers, setTrainers] = useState([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const fetchOptions = async () => {
+      try {
+        setLoadingOptions(true)
+        const [cohortsRes, trainersRes] = await Promise.all([
+          cohortsAPI.list(),
+          trainersAPI.list({ status: 'active' })
+        ])
+        setCohorts(cohortsRes.cohorts || [])
+        setTrainers(trainersRes.users || [])
+      } catch (err) {
+        toast.error('Failed to load cohorts and trainers')
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+
+    fetchOptions()
+  }, [isOpen])
+
   const handleSubmit = async () => {
+    if (!form.name || !form.cohortId) {
+      toast.error('Course name and cohort are required.')
+      return
+    }
+
     try {
       setLoading(true)
-      const res = await coursesAPI.create(form)
+      await coursesAPI.create({
+        name: form.name,
+        description: form.description,
+        duration: form.duration,
+        category: form.category,
+        status: form.status,
+        cohort_id: form.cohortId,
+        trainer_id: form.trainerId || null
+      })
       toast.success('Course created successfully!')
       if (onSuccess) onSuccess()
       onClose()
@@ -46,6 +84,44 @@ export default function CreateCourseModal({ isOpen, onClose, onSuccess }) {
         </div>
 
         
+        {/* Cohort + Trainer */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              COHORT <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="cohortId"
+              value={form.cohortId}
+              onChange={handle}
+              disabled={loadingOptions}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
+            >
+              <option value="">{loadingOptions ? 'Loading...' : 'Select cohort'}</option>
+              {cohorts.map(cohort => (
+                <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">TRAINER</label>
+            <select
+              name="trainerId"
+              value={form.trainerId}
+              onChange={handle}
+              disabled={loadingOptions}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
+            >
+              <option value="">Assign later</option>
+              {trainers.map(trainer => (
+                <option key={trainer.id} value={trainer.id}>
+                  {`${trainer.first_name || ''} ${trainer.last_name || ''}`.trim() || trainer.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
 
         {/* Category + Duration */}
         <div className="grid grid-cols-2 gap-3">

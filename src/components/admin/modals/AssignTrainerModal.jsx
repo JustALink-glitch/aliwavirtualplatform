@@ -1,30 +1,55 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Modal from '../../common/Modal'
+import { coursesAPI, trainersAPI } from '../../../services'
 import toast from 'react-hot-toast'
 
-export default function AssignTrainerModal({ isOpen, onClose }) {
+export default function AssignTrainerModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({
-    trainer: '', course: '', role: '', startDate: ''
+    trainerId: '', courseId: '', role: '', startDate: ''
   })
+  const [courses, setCourses] = useState([])
+  const [trainers, setTrainers] = useState([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const [loading, setLoading] = useState(false)
+  useEffect(() => {
+    if (!isOpen) return
+
+    const fetchOptions = async () => {
+      try {
+        setLoadingOptions(true)
+        const [coursesRes, trainersRes] = await Promise.all([
+          coursesAPI.list(),
+          trainersAPI.list({ status: 'active' })
+        ])
+        setCourses(coursesRes.courses || [])
+        setTrainers(trainersRes.users || [])
+      } catch (err) {
+        toast.error('Failed to load trainers and courses')
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+
+    fetchOptions()
+  }, [isOpen])
 
   const handleSubmit = async () => {
-    if (!form.trainer || !form.course) {
+    if (!form.trainerId || !form.courseId) {
       toast.error('Trainer and Course are required fields.')
       return
     }
-    
+
     try {
       setLoading(true)
-      // Call mock delay to simulate network call
-      await new Promise((resolve) => setTimeout(resolve, 800))
-      toast.success(`${form.trainer} successfully assigned to ${form.course}!`)
+      const res = await coursesAPI.assignTrainer(form.courseId, form.trainerId)
+      toast.success(res.message || 'Trainer assigned successfully!')
+      if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
-      toast.error('Failed to assign trainer.')
+      toast.error(err.message || 'Failed to assign trainer.')
     } finally {
       setLoading(false)
     }
@@ -33,48 +58,44 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Assign Trainer">
       <div className="space-y-4">
-
-        {/* Select Trainer */}
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
             SELECT TRAINER <span className="text-red-500">*</span>
           </label>
           <select
-            name="trainer"
-            value={form.trainer}
+            name="trainerId"
+            value={form.trainerId}
             onChange={handle}
+            disabled={loadingOptions}
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
           >
-            <option value="">Choose a trainer</option>
-            <option>Abdulhameed O.</option>
-            <option>Oyindamola O.</option>
-            <option>Michael K.</option>
-            <option>Victor O.</option>
-            <option>Bewaji O.</option>
+            <option value="">{loadingOptions ? 'Loading...' : 'Choose a trainer'}</option>
+            {trainers.map(trainer => (
+              <option key={trainer.id} value={trainer.id}>
+                {`${trainer.first_name || ''} ${trainer.last_name || ''}`.trim() || trainer.email}
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* Assign to Course */}
         <div>
           <label className="block text-xs font-semibold text-gray-700 mb-1">
             ASSIGN TO COURSE <span className="text-red-500">*</span>
           </label>
           <select
-            name="course"
-            value={form.course}
+            name="courseId"
+            value={form.courseId}
             onChange={handle}
+            disabled={loadingOptions}
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
           >
-            <option value="">Choose a course</option>
-            <option>Data Analytics</option>
-            <option>Project Management</option>
-            <option>UX Design</option>
-            <option>DevOps</option>
-            <option>Full Stack Dev</option>
+            <option value="">{loadingOptions ? 'Loading...' : 'Choose a course'}</option>
+            {courses.map(course => (
+              <option key={course.id} value={course.id}>{course.name}</option>
+            ))}
           </select>
         </div>
 
-        {/* Role + Start Date */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-gray-700 mb-1">ROLE</label>
@@ -102,14 +123,12 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Note */}
         <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
           <p className="text-xs text-blue-700 font-medium">
-            The trainer will receive an email notification once assigned to the course.
+            The trainer will immediately be able to view this course and schedule sessions for it.
           </p>
         </div>
 
-        {/* Buttons */}
         <div className="flex gap-3 pt-1">
           <button
             onClick={onClose}
@@ -125,7 +144,6 @@ export default function AssignTrainerModal({ isOpen, onClose }) {
             {loading ? 'Assigning...' : 'Assign Trainer'}
           </button>
         </div>
-
       </div>
     </Modal>
   )

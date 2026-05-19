@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
-import { ChevronRight, Edit2, BookOpen, Archive, Video, FileText, CheckCircle, HelpCircle } from 'lucide-react'
+import AssignTrainerModal from '../../components/admin/modals/AssignTrainerModal'
+import { ChevronRight, Edit2, BookOpen, Archive, Video, FileText, CheckCircle, HelpCircle, UserPlus } from 'lucide-react'
 import { coursesAPI, assignmentsAPI, sessionsAPI, resourcesAPI } from '../../services'
 import toast from 'react-hot-toast'
 
@@ -16,6 +17,7 @@ export default function CourseDetail() {
   const [sessions, setSessions] = useState([])
   const [resources, setResources] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showAssignTrainer, setShowAssignTrainer] = useState(false)
 
   const [newName, setNewName] = useState('')
 
@@ -148,6 +150,9 @@ export default function CourseDetail() {
               <span className="text-gray-800 font-semibold">{course.name}</span>
             </div>
             <div className="flex items-center gap-2">
+              <button onClick={() => setShowAssignTrainer(true)} className="flex items-center gap-2 border border-gray-200 text-gray-600 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
+                <UserPlus size={14} /> Assign Trainer
+              </button>
               <button onClick={handleToggleStatus} className="flex items-center gap-2 border border-gray-200 text-gray-600 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
                 <Archive size={14} /> {course.status === 'active' ? 'Pause Course' : 'Activate Course'}
               </button>
@@ -283,6 +288,7 @@ export default function CourseDetail() {
           </div>
         </div>
       </div>
+      <AssignTrainerModal isOpen={showAssignTrainer} onClose={() => setShowAssignTrainer(false)} onSuccess={fetchCourseData} />
     </div>
   )
 }

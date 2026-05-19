@@ -8,6 +8,7 @@ const coursesAPI = {
   get: (id) => apiCall(`/courses/${id}`),
   create: (data) => apiCall('/courses', 'POST', data),
   update: (id, data) => apiCall(`/courses/${id}`, 'PUT', data),
+  assignTrainer: (id, trainerId) => apiCall(`/courses/${id}/assign-trainer`, 'PATCH', { trainerId }),
   remove: (id) => apiCall(`/courses/${id}`, 'DELETE'),
 }
 

@@ -1,23 +1,69 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Modal from '../../common/Modal'
 import { Upload } from 'lucide-react'
-import { studentsAPI } from '../../../services'
+import { cohortsAPI, coursesAPI, studentsAPI } from '../../../services'
 import toast from 'react-hot-toast'
 
 export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
   const [tab, setTab] = useState('single')
   const [form, setForm] = useState({
-    fullName: '', email: '', phone: '', course: '', cohort: ''
+    fullName: '', email: '', phone: '', courseId: '', cohortId: ''
   })
+  const [courses, setCourses] = useState([])
+  const [cohorts, setCohorts] = useState([])
+  const [loadingOptions, setLoadingOptions] = useState(false)
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (!isOpen) return
+
+    const fetchOptions = async () => {
+      try {
+        setLoadingOptions(true)
+        const [coursesRes, cohortsRes] = await Promise.all([
+          coursesAPI.list(),
+          cohortsAPI.list()
+        ])
+        setCourses(coursesRes.courses || [])
+        setCohorts(cohortsRes.cohorts || [])
+      } catch (err) {
+        toast.error('Failed to load courses and cohorts')
+      } finally {
+        setLoadingOptions(false)
+      }
+    }
+
+    fetchOptions()
+  }, [isOpen])
+
+  const visibleCourses = useMemo(() => {
+    if (!form.cohortId) return courses
+    return courses.filter(course => course.cohort_id === form.cohortId)
+  }, [courses, form.cohortId])
+
   const handleSubmit = async () => {
+    const names = form.fullName.trim().split(/\s+/)
+    const firstName = names[0] || ''
+    const lastName = names.slice(1).join(' ')
+
+    if (!firstName || !lastName || !form.email || !form.courseId || !form.cohortId) {
+      toast.error('Full name, email, course, and cohort are required.')
+      return
+    }
+
     try {
       setLoading(true)
-      const res = await studentsAPI.onboard(form)
+      await studentsAPI.onboard({
+        firstName,
+        lastName,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        courseId: form.courseId,
+        cohortId: form.cohortId
+      })
       toast.success('Student onboarded successfully!')
       if (onSuccess) onSuccess()
       onClose()
@@ -102,17 +148,16 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
                   COURSE <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="course"
-                  value={form.course}
+                  name="courseId"
+                  value={form.courseId}
                   onChange={handle}
+                  disabled={loadingOptions}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
                 >
-                  <option value="">Select</option>
-                  <option>Data Analytics</option>
-                  <option>Project Management</option>
-                  <option>UX Design</option>
-                  <option>DevOps</option>
-                  <option>Full Stack Dev</option>
+                  <option value="">{loadingOptions ? 'Loading...' : 'Select'}</option>
+                  {visibleCourses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -120,15 +165,16 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
                   COHORT <span className="text-red-500">*</span>
                 </label>
                 <select
-                  name="cohort"
-                  value={form.cohort}
-                  onChange={handle}
+                  name="cohortId"
+                  value={form.cohortId}
+                  onChange={(e) => setForm({ ...form, cohortId: e.target.value, courseId: '' })}
+                  disabled={loadingOptions}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
                 >
-                  <option value="">Select</option>
-                  <option>Cohort 1</option>
-                  <option>Cohort 2</option>
-                  <option>Cohort 3</option>
+                  <option value="">{loadingOptions ? 'Loading...' : 'Select'}</option>
+                  {cohorts.map(cohort => (
+                    <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -162,22 +208,20 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">COURSE</label>
-                <select className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
+                <select name="courseId" value={form.courseId} onChange={handle} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
                   <option value="">Select</option>
-                  <option>Data Analytics</option>
-                  <option>Project Management</option>
-                  <option>UX Design</option>
-                  <option>DevOps</option>
-                  <option>Full Stack Dev</option>
+                  {visibleCourses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">COHORT</label>
-                <select className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
+                <select name="cohortId" value={form.cohortId} onChange={(e) => setForm({ ...form, cohortId: e.target.value, courseId: '' })} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
                   <option value="">Select</option>
-                  <option>Cohort 1</option>
-                  <option>Cohort 2</option>
-                  <option>Cohort 3</option>
+                  {cohorts.map(cohort => (
+                    <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
