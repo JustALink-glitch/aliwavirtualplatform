@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'https://hemstitch-encourage-anguished.ngrok-free.dev/api'
+const API_URL = import.meta.env.VITE_API_URL || 'lms-backend-production.up.railway.app'
 
 // Helper function for API calls
 const apiCall = async (endpoint, method = 'GET', data = null) => {
@@ -8,6 +8,7 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
     method,
     headers: {
       'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
       ...(token && { Authorization: `Bearer ${token}` })
     },
     ...(data && { body: JSON.stringify(data) })
