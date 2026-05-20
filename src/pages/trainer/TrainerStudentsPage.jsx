@@ -84,8 +84,8 @@ export default function TrainerStudentsPage() {
     try {
       setLoading(true)
       const res = await studentsAPI.list()
-      if (res.success || res.students) {
-        setStudents(res.students || res || [])
+      if (res.success || res.students || res.users) {
+        setStudents(res.students || res.users || [])
       }
     } catch (err) {
       toast.error('Failed to load student roster')

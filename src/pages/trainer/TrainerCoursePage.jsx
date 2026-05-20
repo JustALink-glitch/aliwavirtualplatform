@@ -218,8 +218,8 @@ export default function TrainerCoursePage() {
         sessionsAPI.list({ courseId: selectedCourse.id })
       ])
 
-      if (studentsRes.success || studentsRes.students) {
-        setStudents(studentsRes.students || [])
+      if (studentsRes.success || studentsRes.students || studentsRes.users) {
+        setStudents(studentsRes.students || studentsRes.users || [])
       }
       if (assignmentsRes.success || assignmentsRes.assignments) {
         setAssignments(assignmentsRes.assignments || [])

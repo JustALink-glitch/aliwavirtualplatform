@@ -161,7 +161,8 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
 
   // ── Fallback: open Zoom externally if embedding fails ──────
   const openExternal = () => {
-    const url = session.zoom_link || `https://zoom.us/j/${session.zoom_meeting_id}`
+    const url = session.zoom_link || (session.zoom_meeting_id ? `https://zoom.us/j/${session.zoom_meeting_id}` : '')
+    if (!url) return
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 
@@ -181,8 +182,9 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
         <div className="flex items-center gap-2">
           <button
             onClick={openExternal}
+            disabled={!session.zoom_link && !session.zoom_meeting_id}
             title="Open in Zoom app"
-            className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-white border border-gray-600 hover:border-gray-400 rounded-lg px-3 py-1.5 transition"
+            className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-white border border-gray-600 hover:border-gray-400 rounded-lg px-3 py-1.5 transition disabled:opacity-50 disabled:hover:text-gray-400 disabled:hover:border-gray-600"
           >
             <ExternalLink size={12} /> Open in App
           </button>

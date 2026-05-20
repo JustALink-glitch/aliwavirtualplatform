@@ -5,27 +5,10 @@ import CreateCourseModal from './modals/CreateCourseModal'
 import AssignTrainerModal from './modals/AssignTrainerModal'
 import OnboardStudentModal from './modals/OnboardStudentModal'
 
-const activities = [
-  { name: 'Abdulhameed', action: 'uploaded a course material to', target: 'Data Analytics', time: '10 mins ago' },
-  { name: 'Michael Kaine', action: 'started a live class on', target: 'UX Design', time: '2 days ago' },
-  { name: 'Oyindamola', action: 'updated the course info for', target: 'UX Design', time: '2 days ago' },
-  { name: 'Victor O.', action: 'marked attendance for', target: 'DevOps', time: '3 days ago' },
-  { name: 'Bewaji O.', action: 'added new students to', target: 'Full Stack Dev', time: '4 days ago' },
-]
-
-const sessions = [
-  { course: 'Web Development', time: '10:00 AM', day: 'Monday', status: 'Live' },
-  { course: 'Digital Marketing', time: '7:00 PM', day: 'Tuesday', status: 'Live' },
-  { course: 'Virtual Assistant', time: '12:00 PM', day: 'Wednesday', status: 'Upcoming' },
-  { course: 'Data Analytics', time: '3:00 PM', day: 'Thursday', status: 'Upcoming' },
-  { course: 'UX Design', time: '5:00 PM', day: 'Friday', status: 'Upcoming' },
-]
-
 export default function RightPanel({ sessions: propSessions }) {
   const [modal, setModal] = useState(null)
   const navigate = useNavigate()
 
-  // Use props if they exist and are non-empty, otherwise fallback to template data
   const upcomingSessions = propSessions && propSessions.length > 0
     ? propSessions.slice(0, 5).map(s => {
         const date = new Date(s.scheduled_at)
@@ -37,7 +20,7 @@ export default function RightPanel({ sessions: propSessions }) {
           status: new Date() >= date ? 'Live' : 'Upcoming'
         }
       })
-    : sessions
+    : []
 
   return (
     <div className="w-full space-y-4">
@@ -82,23 +65,7 @@ export default function RightPanel({ sessions: propSessions }) {
       <div className="bg-white rounded-xl border border-gray-100 p-4">
         <h3 className="text-sm font-bold text-gray-800">Activities</h3>
         <p className="text-[11px] text-gray-400 mb-3">5 most recent activity</p>
-        <div className="space-y-3">
-          {activities.map(({ name, action, target, time }, i) => (
-            <div key={i} className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-[9px] font-bold flex-shrink-0 mt-0.5">
-                {name[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-700 leading-relaxed">
-                  <span className="font-semibold">{name}</span>{' '}
-                  {action}{' '}
-                  <span className="text-[#2563EB] font-medium">{target}</span>
-                </p>
-                <p className="text-[10px] text-gray-400 mt-0.5">{time}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-xs text-gray-400 font-semibold py-4">No recent activity found on the server.</p>
       </div>
 
       {/* Upcoming Sessions */}
@@ -106,7 +73,9 @@ export default function RightPanel({ sessions: propSessions }) {
         <h3 className="text-sm font-bold text-gray-800">Upcoming Sessions</h3>
         <p className="text-[11px] text-gray-400 mb-3">Next 5 scheduled</p>
         <div className="space-y-3">
-          {upcomingSessions.map(({ course, time, day, status }, i) => (
+          {upcomingSessions.length === 0 ? (
+            <p className="text-xs text-gray-400 font-semibold py-4">No scheduled sessions found on the server.</p>
+          ) : upcomingSessions.map(({ course, time, day, status }, i) => (
             <div key={i} className="flex items-center justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-gray-800 truncate uppercase leading-tight">{course}</p>

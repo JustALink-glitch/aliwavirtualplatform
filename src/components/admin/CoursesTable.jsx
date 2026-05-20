@@ -2,14 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
-const courses = [
-  { name: 'Data Analytics', trainer: 'Abdulhameed O.', progress: 90, status: 'Stopped' },
-  { name: 'Project Management', trainer: 'Oyindamola O.', progress: 70, status: 'Ongoing' },
-  { name: 'UX Design', trainer: 'Michael K.', progress: 50, status: 'Ongoing' },
-  { name: 'DevOps', trainer: 'Victor O.', progress: 20, status: 'Paused' },
-  { name: 'Full Stack Dev', trainer: 'Bewaji O.', progress: 80, status: 'Ongoing' },
-]
-
 const statusStyles = {
   Ongoing: 'bg-green-50 text-green-700 border border-green-200',
   Stopped: 'bg-red-50 text-red-600 border border-red-200',
@@ -45,16 +37,15 @@ export default function CoursesTable({ courses: propCourses }) {
   const [openMenu, setOpenMenu] = useState(null)
   const navigate = useNavigate()
 
-  // Use props if they exist and are non-empty, otherwise fallback to template data
-  const activeCourses = propCourses && propCourses.length > 0 
+  const activeCourses = propCourses && propCourses.length > 0
     ? propCourses.map(c => ({
         id: c.id,
         name: c.name,
         trainer: c.trainer ? `${c.trainer.first_name || ''} ${c.trainer.last_name || ''}`.trim() : 'Unassigned',
-        progress: c.progress || 75, 
+        progress: c.progress || 0,
         status: c.status === 'active' ? 'Ongoing' : c.status === 'paused' ? 'Paused' : 'Stopped'
       }))
-    : courses
+    : []
 
   return (
     <div className="bg-white rounded-xl border border-gray-100">
@@ -67,7 +58,11 @@ export default function CoursesTable({ courses: propCourses }) {
 </button>
       </div>
 
-      {/* Table */}
+      {activeCourses.length === 0 ? (
+        <div className="px-5 py-10 text-center text-xs font-semibold text-gray-400">
+          No courses found on the server.
+        </div>
+      ) : (
       <div className="overflow-x-auto">
       <table className="w-full min-w-[600px]">
         <thead>
@@ -111,6 +106,7 @@ export default function CoursesTable({ courses: propCourses }) {
        </tbody>
       </table>
       </div>
+      )}
     </div>
   )
 }

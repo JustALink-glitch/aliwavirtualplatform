@@ -93,11 +93,12 @@ export default function StudentSessionsPage() {
           if (!studentCohortId) return true
           return !s.cohort_id || s.cohort_id === studentCohortId
         }).map(s => {
-          // Determine live/upcoming status based on date/time
-          let status = s.status || 'upcoming'
+          let status = getSessionStatus(s)
           return {
             ...s,
-            status: status.toLowerCase()
+            status,
+            date: s.scheduled_at ? new Date(s.scheduled_at).toLocaleDateString() : '',
+            time: s.scheduled_at ? new Date(s.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
           }
         })
         setSessions(list)
@@ -112,6 +113,23 @@ export default function StudentSessionsPage() {
   useEffect(() => {
     fetchSessions()
   }, [user])
+
+  const getSessionStatus = (session) => {
+    if (session.status === 'attended' || session.status === 'missed') return session.status
+
+    const scheduled = new Date(session.scheduled_at)
+    const now = new Date()
+    let durationHours = 1
+    if (session.duration) {
+      const match = session.duration.match(/([0-9.]+)/)
+      if (match) durationHours = parseFloat(match[1])
+    }
+    const endsAt = new Date(scheduled.getTime() + durationHours * 60 * 60 * 1000)
+
+    if (now >= scheduled && now <= endsAt) return 'live'
+    if (now > endsAt) return 'missed'
+    return 'upcoming'
+  }
 
   const tabs = ['All', 'Live', 'Upcoming', 'Attended']
   const liveSession = sessions.find(s => s.status === 'live')
@@ -227,12 +245,15 @@ export default function StudentSessionsPage() {
                           </span>
                         </td>
                         <td className="px-5 py-3.5">
-                          {session.status === 'live' && (
-                            <button onClick={() => setPreCheckSession(session)}
-                              className="text-xs bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
-                              <ExternalLink size={11} /> Launch Class
-                            </button>
-                          )}
+          {session.status === 'live' && session.zoom_link && (
+            <button onClick={() => setPreCheckSession(session)}
+              className="text-xs bg-green-500 hover:bg-green-600 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm transition">
+              <ExternalLink size={11} /> Launch Class
+            </button>
+          )}
+          {session.status === 'live' && !session.zoom_link && (
+            <span className="text-xs text-gray-400 font-bold">No meeting link</span>
+          )}
                           {session.status === 'attended' && (
                             <span className="text-xs text-green-600 font-bold">Attended ✓</span>
                           )}
@@ -266,7 +287,13 @@ export default function StudentSessionsPage() {
           currentUser={user}
           onClose={() => setPreCheckSession(null)}
           onProceed={() => {
-            setJoinSession(preCheckSession)
+            if (preCheckSession.zoom_meeting_id) {
+              setJoinSession(preCheckSession)
+            } else if (preCheckSession.zoom_link) {
+              window.open(preCheckSession.zoom_link, '_blank', 'noopener,noreferrer')
+            } else {
+              toast.error('No meeting link has been added for this live session.')
+            }
             setPreCheckSession(null)
           }}
         />

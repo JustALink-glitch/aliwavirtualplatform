@@ -1,13 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 
-const attendance = [
-  { course: 'Data Analytics', trainer: 'Abdulhameed O.', total: 40, present: 36, absent: 4, rate: 90 },
-  { course: 'Project Management', trainer: 'Oyindamola O.', total: 40, present: 30, absent: 10, rate: 75 },
-  { course: 'UX Design', trainer: 'Michael K.', total: 40, present: 34, absent: 6, rate: 85 },
-  { course: 'DevOps', trainer: 'Victor O.', total: 40, present: 20, absent: 20, rate: 50 },
-  { course: 'Full Stack Dev', trainer: 'Bewaji O.', total: 40, present: 38, absent: 2, rate: 95 },
-]
-
 function RateColor(rate) {
   if (rate >= 80) return 'text-green-600 bg-green-50 border-green-200'
   if (rate >= 60) return 'text-amber-600 bg-amber-50 border-amber-200'
@@ -17,24 +9,23 @@ function RateColor(rate) {
 export default function AttendanceTable({ courses = [], attendanceRecords = [] }) {
   const navigate = useNavigate()
 
-  // Use props to build dynamic attendance rate if available, else fallback to template data
-  const data = attendanceRecords && attendanceRecords.length > 0 && courses && courses.length > 0
+  const data = courses && courses.length > 0
     ? courses.map(c => {
         const courseAttendance = attendanceRecords.filter(r => r.course_id === c.id)
         const total = courseAttendance.length
         const present = courseAttendance.filter(r => r.status === 'present').length
         const absent = total - present
-        const rate = total > 0 ? Math.round((present / total) * 100) : 100
+        const rate = total > 0 ? Math.round((present / total) * 100) : 0
         return {
           course: c.name,
           trainer: c.trainer ? `${c.trainer.first_name || ''} ${c.trainer.last_name || ''}`.trim() : 'Unassigned',
-          total: total || 40, // standard default if total is zero
-          present: total ? present : 36,
-          absent: total ? absent : 4,
-          rate: total ? rate : 90
+          total,
+          present,
+          absent,
+          rate
         }
       })
-    : attendance
+    : []
 
   return (
     <div className="bg-white rounded-xl border border-gray-100">
@@ -52,7 +43,11 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
         </button>
       </div>
 
-      {/* Table */}
+      {data.length === 0 ? (
+        <div className="px-5 py-10 text-center text-xs font-semibold text-gray-400">
+          No attendance data found on the server.
+        </div>
+      ) : (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[700px]">
           <thead>
@@ -82,6 +77,7 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
           </tbody>
         </table>
       </div>
+      )}
 
     </div>
   )

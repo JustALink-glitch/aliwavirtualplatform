@@ -53,8 +53,8 @@ export default function TrainerDashboard() {
         const upcoming = list.filter(s => new Date(s.scheduled_at) > now)
         setUpcomingSessions(upcoming)
       }
-      if (studentsRes.success || studentsRes.students) {
-        setTotalStudentsCount((studentsRes.students || []).length)
+      if (studentsRes.success || studentsRes.students || studentsRes.users) {
+        setTotalStudentsCount((studentsRes.students || studentsRes.users || []).length)
       }
     } catch (error) {
       console.error(error)

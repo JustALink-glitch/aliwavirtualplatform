@@ -50,7 +50,8 @@ function ScheduleSessionModal({ onClose, onCreated }) {
     try {
       setSubmitting(true)
       const scheduled_at = new Date(`${form.date}T${form.time}`).toISOString()
-      const zoomLink = form.zoom_link || `https://zoom.us/j/${Math.floor(100000000 + Math.random() * 900000000)}`
+      const zoomLink = form.zoom_link.trim()
+      const meetingId = zoomLink.match(/\/j\/(\d+)/)?.[1] || ''
 
       const payload = {
         title: form.title,
@@ -58,6 +59,7 @@ function ScheduleSessionModal({ onClose, onCreated }) {
         scheduled_at,
         duration: form.duration,
         zoom_link: zoomLink,
+        zoom_meeting_id: meetingId,
       }
 
       const res = await sessionsAPI.create(payload)
@@ -350,17 +352,20 @@ export default function TrainerSessionsPage() {
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-3">
-                            {session.derivedStatus === 'live' && (
+                            {session.derivedStatus === 'live' && session.zoom_link && (
                               <a href={session.zoom_link} target="_blank" rel="noopener noreferrer"
                                 className="text-[10px] bg-green-500 text-white font-bold px-3 py-1.5 rounded-lg hover:bg-green-600 flex items-center gap-1">
                                 <ExternalLink size={11} /> Start Class
                               </a>
                             )}
-                            {session.derivedStatus === 'upcoming' && (
+                            {session.derivedStatus === 'upcoming' && session.zoom_link && (
                               <a href={session.zoom_link} target="_blank" rel="noopener noreferrer"
                                 className="text-[10px] border border-blue-100 bg-blue-50 text-[#2563EB] font-bold px-3 py-1.5 rounded-lg hover:bg-blue-100 flex items-center gap-1">
                                 <ExternalLink size={11} /> Meeting Link
                               </a>
+                            )}
+                            {!session.zoom_link && (
+                              <span className="text-[10px] text-gray-400 font-bold">No meeting link</span>
                             )}
                             <button onClick={() => handleDeleteSession(session.id)} className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50">
                               <Trash2 size={13} />

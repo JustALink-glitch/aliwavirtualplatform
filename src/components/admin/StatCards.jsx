@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 export default function StatCards({ coursesCount = 0, studentsCount = 0, attendanceRecords = [] }) {
   const navigate = useNavigate()
 
-  // Compute average attendance rate or fallback to 84%
-  let attendanceRate = '84%'
+  let attendanceRate = '0%'
   if (attendanceRecords && attendanceRecords.length > 0) {
     const present = attendanceRecords.filter(r => r.status === 'present').length
     const total = attendanceRecords.length
