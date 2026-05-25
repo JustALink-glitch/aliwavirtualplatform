@@ -272,7 +272,7 @@ export default function CohortsPage() {
                       </div>
                       <div className="grid grid-cols-4 gap-1 pt-3 border-t border-gray-100 mt-auto">
                         {[
-                          { label: 'Students', value: cohort.max_students || 0 }, // We can fall back to max_students or dynamic counts later
+                          { label: 'Students', value: cohort.student_count ?? 0 },
                           { label: 'Start Date', value: cohort.start_date ? new Date(cohort.start_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A' },
                           { label: 'End Date', value: cohort.end_date ? new Date(cohort.end_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A' },
                           { label: 'Capacity', value: cohort.max_students || 250 },

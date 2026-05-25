@@ -139,10 +139,20 @@ function OrganizationTab() {
     phone: '+234 913 634 5555', website: 'www.aliwa.org',
     address: 'Lagos, Nigeria', description: ''
   })
+  const [saving, setSaving] = useState(false)
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setSaving(true)
+    setTimeout(() => {
+      setSaving(false)
+      toast.success('Organization details updated successfully!')
+    }, 600)
+  }
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-2xl space-y-6">
       <div>
         <h3 className="text-sm font-bold text-gray-800 mb-1">Organization Settings</h3>
         <p className="text-xs text-gray-400">Manage your organization details</p>
@@ -203,11 +213,11 @@ function OrganizationTab() {
       </div>
 
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
-          <Save size={14} /> Save Changes
+        <button type="submit" disabled={saving} className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
+          <Save size={14} /> {saving ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
-    </div>
+    </form>
   )
 }
 
@@ -257,7 +267,19 @@ function NotificationsTab() {
 
 function SecurityTab() {
   const [form, setForm] = useState({ current: '', newPass: '', confirm: '' })
+  const [saving, setSaving] = useState(false)
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
+
+  const handleUpdatePassword = (e) => {
+    e.preventDefault()
+    if (form.newPass !== form.confirm) return toast.error('Passwords do not match')
+    setSaving(true)
+    setTimeout(() => {
+      setSaving(false)
+      setForm({ current: '', newPass: '', confirm: '' })
+      toast.success('Password updated successfully!')
+    }, 600)
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -268,29 +290,31 @@ function SecurityTab() {
 
       <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
         <p className="text-sm font-bold text-gray-800">Change Password</p>
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">CURRENT PASSWORD</label>
-          <input name="current" type="password" value={form.current} onChange={handle}
-            placeholder="Enter current password"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">NEW PASSWORD</label>
-          <input name="newPass" type="password" value={form.newPass} onChange={handle}
-            placeholder="Enter new password"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">CONFIRM NEW PASSWORD</label>
-          <input name="confirm" type="password" value={form.confirm} onChange={handle}
-            placeholder="Confirm new password"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-        </div>
-        <div className="flex justify-end pt-1">
-          <button className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
-            <Save size={14} /> Update Password
-          </button>
-        </div>
+        <form onSubmit={handleUpdatePassword} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">CURRENT PASSWORD</label>
+            <input name="current" type="password" value={form.current} onChange={handle} required
+              placeholder="Enter current password"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">NEW PASSWORD</label>
+            <input name="newPass" type="password" value={form.newPass} onChange={handle} required
+              placeholder="Enter new password"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-1">CONFIRM NEW PASSWORD</label>
+            <input name="confirm" type="password" value={form.confirm} onChange={handle} required
+              placeholder="Confirm new password"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+          </div>
+          <div className="flex justify-end pt-1">
+            <button type="submit" disabled={saving} className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
+              <Save size={14} /> {saving ? 'Updating...' : 'Update Password'}
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -368,7 +392,7 @@ function AppearanceTab() {
       </div>
 
       <div className="flex justify-end">
-        <button className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
+        <button onClick={() => toast.success('Appearance preferences saved!')} className="flex items-center gap-2 bg-[#2563EB] text-white text-sm font-semibold rounded-lg px-5 py-2.5 hover:bg-blue-700">
           <Save size={14} /> Save Preferences
         </button>
       </div>

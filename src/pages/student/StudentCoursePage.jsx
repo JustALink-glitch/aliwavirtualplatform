@@ -37,16 +37,18 @@ export default function StudentCoursePage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      const res = await coursesAPI.list()
+      // Students are restricted to ONE enrolled course — fetch and display it directly
+      const res = await coursesAPI.list(user?.id ? { student_id: user.id } : {})
       if (res.success || res.courses) {
         const list = res.courses || res || []
-        setCourses(list)
+        // Enforce one-course limit: only show the first enrolled course
+        setCourses(list.slice(0, 1))
         if (list.length > 0) {
           setSelectedCourse(list[0])
         }
       }
     } catch (err) {
-      toast.error('Failed to load enrolled courses')
+      toast.error('Failed to load your enrolled course')
     } finally {
       setLoading(false)
     }
@@ -121,8 +123,9 @@ export default function StudentCoursePage() {
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <StudentTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-            <BookOpen size={48} className="text-gray-300 mb-2" />
-            <p className="text-xs font-bold text-gray-700">No Enrolled Courses Found</p>
+            <BookOpen size={48} className="text-gray-300 mb-3" />
+            <p className="text-sm font-bold text-gray-700 mb-1">No Active Enrollment Found</p>
+            <p className="text-xs text-gray-400 max-w-xs">You are not currently enrolled in any course. Please contact your administrator to get assigned to a cohort and course.</p>
           </div>
         </div>
       </div>
@@ -139,20 +142,15 @@ export default function StudentCoursePage() {
         <StudentTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {/* Header course switcher */}
+          {/* Course header — no switcher, students are in one course only */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Select Course:</label>
-              <select
-                value={selectedCourse.id}
-                onChange={e => setSelectedCourse(courses.find(c => c.id === e.target.value))}
-                className="bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold text-gray-800 outline-none focus:border-[#2563EB]"
-              >
-                {courses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">{selectedCourse.name}</h1>
+              <p className="text-xs text-gray-400 mt-0.5">Your enrolled learning programme</p>
             </div>
+            <span className="bg-green-50 text-green-700 text-[10px] font-black px-3 py-1 rounded-full border border-green-200 uppercase">
+              {selectedCourse.status || 'Active'}
+            </span>
           </div>
 
           {/* Course banner */}
@@ -162,14 +160,11 @@ export default function StudentCoursePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-lg font-bold text-gray-900">{selectedCourse.name}</h1>
-                    <span className="bg-green-50 text-green-700 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-green-200 uppercase">
-                      {selectedCourse.status || 'Active'}
-                    </span>
+                    <h2 className="text-lg font-bold text-gray-900">{selectedCourse.name}</h2>
                   </div>
-                  <p className="text-xs text-gray-500">{selectedCourse.description || 'No description provided.'}</p>
+                  <p className="text-xs text-gray-500">{selectedCourse.description || 'Your enrolled course for this cohort programme.'}</p>
                   <div className="flex items-center gap-4 mt-2 text-xs text-gray-400 font-bold">
-                    <span>📚 Cohort: {selectedCourse.cohort_id || 'Global'}</span>
+                    <span>📚 Cohort: {selectedCourse.cohort_id || 'Current Cohort'}</span>
                     <span>📅 Timeline: {selectedCourse.duration || 'Flexible'}</span>
                   </div>
                 </div>

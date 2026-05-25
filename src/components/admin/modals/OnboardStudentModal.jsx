@@ -7,19 +7,17 @@ import toast from 'react-hot-toast'
 export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
   const [tab, setTab] = useState('single')
   const [form, setForm] = useState({
-    fullName: '', email: '', phone: '', courseId: '', cohortId: ''
+    firstName: '', lastName: '', email: '', phone: '', courseId: '', cohortId: ''
   })
   const [courses, setCourses] = useState([])
   const [cohorts, setCohorts] = useState([])
   const [loadingOptions, setLoadingOptions] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
-  const [loading, setLoading] = useState(false)
-
   useEffect(() => {
     if (!isOpen) return
-
     const fetchOptions = async () => {
       try {
         setLoadingOptions(true)
@@ -35,7 +33,6 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
         setLoadingOptions(false)
       }
     }
-
     fetchOptions()
   }, [isOpen])
 
@@ -45,30 +42,27 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
   }, [courses, form.cohortId])
 
   const handleSubmit = async () => {
-    const names = form.fullName.trim().split(/\s+/)
-    const firstName = names[0] || ''
-    const lastName = names.slice(1).join(' ')
-
-    if (!firstName || !lastName || !form.email || !form.courseId || !form.cohortId) {
-      toast.error('Full name, email, course, and cohort are required.')
+    if (!form.firstName?.trim() || !form.lastName?.trim() || !form.email || !form.courseId || !form.cohortId) {
+      toast.error('All fields — first name, last name, email, course and cohort — are required.')
       return
     }
 
     try {
       setLoading(true)
       await studentsAPI.onboard({
-        firstName,
-        lastName,
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         courseId: form.courseId,
         cohortId: form.cohortId
       })
-      toast.success('Student onboarded successfully!')
+      toast.success('Student onboarded successfully! An invitation email has been sent.')
+      setForm({ firstName: '', lastName: '', email: '', phone: '', courseId: '', cohortId: '' })
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
-      toast.error(err.message || 'Failed to onboard student')
+      toast.error(err.message || 'Failed to onboard student. Please check all fields and try again.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -76,7 +70,7 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Onboard Students">
+    <Modal isOpen={isOpen} onClose={onClose} title="Onboard Student">
       <div className="space-y-4">
 
         {/* Tabs */}
@@ -98,18 +92,32 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
 
         {tab === 'single' ? (
           <>
-            {/* Full Name */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                FULL NAME <span className="text-red-500">*</span>
-              </label>
-              <input
-                name="fullName"
-                value={form.fullName}
-                onChange={handle}
-                placeholder="Enter student full name"
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors"
-              />
+            {/* First + Last Name */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  FIRST NAME <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handle}
+                  placeholder="e.g. Amara"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  LAST NAME <span className="text-red-500">*</span>
+                </label>
+                <input
+                  name="lastName"
+                  value={form.lastName}
+                  onChange={handle}
+                  placeholder="e.g. Okonkwo"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors"
+                />
+              </div>
             </div>
 
             {/* Email */}
@@ -122,7 +130,7 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
                 type="email"
                 value={form.email}
                 onChange={handle}
-                placeholder="Enter email address"
+                placeholder="student@email.com"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors"
               />
             </div>
@@ -136,30 +144,13 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
                 name="phone"
                 value={form.phone}
                 onChange={handle}
-                placeholder="Enter phone number"
+                placeholder="+234 800 000 0000"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors"
               />
             </div>
 
-            {/* Course + Cohort */}
+            {/* Cohort first, then Course (filtered by cohort) */}
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
-                  COURSE <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="courseId"
-                  value={form.courseId}
-                  onChange={handle}
-                  disabled={loadingOptions}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
-                >
-                  <option value="">{loadingOptions ? 'Loading...' : 'Select'}</option>
-                  {visibleCourses.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
-                  ))}
-                </select>
-              </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">
                   COHORT <span className="text-red-500">*</span>
@@ -171,9 +162,26 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
                   disabled={loadingOptions}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
                 >
-                  <option value="">{loadingOptions ? 'Loading...' : 'Select'}</option>
+                  <option value="">{loadingOptions ? 'Loading...' : 'Select cohort'}</option>
                   {cohorts.map(cohort => (
                     <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  COURSE <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="courseId"
+                  value={form.courseId}
+                  onChange={handle}
+                  disabled={loadingOptions || !form.cohortId}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
+                >
+                  <option value="">{!form.cohortId ? 'Select cohort first' : loadingOptions ? 'Loading...' : 'Select course'}</option>
+                  {visibleCourses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
                   ))}
                 </select>
               </div>
@@ -196,8 +204,8 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
             {/* Template download */}
             <div className="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
               <div>
-                <p className="text-xs font-semibold text-blue-700">Download template</p>
-                <p className="text-[11px] text-blue-500 mt-0.5">Use our CSV template to avoid errors</p>
+                <p className="text-xs font-semibold text-blue-700">Download CSV template</p>
+                <p className="text-[11px] text-blue-500 mt-0.5">Use our template to avoid errors</p>
               </div>
               <button className="text-xs text-[#2563EB] font-bold hover:underline">
                 Download →
@@ -207,20 +215,20 @@ export default function OnboardStudentModal({ isOpen, onClose, onSuccess }) {
             {/* Course + Cohort for bulk */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">COURSE</label>
-                <select name="courseId" value={form.courseId} onChange={handle} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
-                  <option value="">Select</option>
-                  {visibleCourses.map(course => (
-                    <option key={course.id} value={course.id}>{course.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
                 <label className="block text-xs font-semibold text-gray-700 mb-1">COHORT</label>
                 <select name="cohortId" value={form.cohortId} onChange={(e) => setForm({ ...form, cohortId: e.target.value, courseId: '' })} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
                   <option value="">Select</option>
                   {cohorts.map(cohort => (
                     <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">COURSE</label>
+                <select name="courseId" value={form.courseId} onChange={handle} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600">
+                  <option value="">Select</option>
+                  {visibleCourses.map(course => (
+                    <option key={course.id} value={course.id}>{course.name}</option>
                   ))}
                 </select>
               </div>

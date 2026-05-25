@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import TrainerSidebar from '../../components/trainer/TrainerSidebar'
 import TrainerTopBar from '../../components/trainer/TrainerTopBar'
 import { Users, Video, ClipboardList, BookOpen, Plus, Upload, X, FileText, Link as LinkIcon } from 'lucide-react'
 import { coursesAPI, studentsAPI, assignmentsAPI, resourcesAPI, sessionsAPI } from '../../services'
+import { useAuth } from '../../context/AuthContext'
 import toast from 'react-hot-toast'
 
 const tabs = ['Overview', 'Students', 'Assignments', 'Resources', 'Sessions']
@@ -96,9 +97,10 @@ function AddAssignmentModal({ courseId, onClose, onCreated }) {
 }
 
 function UploadResourceModal({ courseId, onClose, onCreated }) {
-  const [tab, setTab] = useState('link')
   const [form, setForm] = useState({ name: '', url: '', file_type: 'link' })
   const [submitting, setSubmitting] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+  const fileInputRef = useRef()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -127,6 +129,22 @@ function UploadResourceModal({ courseId, onClose, onCreated }) {
 
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
+  const handleDrop = (e) => {
+    e.preventDefault()
+    setDragActive(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      setForm(prev => ({
+        ...prev,
+        name: prev.name || file.name,
+        // In a real scenario, we'd upload to storage and get a URL.
+        // For now, show the file name and instruct trainer to paste URL.
+        file_type: file.type.includes('pdf') ? 'pdf' : file.type.includes('video') ? 'video' : 'link'
+      }))
+      toast('File detected: paste the hosted URL below to complete upload.', { icon: '📎' })
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -149,13 +167,29 @@ function UploadResourceModal({ courseId, onClose, onCreated }) {
           ))}
         </div>
 
+        {/* Drag-and-drop zone */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragActive(true) }}
+          onDragLeave={() => setDragActive(false)}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${
+            dragActive ? 'border-[#2563EB] bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+          }`}
+        >
+          <input ref={fileInputRef} type="file" className="hidden" onChange={e => handleDrop({ preventDefault: ()=>{}, dataTransfer: e.target })} />
+          <Upload size={22} className={`mx-auto mb-2 ${dragActive ? 'text-[#2563EB]' : 'text-gray-300'}`} />
+          <p className="text-xs font-bold text-gray-500">Drag & drop a file here</p>
+          <p className="text-[10px] text-gray-400 mt-0.5">or click to browse — PDF, Video, Docs</p>
+        </div>
+
         <div>
           <label className="block text-[11px] font-bold text-gray-700 mb-1">RESOURCE NAME *</label>
           <input name="name" required value={form.name} onChange={handle} placeholder="e.g. Figma Design Kit"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
         </div>
         <div>
-          <label className="block text-[11px] font-bold text-gray-700 mb-1">URL LINK *</label>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">RESOURCE URL *</label>
           <input name="url" required value={form.url} onChange={handle} placeholder="https://..."
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
         </div>
@@ -165,7 +199,7 @@ function UploadResourceModal({ courseId, onClose, onCreated }) {
             Cancel
           </button>
           <button type="submit" disabled={submitting} className="flex-1 bg-[#2563EB] text-white text-xs font-bold rounded-lg py-2 hover:bg-blue-700 transition-colors">
-            {submitting ? 'Adding...' : 'Add Resource'}
+            {submitting ? 'Saving...' : 'Add Resource'}
           </button>
         </div>
       </form>
@@ -174,6 +208,7 @@ function UploadResourceModal({ courseId, onClose, onCreated }) {
 }
 
 export default function TrainerCoursePage() {
+  const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState('Overview')
   const [courses, setCourses] = useState([])
@@ -192,7 +227,9 @@ export default function TrainerCoursePage() {
   const fetchCourses = async () => {
     try {
       setLoading(true)
-      const res = await coursesAPI.list()
+      // Filter courses by this trainer's ID so they only see their assigned courses
+      const params = user?.id ? { trainer_id: user.id } : {}
+      const res = await coursesAPI.list(params)
       if (res.success || res.courses) {
         const list = res.courses || res || []
         setCourses(list)
@@ -201,7 +238,7 @@ export default function TrainerCoursePage() {
         }
       }
     } catch (err) {
-      toast.error('Failed to load courses')
+      toast.error('Failed to load your assigned courses')
     } finally {
       setLoading(false)
     }

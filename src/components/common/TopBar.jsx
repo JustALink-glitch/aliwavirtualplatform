@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Menu, ChevronDown, Search, Bell, LogOut, User, Settings } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 const notifications = [
   { title: 'New student enrolled', desc: 'Fatima A. joined Data Analytics', time: '5 mins ago', unread: true },
@@ -20,6 +22,8 @@ function useOutsideClick(ref, callback) {
 }
 
 export default function TopBar({ onToggleSidebar }) {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showCohorts, setShowCohorts] = useState(false)
@@ -35,6 +39,14 @@ export default function TopBar({ onToggleSidebar }) {
   useOutsideClick(cohortRef, () => setShowCohorts(false))
 
   const unreadCount = notifications.filter(n => n.unread).length
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : 'AF'
+  const fullName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Admin User'
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0 z-10">
@@ -131,24 +143,26 @@ export default function TopBar({ onToggleSidebar }) {
         <div className="relative" ref={profileRef}>
           <button onClick={() => setShowProfile(!showProfile)}
             className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:bg-blue-700 transition-colors">
-            AF
+            {initials}
           </button>
           {showProfile && (
             <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg w-48 z-30">
               <div className="px-4 py-3 border-b border-gray-100">
-                <p className="text-sm font-bold text-gray-800">Admin User</p>
-                <p className="text-xs text-gray-400 mt-0.5">admin@training.com</p>
+                <p className="text-sm font-bold text-gray-800">{fullName}</p>
+                <p className="text-xs text-gray-400 mt-0.5 truncate">{user?.email || 'No email'}</p>
               </div>
               <div className="py-1">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => navigate(`/${user?.role || 'admin'}/settings`)}>
                   <User size={14} className="text-gray-400" /> My Profile
                 </button>
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => navigate(`/${user?.role || 'admin'}/settings`)}>
                   <Settings size={14} className="text-gray-400" /> Settings
                 </button>
               </div>
               <div className="border-t border-gray-100 py-1">
-                <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
+                <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50 transition-colors">
                   <LogOut size={14} /> Sign Out
                 </button>
               </div>

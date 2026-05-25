@@ -346,8 +346,8 @@ export default function TrainersPage() {
               </button>
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-              <div className="overflow-x-auto">
+            <div className="bg-white rounded-xl border border-gray-100 overflow-visible">
+              <div className="overflow-x-auto min-h-[300px] pb-24">
                 <table className="w-full min-w-[700px]">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
@@ -379,7 +379,7 @@ export default function TrainersPage() {
                             {trainer.status.toUpperCase()}
                           </span>
                         </td>
-                        <td className="px-5 py-3.5 relative" onClick={e => e.stopPropagation()}>
+                        <td className={`px-5 py-3.5 relative ${openMenu === trainer.id ? 'z-50' : ''}`} onClick={e => e.stopPropagation()}>
                           <button onClick={() => setOpenMenu(openMenu === trainer.id ? null : trainer.id)}
                             className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100">
                             <MoreHorizontal size={15} />

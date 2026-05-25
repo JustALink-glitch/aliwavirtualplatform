@@ -151,13 +151,13 @@ export default function CourseDetail() {
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => setShowAssignTrainer(true)} className="flex items-center gap-2 border border-gray-200 text-gray-600 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
-                <UserPlus size={14} /> Assign Trainer
+                <UserPlus size={14} /> Assign Lead Instructor
               </button>
               <button onClick={handleToggleStatus} className="flex items-center gap-2 border border-gray-200 text-gray-600 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-50 transition-colors">
-                <Archive size={14} /> {course.status === 'active' ? 'Pause Course' : 'Activate Course'}
+                <Archive size={14} /> {course.status === 'active' ? 'Suspend Course' : 'Resume Course'}
               </button>
               <button onClick={handleDeleteCourse} className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-100 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-red-100 transition-colors">
-                Delete Course
+                Delete Course Permanently
               </button>
             </div>
           </div>
@@ -193,7 +193,7 @@ export default function CourseDetail() {
                   </div>
 
                   <p className="text-sm text-gray-500 mb-4">
-                    {course.description || 'No description provided for this course yet.'}
+                    {course.description || 'An official curriculum detail has not been provided for this learning module.'}
                   </p>
 
                   <div className="flex items-center gap-5 text-xs text-gray-500 font-semibold">
@@ -229,7 +229,7 @@ export default function CourseDetail() {
               {/* Section: Syllabus / Modules */}
               <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">Course Modules / Lessons ({sessions.length})</h2>
+                  <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">Class Sessions & Curriculum ({sessions.length})</h2>
                 </div>
 
                 {sessions.length === 0 ? (
@@ -263,7 +263,7 @@ export default function CourseDetail() {
 
             {/* Right panel — Resources */}
             <div className="w-full lg:w-[260px] lg:flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 bg-white p-5 space-y-4">
-              <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2">Study Resources ({resources.length})</h3>
+              <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2">Learning Materials ({resources.length})</h3>
 
               {resources.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">

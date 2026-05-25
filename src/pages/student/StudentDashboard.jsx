@@ -74,25 +74,25 @@ export default function StudentDashboard() {
           {/* Welcome banner */}
           <div style={{ background: 'linear-gradient(135deg, #2563EB, #6366f1)' }} className="rounded-2xl p-6 text-white flex items-center justify-between shadow-sm">
             <div>
-              <h1 className="text-lg font-bold mb-1">Good Day, {user?.first_name || 'Learner'}! 👋</h1>
-              <p className="text-xs text-white/80">Welcome back to your Training Ops workspace. Let's keep learning!</p>
+              <h1 className="text-lg font-bold mb-1">Welcome back, {user?.first_name || 'Learner'} 👋</h1>
+              <p className="text-xs text-white/80">You're making great progress. Continue your learning journey below.</p>
               <p className="text-[10px] text-white/60 mt-1.5 font-bold uppercase tracking-wider">
-                {cohorts.length > 0 ? `${cohorts[0].name} · ` : ''} Student Portal
+                {cohorts.length > 0 ? `${cohorts[0].name} · ` : ''}Student Learning Portal
               </p>
             </div>
             <button onClick={() => navigate('/student/course')}
               className="flex items-center gap-2 bg-white text-[#2563EB] text-xs font-bold rounded-xl px-5 py-2.5 hover:bg-blue-50 transition flex-shrink-0 shadow-sm">
-              <BookOpen size={14} /> View My Courses
+              <BookOpen size={14} /> View My Course
             </button>
           </div>
 
           {/* Stat cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'My Enrolled Courses', value: loading ? '-' : courses.length, icon: BookOpen, bg: 'bg-blue-50', color: 'text-[#2563EB]', sub: 'Active lessons' },
-              { label: 'My Cohorts', value: loading ? '-' : cohorts.length, icon: Video, bg: 'bg-green-50', color: 'text-green-600', sub: 'Assigned groups' },
-              { label: 'My Submissions', value: loading ? '-' : `${submissions.length}/${assignmentsCount}`, icon: ClipboardList, bg: 'bg-amber-50', color: 'text-amber-600', sub: 'Handed in' },
-              { label: 'Avg Grade Score', value: loading ? '-' : gradeLetter, icon: Star, bg: 'bg-purple-50', color: 'text-purple-600', sub: avgGrade !== null ? `${avgGrade}% average` : 'No grades yet' },
+              { label: 'Enrolled Programme', value: loading ? '-' : courses.length, icon: BookOpen, bg: 'bg-blue-50', color: 'text-[#2563EB]', sub: 'Current learning programme' },
+              { label: 'Cohort', value: loading ? '-' : cohorts.length, icon: Video, bg: 'bg-green-50', color: 'text-green-600', sub: 'Active cohort group' },
+              { label: 'Assignments', value: loading ? '-' : `${submissions.length}/${assignmentsCount}`, icon: ClipboardList, bg: 'bg-amber-50', color: 'text-amber-600', sub: 'Submitted vs total' },
+              { label: 'Grade Average', value: loading ? '-' : gradeLetter, icon: Star, bg: 'bg-purple-50', color: 'text-purple-600', sub: avgGrade !== null ? `${avgGrade}% overall` : 'Pending assessment' },
             ].map(({ label, value, icon: Icon, bg, color, sub }) => (
               <div key={label} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
                 <div className="flex items-start justify-between mb-3">
@@ -112,10 +112,10 @@ export default function StudentDashboard() {
             {/* My Courses */}
             <div className="flex-1 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-                <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">My Active Courses</h2>
+                <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">My Learning Programme</h2>
                 <button onClick={() => navigate('/student/course')}
                   className="text-xs text-[#2563EB] font-bold hover:underline">
-                  View Course Details
+                  Go to Course →
                 </button>
               </div>
               <div className="divide-y divide-gray-50">
@@ -124,7 +124,7 @@ export default function StudentDashboard() {
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#2563EB]"></div>
                   </div>
                 ) : courses.length === 0 ? (
-                  <p className="text-xs text-gray-400 p-5 text-center font-bold">You are not enrolled in any courses yet.</p>
+                  <p className="text-xs text-gray-400 p-5 text-center font-bold">You have not been enrolled in a course yet. Please contact your administrator.</p>
                 ) : (
                   courses.map((course, idx) => (
                     <div key={idx} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition">
@@ -134,7 +134,7 @@ export default function StudentDashboard() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-gray-800 truncate">{course.name}</p>
-                          <p className="text-[10px] text-gray-400 font-semibold mt-0.5 capitalize">{course.category || 'General'}</p>
+                          <p className="text-[10px] text-gray-400 font-semibold mt-0.5 capitalize">{course.category || 'General Training'}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 flex-shrink-0">
@@ -148,10 +148,10 @@ export default function StudentDashboard() {
               </div>
             </div>
 
-            {/* My Cohorts */}
+            {/* My Cohort */}
             <div className="w-full lg:w-[280px] lg:flex-shrink-0 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 bg-gray-50/50">
-                <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">My Cohorts</h2>
+                <h2 className="text-xs font-black text-gray-800 uppercase tracking-wider">My Cohort</h2>
               </div>
               <div className="divide-y divide-gray-50">
                 {loading ? (
@@ -159,13 +159,13 @@ export default function StudentDashboard() {
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#2563EB]"></div>
                   </div>
                 ) : cohorts.length === 0 ? (
-                  <p className="text-xs text-gray-400 p-5 text-center font-bold">No cohorts assigned yet.</p>
+                  <p className="text-xs text-gray-400 p-5 text-center font-bold">You have not been assigned to a cohort yet.</p>
                 ) : (
                   cohorts.map((cohort, i) => (
                     <div key={i} className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition">
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-800">{cohort.name}</p>
-                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5 capitalize">{cohort.status || 'Active'}</p>
+                        <p className="text-[10px] text-gray-400 font-semibold mt-0.5 capitalize">Status: {cohort.status || 'Active'}</p>
                       </div>
                     </div>
                   ))

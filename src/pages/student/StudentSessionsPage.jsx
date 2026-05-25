@@ -81,6 +81,23 @@ export default function StudentSessionsPage() {
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
+  const getSessionStatus = (session) => {
+    if (session.status === 'attended' || session.status === 'missed') return session.status
+
+    const scheduled = new Date(session.scheduled_at)
+    const now = new Date()
+    let durationHours = 1
+    if (session.duration) {
+      const match = session.duration.match(/([0-9.]+)/)
+      if (match) durationHours = parseFloat(match[1])
+    }
+    const endsAt = new Date(scheduled.getTime() + durationHours * 60 * 60 * 1000)
+
+    if (now >= scheduled && now <= endsAt) return 'live'
+    if (now > endsAt) return 'missed'
+    return 'upcoming'
+  }
+
   const fetchSessions = async () => {
     try {
       setLoading(true)
@@ -113,23 +130,6 @@ export default function StudentSessionsPage() {
   useEffect(() => {
     fetchSessions()
   }, [user])
-
-  const getSessionStatus = (session) => {
-    if (session.status === 'attended' || session.status === 'missed') return session.status
-
-    const scheduled = new Date(session.scheduled_at)
-    const now = new Date()
-    let durationHours = 1
-    if (session.duration) {
-      const match = session.duration.match(/([0-9.]+)/)
-      if (match) durationHours = parseFloat(match[1])
-    }
-    const endsAt = new Date(scheduled.getTime() + durationHours * 60 * 60 * 1000)
-
-    if (now >= scheduled && now <= endsAt) return 'live'
-    if (now > endsAt) return 'missed'
-    return 'upcoming'
-  }
 
   const tabs = ['All', 'Live', 'Upcoming', 'Attended']
   const liveSession = sessions.find(s => s.status === 'live')

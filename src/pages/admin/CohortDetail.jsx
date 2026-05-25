@@ -251,8 +251,8 @@ export default function CohortDetail() {
                   {/* Stats row */}
                   <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-gray-100 bg-gray-50/50 rounded-xl p-4 border border-gray-100">
                     {[
-                      { label: 'Completion Rate', value: '86%', color: 'text-green-600' },
-                      { label: 'Avg Attendance', value: '76%', color: 'text-blue-600' },
+                      { label: 'Total Capacity', value: (cohort.max_students || 250).toString(), color: 'text-green-600' },
+                      { label: 'Open Seats', value: Math.max(0, (cohort.max_students || 250) - cohortStudents.length).toString(), color: 'text-blue-600' },
                       { label: 'Total Enrolled', value: cohortStudents.length.toString(), color: 'text-gray-800' },
                       { label: 'Active Courses', value: cohortCourses.length.toString(), color: 'text-gray-800' },
                       { label: 'Trainers Roster', value: cohortTrainers.length.toString(), color: 'text-purple-600' },

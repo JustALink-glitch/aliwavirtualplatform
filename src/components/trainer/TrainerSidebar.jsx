@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, BookOpen, Video, Users, ClipboardList, TrendingUp, Settings, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, BookOpen, Video, Users, ClipboardList, Settings, LogOut, X } from 'lucide-react'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/trainer/dashboard' },
@@ -8,7 +8,6 @@ const navItems = [
   { icon: Video, label: 'My Sessions', path: '/trainer/sessions' },
   { icon: Users, label: 'My Students', path: '/trainer/students' },
   { icon: ClipboardList, label: 'Grade Assignments', path: '/trainer/assignments' },
-  { icon: TrendingUp, label: 'Performance', path: '/trainer/performance' },
   { icon: Settings, label: 'Settings', path: '/trainer/settings' },
 ]
 
