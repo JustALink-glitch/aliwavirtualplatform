@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
+import Modal from '../../components/common/Modal'
 import OnboardStudentModal from '../../components/admin/modals/OnboardStudentModal'
-import { MoreHorizontal, Eye, Trash2, X, ChevronDown } from 'lucide-react'
+import { MoreHorizontal, Eye, Trash2, ChevronDown } from 'lucide-react'
 import { studentsAPI } from '../../services'
 import toast from 'react-hot-toast'
 
@@ -24,27 +25,22 @@ const statusStyles = {
 }
 
 function StudentModal({ student, onClose, onRevoke }) {
+  if (!student) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full ${student.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-base font-bold`}>
-              {student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800">{student.name}</p>
-              <p className="text-xs text-gray-400">ID: {student.id.slice(0, 8)}...</p>
-            </div>
+    <Modal isOpen={!!student} onClose={onClose} title="Student Information" maxWidth="max-w-lg">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-full ${student.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-base font-bold`}>
+            {student.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
-            <X size={16} />
-          </button>
+          <div>
+            <p className="text-sm font-bold text-gray-800">{student.name}</p>
+            <p className="text-xs text-gray-400">ID: {student.id.slice(0, 8)}...</p>
+          </div>
         </div>
 
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Student Information</p>
-        <div className="grid grid-cols-2 gap-4 mb-5">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Full Name', value: student.name },
             { label: 'Gender', value: student.gender || 'N/A' },
@@ -60,14 +56,14 @@ function StudentModal({ student, onClose, onRevoke }) {
           ))}
         </div>
 
-        <button 
+        <button
           onClick={() => { onRevoke(student.id); onClose() }}
           className="w-full bg-red-50 text-red-500 border border-red-200 text-sm font-bold rounded-lg py-2.5 hover:bg-red-100 transition-colors"
         >
           Revoke Access / Suspend Student
         </button>
       </div>
-    </div>
+    </Modal>
   )
 }
 

@@ -1,10 +1,10 @@
 import { X } from 'lucide-react'
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/40"
@@ -12,7 +12,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
       />
 
       {/* Modal card */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10">
+      <div className={`relative bg-white rounded-2xl shadow-xl w-full ${maxWidth} z-10 max-h-[90vh] overflow-y-auto`}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

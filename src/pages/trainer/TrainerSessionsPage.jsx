@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import TrainerSidebar from '../../components/trainer/TrainerSidebar'
 import TrainerTopBar from '../../components/trainer/TrainerTopBar'
-import { Video, Calendar, Clock, Plus, X, ExternalLink, Trash2 } from 'lucide-react'
+import { Video, Calendar, Clock, Plus, X, ExternalLink, Trash2, ShieldAlert, CheckCircle2 } from 'lucide-react'
 import { sessionsAPI, coursesAPI } from '../../services'
+import { useAuth } from '../../context/AuthContext'
+import zoomAPI from '../../services/zoom'
 import toast from 'react-hot-toast'
 
 const statusStyles = {
@@ -12,8 +14,11 @@ const statusStyles = {
 }
 
 function ScheduleSessionModal({ onClose, onCreated }) {
+  const { user } = useAuth()
   const [courses, setCourses] = useState([])
   const [loadingCourses, setLoadingCourses] = useState(false)
+  const [zoomConnected, setZoomConnected] = useState(null)
+  const [checkingZoom, setCheckingZoom] = useState(false)
   const [form, setForm] = useState({
     title: '',
     course_id: '',
@@ -21,6 +26,7 @@ function ScheduleSessionModal({ onClose, onCreated }) {
     time: '',
     duration: '1 hour',
     zoom_link: '',
+    attendance_threshold_percentage: 40
   })
   const [submitting, setSubmitting] = useState(false)
 
@@ -38,8 +44,23 @@ function ScheduleSessionModal({ onClose, onCreated }) {
         setLoadingCourses(false)
       }
     }
+
+    const checkZoom = async () => {
+      if (!user?.id) return
+      try {
+        setCheckingZoom(true)
+        const res = await zoomAPI.getZoomStatus(user.id)
+        setZoomConnected(res.connected)
+      } catch (err) {
+        console.error('Failed to check Zoom authorization status', err)
+      } finally {
+        setCheckingZoom(false)
+      }
+    }
+
     fetchCourses()
-  }, [])
+    checkZoom()
+  }, [user])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -47,11 +68,16 @@ function ScheduleSessionModal({ onClose, onCreated }) {
       return toast.error('Please fill in all required fields')
     }
 
+    const zoomLink = form.zoom_link.trim()
+
+    if (!zoomLink && zoomConnected === false) {
+      return toast.error('Please connect your Zoom account to auto-generate a meeting, or enter a manual Zoom Link.')
+    }
+
     try {
       setSubmitting(true)
       const scheduled_at = new Date(`${form.date}T${form.time}`).toISOString()
-      const zoomLink = form.zoom_link.trim()
-      const meetingId = zoomLink.match(/\/j\/(\d+)/)?.[1] || ''
+      const meetingId = zoomLink ? (zoomLink.match(/\/j\/(\d+)/)?.[1] || '') : ''
 
       const payload = {
         title: form.title,
@@ -60,6 +86,7 @@ function ScheduleSessionModal({ onClose, onCreated }) {
         duration: form.duration,
         zoom_link: zoomLink,
         zoom_meeting_id: meetingId,
+        attendance_threshold_percentage: form.attendance_threshold_percentage
       }
 
       const res = await sessionsAPI.create(payload)
@@ -77,6 +104,12 @@ function ScheduleSessionModal({ onClose, onCreated }) {
     }
   }
 
+  const handleConnectZoom = () => {
+    const apiBase = import.meta.env.VITE_API_URL || 'https://lms-backend-production.up.railway.app/api'
+    const oauthUrl = `${apiBase}/zoom/authorize?userId=${user?.id}`
+    window.location.href = oauthUrl
+  }
+
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   return (
@@ -89,6 +122,32 @@ function ScheduleSessionModal({ onClose, onCreated }) {
             <X size={16} />
           </button>
         </div>
+
+        {/* Zoom Connection Banner Indicator */}
+        {checkingZoom ? (
+          <div className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 rounded-lg p-2.5 text-center font-bold">
+            Checking Zoom connection status...
+          </div>
+        ) : zoomConnected === true ? (
+          <div className="flex items-center gap-2 text-[10px] bg-green-50 border border-green-100 rounded-lg p-2.5 text-green-700 font-bold">
+            <CheckCircle2 size={13} />
+            <span>✓ Zoom authorized! Meetings will auto-generate.</span>
+          </div>
+        ) : zoomConnected === false ? (
+          <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 space-y-2 text-left">
+            <div className="flex items-start gap-2 text-[10px] text-amber-700 font-bold">
+              <ShieldAlert size={15} className="mt-0.5 flex-shrink-0" />
+              <span>Zoom is not authorized. You must enter a manual Zoom link or connect your Zoom account.</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleConnectZoom}
+              className="w-full text-center bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-black rounded-lg py-1.5 transition-colors shadow-sm"
+            >
+              Connect Zoom Account
+            </button>
+          </div>
+        ) : null}
 
         {/* Title */}
         <div>
@@ -140,10 +199,31 @@ function ScheduleSessionModal({ onClose, onCreated }) {
           </select>
         </div>
 
+        {/* Attendance Threshold */}
+        <div>
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">ATTENDANCE THRESHOLD (%) *</label>
+          <input
+            type="number"
+            name="attendance_threshold_percentage"
+            required
+            min="0"
+            max="100"
+            value={form.attendance_threshold_percentage}
+            onChange={handle}
+            placeholder="e.g. 40"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700"
+          />
+          <p className="text-[9px] text-gray-400 mt-1 font-medium">
+            Percentage of session duration a student must attend to be marked "Present".
+          </p>
+        </div>
+
         {/* Zoom Link optional */}
         <div>
-          <label className="block text-[11px] font-bold text-gray-700 mb-1">ZOOM LINK (leave blank to auto-generate)</label>
-          <input name="zoom_link" value={form.zoom_link} onChange={handle} placeholder="https://zoom.us/j/..."
+          <label className="block text-[11px] font-bold text-gray-700 mb-1">
+            ZOOM LINK {zoomConnected === true ? '(leave blank to auto-generate)' : '*'}
+          </label>
+          <input name="zoom_link" required={zoomConnected === false} value={form.zoom_link} onChange={handle} placeholder={zoomConnected === true ? 'Auto-generates if left blank' : 'https://zoom.us/j/...'}
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#2563EB] font-semibold text-gray-700" />
         </div>
 

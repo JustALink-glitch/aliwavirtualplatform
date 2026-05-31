@@ -37,19 +37,20 @@ export default function AssignTrainerModal({ isOpen, onClose, onSuccess }) {
   }, [isOpen])
 
   const handleSubmit = async () => {
-    if (!form.trainerId || !form.courseId) {
-      toast.error('Trainer and Course are required fields.')
+    if (!form.courseId) {
+      toast.error('Course is required.')
       return
     }
 
     try {
       setLoading(true)
-      const res = await coursesAPI.assignTrainer(form.courseId, form.trainerId)
-      toast.success(res.message || 'Trainer assigned successfully!')
+      const res = await coursesAPI.assignTrainer(form.courseId, form.trainerId || null)
+      const successMessage = form.trainerId ? 'Trainer assigned successfully!' : 'Trainer unassigned successfully!'
+      toast.success(res.message || successMessage)
       if (onSuccess) onSuccess()
       onClose()
     } catch (err) {
-      toast.error(err.message || 'Failed to assign trainer.')
+      toast.error(err.message || 'Failed to update trainer assignment.')
     } finally {
       setLoading(false)
     }
@@ -69,7 +70,7 @@ export default function AssignTrainerModal({ isOpen, onClose, onSuccess }) {
             disabled={loadingOptions}
             className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB] transition-colors text-gray-600"
           >
-            <option value="">{loadingOptions ? 'Loading...' : 'Choose a trainer'}</option>
+            <option value="">{loadingOptions ? 'Loading...' : 'Choose a trainer or leave blank to unassign'}</option>
             {trainers.map(trainer => (
               <option key={trainer.id} value={trainer.id}>
                 {`${trainer.first_name || ''} ${trainer.last_name || ''}`.trim() || trainer.email}
@@ -141,7 +142,7 @@ export default function AssignTrainerModal({ isOpen, onClose, onSuccess }) {
             disabled={loading}
             className="flex-1 bg-[#2563EB] text-white text-sm font-semibold rounded-lg py-2.5 hover:bg-blue-700 transition-colors disabled:opacity-60"
           >
-            {loading ? 'Assigning...' : 'Assign Trainer'}
+            {loading ? (form.trainerId ? 'Assigning...' : 'Unassigning...') : (form.trainerId ? 'Assign Trainer' : 'Unassign Trainer')}
           </button>
         </div>
       </div>

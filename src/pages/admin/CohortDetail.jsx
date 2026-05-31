@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
+import Modal from '../../components/common/Modal'
 import OnboardStudentModal from '../../components/admin/modals/OnboardStudentModal'
-import { ChevronRight, ChevronDown, UserPlus, X } from 'lucide-react'
+import { ChevronRight, ChevronDown, UserPlus } from 'lucide-react'
 import StudentsTab from '../../components/admin/cohort-tabs/StudentsTab'
 import CoursesTab from '../../components/admin/cohort-tabs/CoursesTab'
 import AssignmentsTab from '../../components/admin/cohort-tabs/AssignmentsTab'
@@ -34,26 +35,21 @@ const cardColors = [
 ]
 
 function TrainerModal({ trainer, onClose }) {
+  if (!trainer) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full ${trainer.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-sm font-bold`}>
-              {trainer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800">{trainer.name}</p>
-              <p className="text-xs text-gray-400">Trainer</p>
-            </div>
+    <Modal isOpen={!!trainer} onClose={onClose} title="Trainer Information" maxWidth="max-w-lg">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full ${trainer.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-sm font-bold`}>
+            {trainer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
-            <X size={16} />
-          </button>
+          <div>
+            <p className="text-sm font-bold text-gray-800">{trainer.name}</p>
+            <p className="text-xs text-gray-400">Trainer</p>
+          </div>
         </div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Trainer Information</p>
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Full Name', value: trainer.name },
             { label: 'Email Address', value: trainer.email },
@@ -70,7 +66,7 @@ function TrainerModal({ trainer, onClose }) {
           Close Profile
         </button>
       </div>
-    </div>
+    </Modal>
   )
 }
 

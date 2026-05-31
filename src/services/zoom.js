@@ -21,6 +21,15 @@ const zoomAPI = {
    */
   getOBFToken: (teacherUserId) => {
     return apiCall(`/zoom/obf-token?teacherUserId=${teacherUserId}`)
+  },
+
+  /**
+   * Checks if the trainer has authorized Zoom.
+   *
+   * @param {string} userId User ID of the trainer
+   */
+  getZoomStatus: (userId) => {
+    return apiCall(`/zoom/status?userId=${userId}`)
   }
 }
 

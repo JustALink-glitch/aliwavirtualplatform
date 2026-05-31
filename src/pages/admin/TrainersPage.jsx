@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
-import { UserPlus, MoreHorizontal, Eye, Trash2, X, ChevronDown } from 'lucide-react'
+import Modal from '../../components/common/Modal'
+import { UserPlus, MoreHorizontal, Eye, Trash2, ChevronDown } from 'lucide-react'
 import { trainersAPI } from '../../services'
 import toast from 'react-hot-toast'
 
@@ -23,29 +24,22 @@ const statusStyles = {
 }
 
 function TrainerModal({ trainer, onClose, onRevoke }) {
+  if (!trainer) return null
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md z-10 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full ${trainer.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-base font-bold`}>
-              {trainer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <p className="text-sm font-bold text-gray-800">{trainer.name}</p>
-              <p className="text-xs text-gray-400">ID: {trainer.id.slice(0, 8)}...</p>
-            </div>
+    <Modal isOpen={!!trainer} onClose={onClose} title="Trainer Information" maxWidth="max-w-lg">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
+          <div className={`w-12 h-12 rounded-full ${trainer.color || 'bg-[#2563EB]'} flex items-center justify-center text-white text-base font-bold`}>
+            {trainer.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
-            <X size={16} />
-          </button>
+          <div>
+            <p className="text-sm font-bold text-gray-800">{trainer.name}</p>
+            <p className="text-xs text-gray-400">ID: {trainer.id.slice(0, 8)}...</p>
+          </div>
         </div>
 
-        {/* Info */}
-        <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Trainer's Information</p>
-        <div className="grid grid-cols-2 gap-4 mb-5">
+        <div className="grid grid-cols-2 gap-4">
           {[
             { label: 'Full Name', value: trainer.name },
             { label: 'Gender', value: trainer.gender || 'N/A' },
@@ -60,14 +54,14 @@ function TrainerModal({ trainer, onClose, onRevoke }) {
           ))}
         </div>
 
-        <button 
+        <button
           onClick={() => { onRevoke(trainer.id); onClose() }}
           className="w-full bg-red-50 text-red-500 border border-red-200 text-sm font-bold rounded-lg py-2.5 hover:bg-red-100 transition-colors"
         >
           Revoke Access / Suspend
         </button>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -92,7 +86,7 @@ function ActionMenu({ onClose, onView, onDelete }) {
   )
 }
 
-function InviteTrainerModal({ onClose, onSuccess }) {
+function InviteTrainerModal({ isOpen, onClose, onSuccess }) {
   const [form, setForm] = useState({ name: '', email: '' })
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
   const [loading, setLoading] = useState(false)
@@ -107,14 +101,14 @@ function InviteTrainerModal({ onClose, onSuccess }) {
       const parts = form.name.trim().split(' ')
       const firstName = parts[0] || ''
       const lastName = parts.slice(1).join(' ') || ''
-      
+
       const payload = {
         email: form.email.trim(),
         firstName,
         lastName,
         role: 'trainer'
       }
-      
+
       const res = await trainersAPI.invite(payload)
       if (res.success) {
         toast.success('Trainer invited successfully!')
@@ -132,36 +126,29 @@ function InviteTrainerModal({ onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 font-[Manrope]">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-sm z-10">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-bold text-gray-800">Invite Trainer</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X size={16} /></button>
+    <Modal isOpen={isOpen} onClose={onClose} title="Invite Trainer" maxWidth="max-w-sm">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">FULL NAME <span className="text-red-500">*</span></label>
+          <input name="name" value={form.name} onChange={handle} placeholder="Enter trainer name"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
         </div>
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">FULL NAME <span className="text-red-500">*</span></label>
-            <input name="name" value={form.name} onChange={handle} placeholder="Enter trainer name"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-1">EMAIL ADDRESS <span className="text-red-500">*</span></label>
-            <input name="email" type="email" value={form.email} onChange={handle} placeholder="Enter email address"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
-          </div>
-          <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-            <p className="text-xs text-blue-700 font-medium">An invitation email will be sent to the trainer to set their password and log in.</p>
-          </div>
-          <div className="flex gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm font-bold rounded-lg py-2.5 hover:bg-gray-50">Cancel</button>
-            <button onClick={handleSubmit} disabled={loading} className="flex-1 bg-[#2563EB] text-white text-sm font-bold rounded-lg py-2.5 hover:bg-blue-700 disabled:opacity-60">
-              {loading ? 'Sending...' : 'Send Invite'}
-            </button>
-          </div>
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1">EMAIL ADDRESS <span className="text-red-500">*</span></label>
+          <input name="email" type="email" value={form.email} onChange={handle} placeholder="Enter email address"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#2563EB]" />
+        </div>
+        <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
+          <p className="text-xs text-blue-700 font-medium">An invitation email will be sent to the trainer to set their password and log in.</p>
+        </div>
+        <div className="flex gap-3 pt-1">
+          <button onClick={onClose} className="flex-1 border border-gray-200 text-gray-600 text-sm font-bold rounded-lg py-2.5 hover:bg-gray-50">Cancel</button>
+          <button onClick={handleSubmit} disabled={loading} className="flex-1 bg-[#2563EB] text-white text-sm font-bold rounded-lg py-2.5 hover:bg-blue-700 disabled:opacity-60">
+            {loading ? 'Sending...' : 'Send Invite'}
+          </button>
         </div>
       </div>
-    </div>
+    </Modal>
   )
 }
 
@@ -403,7 +390,7 @@ export default function TrainersPage() {
       </div>
 
       {selected && <TrainerModal trainer={selected} onClose={() => setSelected(null)} onRevoke={handleRevoke} />}
-      {showInvite && <InviteTrainerModal onClose={() => setShowInvite(false)} onSuccess={fetchTrainers} />}
+      <InviteTrainerModal isOpen={showInvite} onClose={() => setShowInvite(false)} onSuccess={fetchTrainers} />
     </div>
   )
 }

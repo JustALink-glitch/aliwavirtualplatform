@@ -11,12 +11,14 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
 
   const data = courses && courses.length > 0
     ? courses.map(c => {
-        const courseAttendance = attendanceRecords.filter(r => r.course_id === c.id)
+        const courseAttendance = attendanceRecords.filter(r => r.course_id === c.id || r.course?.id === c.id)
         const total = courseAttendance.length
-        const present = courseAttendance.filter(r => r.status === 'present').length
-        const absent = total - present
+        const present = courseAttendance.filter(r => ['present', 'joined', 'late'].includes((r.status || '').toLowerCase())).length
+        const absent = Math.max(total - present, 0)
         const rate = total > 0 ? Math.round((present / total) * 100) : 0
+
         return {
+          id: c.id,
           course: c.name,
           trainer: c.trainer ? `${c.trainer.first_name || ''} ${c.trainer.last_name || ''}`.trim() : 'Unassigned',
           total,
@@ -34,12 +36,12 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
         <div>
           <h2 className="text-sm font-bold text-gray-800">Attendance Summary</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Per course breakdown for this cohort</p>
+          <p className="text-xs text-gray-400 mt-0.5">Click a course to inspect its attendance, sessions, and engagement.</p>
         </div>
         <button
-          onClick={() => navigate('/admin/cohorts')}
+          onClick={() => navigate('/admin/courses')}
           className="text-xs text-[#2563EB] font-semibold hover:underline">
-          View all →
+          Browse courses →
         </button>
       </div>
 
@@ -52,7 +54,7 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
         <table className="w-full min-w-[700px]">
           <thead>
             <tr className="bg-gray-50">
-              {['Course', 'Trainer', 'Total Sessions', 'Present', 'Absent', 'Rate'].map(h => (
+              {['Course', 'Trainer', 'Attendance Records', 'Present', 'Absent', 'Rate'].map(h => (
                 <th key={h} className="text-left text-xs font-semibold text-gray-500 px-5 py-3">
                   {h}
                 </th>
@@ -60,8 +62,12 @@ export default function AttendanceTable({ courses = [], attendanceRecords = [] }
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {data.map(({ course, trainer, total, present, absent, rate }) => (
-              <tr key={course} className="hover:bg-gray-50 transition-colors">
+            {data.map(({ id, course, trainer, total, present, absent, rate }) => (
+              <tr
+                key={id || course}
+                onClick={() => id && navigate(`/admin/courses/${id}`)}
+                className="cursor-pointer hover:bg-gray-50 transition-colors"
+              >
                 <td className="px-5 py-3.5 text-sm font-medium text-gray-800">{course}</td>
                 <td className="px-5 py-3.5 text-sm text-gray-600">{trainer}</td>
                 <td className="px-5 py-3.5 text-sm text-gray-600">{total}</td>

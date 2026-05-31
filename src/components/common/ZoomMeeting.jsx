@@ -3,48 +3,34 @@ import { Video, X, Loader, AlertCircle, RefreshCw, ExternalLink } from 'lucide-r
 import zoomAPI from '../../services/zoom'
 
 // ─────────────────────────────────────────────────────────────
-// Dynamically load the Zoom Meeting SDK from CDN.
-// We use CDN to avoid React 18 peer-dep conflicts with the npm package.
-// Zoom Meeting SDK 3.11.x is the last stable version supporting CDN loading.
+// Dynamically load the Zoom Meeting SDK (Component View) from CDN.
+// Component View does not conflict with Tailwind or React 18 styles
+// and embeds Zoom directly inside a custom container.
 // ─────────────────────────────────────────────────────────────
 const ZOOM_SDK_VERSION = '3.11.1'
-const ZOOM_CDN_BASE = `https://source.zoom.us/${ZOOM_SDK_VERSION}/lib`
 
 function loadZoomSDK() {
   return new Promise((resolve, reject) => {
-    if (window.ZoomMtg) {
-      resolve(window.ZoomMtg)
+    if (window.ZoomMtgEmbedded) {
+      resolve(window.ZoomMtgEmbedded)
       return
     }
 
-    // Inject Zoom Bootstrap CSS
-    const cssBootstrap = document.createElement('link')
-    cssBootstrap.rel = 'stylesheet'
-    cssBootstrap.type = 'text/css'
-    cssBootstrap.href = `${ZOOM_CDN_BASE}/css/bootstrap.css`
-    document.head.appendChild(cssBootstrap)
-
-    const cssReact = document.createElement('link')
-    cssReact.rel = 'stylesheet'
-    cssReact.type = 'text/css'
-    cssReact.href = `${ZOOM_CDN_BASE}/css/react-select.css`
-    document.head.appendChild(cssReact)
-
-    // Inject Zoom SDK script
+    // Inject Zoom Meeting Component View Script
     const script = document.createElement('script')
-    script.src = `${ZOOM_CDN_BASE}/zoom.min.js`
+    script.src = `https://source.zoom.us/zoom-meeting-embedded-${ZOOM_SDK_VERSION}.min.js`
     script.async = true
     script.onload = () => {
-      if (window.ZoomMtg) resolve(window.ZoomMtg)
-      else reject(new Error('Zoom SDK loaded but ZoomMtg not found on window'))
+      if (window.ZoomMtgEmbedded) resolve(window.ZoomMtgEmbedded)
+      else reject(new Error('Zoom Component SDK loaded but ZoomMtgEmbedded not found on window'))
     }
-    script.onerror = () => reject(new Error('Failed to load Zoom SDK from CDN'))
+    script.onerror = () => reject(new Error('Failed to load Zoom Component View SDK from CDN'))
     document.body.appendChild(script)
   })
 }
 
 // ─────────────────────────────────────────────────────────────
-// ZoomMeeting Component
+// ZoomMeeting Component (Component View Edition)
 //
 // Props:
 //   session        - the session object (must have zoom_meeting_id, zoom_password, teacher_user_id)
@@ -53,12 +39,13 @@ function loadZoomSDK() {
 // ─────────────────────────────────────────────────────────────
 export default function ZoomMeeting({ session, currentUser, onClose }) {
   const mountRef = useRef(null)
+  const clientRef = useRef(null)
   const [phase, setPhase] = useState('loading') // loading | joining | joined | error
   const [errorMsg, setErrorMsg] = useState('')
   const [retryCount, setRetryCount] = useState(0)
   const MAX_RETRIES = 3
 
-  const joinMeeting = useCallback(async (ZoomMtg) => {
+  const joinMeeting = useCallback(async (ZoomMtgEmbedded) => {
     setPhase('joining')
     setErrorMsg('')
 
@@ -89,42 +76,40 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
         }
       }
 
-      // 3. Initialize Zoom SDK
-      ZoomMtg.setZoomJSLib(`${ZOOM_CDN_BASE}`, '/av')
-      ZoomMtg.preLoadWasm()
-      ZoomMtg.prepareWebSDK()
-
-      // Set the container for the embedded meeting
+      // 3. Initialize and mount Component View Client
       if (mountRef.current) {
-        ZoomMtg.init({
-          leaveUrl: window.location.href,
-          isSupportAV: true,
+        const client = ZoomMtgEmbedded.createClient()
+        clientRef.current = client
+
+        client.init({
+          zoomAppRoot: mountRef.current,
+          language: 'en-US',
           success: () => {
-            ZoomMtg.join({
+            client.join({
               sdkKey,
               signature,
               meetingNumber,
               userName: `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim() || currentUser.email,
               userEmail: currentUser.email,
               passWord: session.zoom_password || '',
-              ...(obfToken && { obfToken }),
+              tk: obfToken || '',
               success: () => setPhase('joined'),
               error: (joinErr) => {
-                console.error('[Zoom] Join error:', joinErr)
+                console.error('[Zoom Component View] Join error:', joinErr)
                 setErrorMsg(joinErr.errorMessage || 'Failed to join meeting.')
                 setPhase('error')
               },
             })
           },
           error: (initErr) => {
-            console.error('[Zoom] Init error:', initErr)
+            console.error('[Zoom Component View] Init error:', initErr)
             setErrorMsg(initErr.errorMessage || 'Failed to initialize Zoom.')
             setPhase('error')
           },
         })
       }
     } catch (err) {
-      console.error('[Zoom] Error fetching tokens:', err)
+      console.error('[Zoom Component View] Error launching:', err)
       setErrorMsg(err.message || 'Could not connect to meeting server.')
       setPhase('error')
     }
@@ -136,8 +121,8 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
     setPhase('loading')
 
     loadZoomSDK()
-      .then((ZoomMtg) => {
-        if (!cancelled) joinMeeting(ZoomMtg)
+      .then((ZoomMtgEmbedded) => {
+        if (!cancelled) joinMeeting(ZoomMtgEmbedded)
       })
       .catch((err) => {
         if (!cancelled) {
@@ -149,9 +134,9 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
     return () => {
       cancelled = true
       // Leave meeting on unmount
-      if (window.ZoomMtg && phase === 'joined') {
+      if (clientRef.current && phase === 'joined') {
         try {
-          window.ZoomMtg.leaveMeeting({})
+          clientRef.current.leaveMeeting()
         } catch (_) {
           // Ignore error since we are unmounting
         }
@@ -171,12 +156,12 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 bg-gray-800 border-b border-gray-700 flex-shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-7 h-7 bg-[#2563EB] rounded-lg flex items-center justify-center">
             <Video size={14} className="text-white" />
           </div>
           <div>
             <p className="text-sm font-bold text-white truncate max-w-[280px]">{session.title}</p>
-            <p className="text-[10px] text-gray-400">Live Session · Attendance auto-recorded</p>
+            <p className="text-[10px] text-gray-400">Embedded Live Session · Attendance auto-recorded</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -198,24 +183,23 @@ export default function ZoomMeeting({ session, currentUser, onClose }) {
       </div>
 
       {/* Meeting viewport */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Zoom SDK mounts here */}
+      <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-gray-950 p-2 sm:p-4">
+        {/* Zoom SDK Component View mounts here */}
         <div
-          id="zmmtg-root"
           ref={mountRef}
-          className="w-full h-full"
+          className="w-full h-full max-w-5xl rounded-xl overflow-hidden shadow-2xl border border-gray-800/50 bg-gray-900"
           style={{ display: phase === 'joined' ? 'block' : 'none' }}
         />
 
         {/* Loading / Joining overlay */}
         {(phase === 'loading' || phase === 'joining') && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 gap-5">
-            <div className="w-16 h-16 bg-blue-600/20 rounded-2xl flex items-center justify-center">
+            <div className="w-16 h-16 bg-[#2563EB]/25 rounded-2xl flex items-center justify-center">
               <Loader size={28} className="text-blue-400 animate-spin" />
             </div>
             <div className="text-center space-y-1">
               <p className="text-white font-bold text-sm">
-                {phase === 'loading' ? 'Loading Zoom SDK…' : 'Connecting to meeting…'}
+                {phase === 'loading' ? 'Loading Zoom Embedded SDK…' : 'Connecting to live class…'}
               </p>
               {errorMsg && (
                 <p className="text-yellow-400 text-xs max-w-xs text-center">{errorMsg}</p>

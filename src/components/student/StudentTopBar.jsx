@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Menu, Search, Bell, User, Settings, LogOut } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 const notifications = [
   { title: 'New session scheduled', desc: 'Data Analytics class on Apr 22 at 4:30 PM', time: '1 hour ago', unread: true },
@@ -25,6 +26,10 @@ export default function StudentTopBar({ onToggleSidebar }) {
   useOutsideClick(profileRef, () => setShowProfile(false))
 
   const unread = notifications.filter(n => n.unread).length
+  const { user } = useAuth()
+  const fullName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Student'
+  const email = user?.email || ''
+  const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : 'ST'
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0 relative">
@@ -96,14 +101,14 @@ export default function StudentTopBar({ onToggleSidebar }) {
       <div className="relative" ref={profileRef}>
         <div onClick={() => setShowProfile(!showProfile)}
           className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:bg-green-600 transition-colors">
-          MK
+          {initials}
         </div>
         {showProfile && (
           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg w-48 z-30">
             <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">Michael Kaine</p>
-              <p className="text-xs text-gray-400 mt-0.5">michael@gmail.com</p>
-              <p className="text-xs text-green-600 font-medium mt-0.5">Student</p>
+              <p className="text-sm font-bold text-gray-800">{fullName}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{email}</p>
+              <p className="text-xs text-green-600 font-medium mt-0.5">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'}</p>
             </div>
             <div className="py-1">
               <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">

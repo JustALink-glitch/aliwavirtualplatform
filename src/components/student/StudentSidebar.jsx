@@ -1,6 +1,32 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, BookOpen, Video, ClipboardList, Star, Settings, LogOut, X, HelpCircle } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+
+function SidebarProfile({ collapsed, isMobile, onLogout }) {
+  const { user } = useAuth()
+  const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Student'
+  const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'
+  const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : 'ST'
+
+  return (
+    <div onClick={onLogout}
+      className={`flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group ${
+        collapsed && !isMobile ? 'justify-center' : ''
+      }`}>
+      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{initials}</div>
+      {(!collapsed || isMobile) && (
+        <>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 truncate">{name}</p>
+            <p className="text-xs text-gray-400 truncate">{role}</p>
+          </div>
+          <LogOut size={15} className="text-gray-400 group-hover:text-red-500 transition-colors flex-shrink-0" />
+        </>
+      )}
+    </div>
+  )
+}
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/student/dashboard' },
@@ -80,21 +106,7 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
 
         {/* Profile */}
         <div className="px-2 py-4 border-t border-gray-100">
-          <div onClick={() => setShowLogout(true)}
-            className={`flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group ${
-              collapsed && !isMobile ? 'justify-center' : ''
-            }`}>
-            <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">MK</div>
-            {(!collapsed || isMobile) && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">Michael Kaine</p>
-                  <p className="text-xs text-gray-400 truncate">Student</p>
-                </div>
-                <LogOut size={15} className="text-gray-400 group-hover:text-red-500 transition-colors flex-shrink-0" />
-              </>
-            )}
-          </div>
+          <SidebarProfile collapsed={collapsed} isMobile={isMobile} onLogout={() => { setShowLogout(true) }} />
         </div>
       </div>
 
