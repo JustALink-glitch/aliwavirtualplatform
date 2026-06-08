@@ -14,6 +14,7 @@ export default function StudentDashboard() {
   const [assignmentsCount, setAssignmentsCount] = useState(0)
   const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -26,10 +27,10 @@ export default function StudentDashboard() {
           coursesAPI.list(),
           submissionsAPI.list(user ? { studentId: user.id } : {})
         ])
-        
+
         const allCohorts = cohortsRes.cohorts || cohortsRes || []
         const allCourses = coursesRes.courses || coursesRes || []
-        
+
         setCohorts(allCohorts)
         setCourses(allCourses)
 
@@ -53,6 +54,7 @@ export default function StudentDashboard() {
         setLoading(false)
       }
     }
+
     fetchData()
   }, [user])
 

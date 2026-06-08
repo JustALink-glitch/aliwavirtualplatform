@@ -23,6 +23,7 @@ export default function TrainerDashboard() {
   const [upcomingSessions, setUpcomingSessions] = useState([])
   const [totalStudentsCount, setTotalStudentsCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -66,15 +67,37 @@ export default function TrainerDashboard() {
 
   useEffect(() => {
     loadDashboardData()
+    const intervalId = setInterval(loadDashboardData, 20000)
+    return () => clearInterval(intervalId)
   }, [])
 
   const trainerName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Trainer'
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const filteredSubmissions = normalizedQuery
+    ? pendingSubmissions.filter((sub) => {
+        const studentName = `${sub.student?.first_name || ''} ${sub.student?.last_name || ''}`.toLowerCase()
+        const assignmentTitle = (sub.assignment?.title || '').toLowerCase()
+        return studentName.includes(normalizedQuery) || assignmentTitle.includes(normalizedQuery)
+      })
+    : pendingSubmissions
+  const filteredUpcomingSessions = normalizedQuery
+    ? upcomingSessions.filter((session) => {
+        const title = (session.title || '').toLowerCase()
+        const courseName = (session.course?.name || '').toLowerCase()
+        return title.includes(normalizedQuery) || courseName.includes(normalizedQuery)
+      })
+    : upcomingSessions
 
   return (
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
       <TrainerSidebar collapsed={collapsed} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TrainerTopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+        <TrainerTopBar
+          onToggleSidebar={() => setCollapsed(!collapsed)}
+          onSearch={setSearchQuery}
+          searchValue={searchQuery}
+          searchPlaceholder="Search submissions, courses or sessions"
+        />
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
           {/* Welcome banner */}
@@ -136,13 +159,13 @@ export default function TrainerDashboard() {
                   <div className="flex items-center justify-center h-48">
                     <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
                   </div>
-                ) : pendingSubmissions.length === 0 ? (
+                ) : filteredSubmissions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <ClipboardList className="text-gray-300 mb-2" size={32} />
                     <p className="text-xs text-gray-400 font-bold">Awesome! Grading queue is clear.</p>
                   </div>
                 ) : (
-                  pendingSubmissions.slice(0, 5).map((sub, idx) => {
+                  filteredSubmissions.slice(0, 5).map((sub, idx) => {
                     const studentName = sub.student ? `${sub.student.first_name || ''} ${sub.student.last_name || ''}`.trim() : 'Anonymous Student'
                     const assignmentTitle = sub.assignment ? sub.assignment.title : 'General Assignment'
                     const courseName = sub.assignment?.course ? sub.assignment.course.name : 'Class Course'
@@ -183,13 +206,13 @@ export default function TrainerDashboard() {
                   <div className="flex items-center justify-center h-48">
                     <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#2563EB]"></div>
                   </div>
-                ) : upcomingSessions.length === 0 ? (
+                ) : filteredUpcomingSessions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <Video className="text-gray-300 mb-2" size={32} />
                     <p className="text-xs text-gray-400 font-bold">No upcoming classes scheduled</p>
                   </div>
                 ) : (
-                  upcomingSessions.slice(0, 5).map((session, idx) => (
+                  filteredUpcomingSessions.slice(0, 5).map((session, idx) => (
                     <div key={session.id} className="p-4 hover:bg-gray-50 cursor-pointer">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">

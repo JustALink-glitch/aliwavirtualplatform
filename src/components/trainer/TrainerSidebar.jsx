@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, BookOpen, Video, Users, ClipboardList, Settings, LogOut, X } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { getUserFullName, getUserInitials } from '../../utils/helpers'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/trainer/dashboard' },
@@ -34,6 +36,11 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [showLogout, setShowLogout] = useState(false)
+  const { user, logout } = useAuth()
+
+  const fullName = getUserFullName(user) || 'Trainer'
+  const email = user?.email || ''
+  const initials = getUserInitials(user, 'TR')
 
   return (
     <>
@@ -83,12 +90,12 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
             className={`flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-gray-50 cursor-pointer group ${
               collapsed && !isMobile ? 'justify-center' : ''
             }`}>
-            <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">AO</div>
+            <div className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{initials}</div>
             {(!collapsed || isMobile) && (
               <>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-800 truncate">Abdulhameed O.</p>
-                  <p className="text-xs text-gray-400 truncate">Trainer</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">{fullName}</p>
+                  <p className="text-xs text-gray-400 truncate">{email}</p>
                 </div>
                 <LogOut size={15} className="text-gray-400 group-hover:text-red-500 transition-colors flex-shrink-0" />
               </>
@@ -100,7 +107,7 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
       {showLogout && (
         <LogoutModal
           onCancel={() => setShowLogout(false)}
-          onConfirm={() => { setShowLogout(false); navigate('/login') }}
+          onConfirm={() => { logout(); setShowLogout(false); navigate('/login') }}
         />
       )}
     </>

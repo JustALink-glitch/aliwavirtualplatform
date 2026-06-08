@@ -276,7 +276,7 @@ export default function ReportsPage() {
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
       <Sidebar collapsed={collapsed} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 

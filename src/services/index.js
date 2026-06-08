@@ -9,4 +9,5 @@ export { default as submissionsAPI } from './submissions'
 export { default as sessionsAPI } from './sessions'
 export { default as attendanceAPI } from './attendance'
 export { default as resourcesAPI } from './resources'
+export { default as notificationsAPI } from './notifications'
 

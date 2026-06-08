@@ -4,6 +4,7 @@ import StudentTopBar from '../../components/student/StudentTopBar'
 import { User, Bell, Shield, Save, Camera, Eye, EyeOff } from 'lucide-react'
 import { studentsAPI } from '../../services'
 import { useAuth } from '../../context/AuthContext'
+import { normalizeUser, getUserPhone, getUserBio } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
 const tabs = [
@@ -27,11 +28,11 @@ function ProfileTab({ user, onUpdate }) {
   useEffect(() => {
     if (user) {
       setForm({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
+        firstName: user.firstName || user.first_name || '',
+        lastName: user.lastName || user.last_name || '',
         email: user.email || '',
-        phone: user.phone_number || '',
-        bio: user.bio || '',
+        phone: getUserPhone(user),
+        bio: getUserBio(user),
         course: user.course || 'Data Analytics',
         cohort: user.cohort_name || 'Cohort 1'
       })
@@ -54,6 +55,7 @@ function ProfileTab({ user, onUpdate }) {
       if (res.success || res.user) {
         toast.success('Profile saved successfully!')
         onUpdate(res.user || { ...user, first_name: form.firstName, last_name: form.lastName, phone_number: form.phone, bio: form.bio })
+        window.dispatchEvent(new Event('notifications:refresh'))
       } else {
         toast.error(res.message || 'Failed to save profile')
       }
@@ -306,8 +308,9 @@ export default function StudentSettingsPage() {
   }, [user])
 
   const handleUpdateUser = (updated) => {
-    setCurrentUser(updated)
-    updateUser(updated)
+    const normalized = normalizeUser(updated)
+    setCurrentUser(normalized)
+    updateUser(normalized)
   }
 
   return (

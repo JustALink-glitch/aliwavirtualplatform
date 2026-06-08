@@ -30,6 +30,13 @@ const zoomAPI = {
    */
   getZoomStatus: (userId) => {
     return apiCall(`/zoom/status?userId=${userId}`)
+  },
+
+  /**
+   * Disconnects the Zoom OAuth integration.
+   */
+  disconnectZoom: () => {
+    return apiCall('/zoom/disconnect', 'POST')
   }
 }
 

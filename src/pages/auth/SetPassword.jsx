@@ -50,8 +50,8 @@ export default function SetPassword() {
     setLoading(true)
     try {
       const updatedUser = await setPassword({
-        email: emailToUse,
-        tempPassword: form.temp,
+        email: emailToUse.trim(),
+        tempPassword: form.temp.trim(),
         newPassword: form.password,
       })
       toast.success('Password set successfully!')

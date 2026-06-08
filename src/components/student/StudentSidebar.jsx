@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, BookOpen, Video, ClipboardList, Star, Settings, LogOut, X, HelpCircle } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { getUserFullName, getUserInitials } from '../../utils/helpers'
 
 function SidebarProfile({ collapsed, isMobile, onLogout }) {
   const { user } = useAuth()
-  const name = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Student'
+  const name = getUserFullName(user) || 'Student'
   const role = user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'
-  const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : 'ST'
+  const initials = getUserInitials(user, 'ST')
 
   return (
     <div onClick={onLogout}
@@ -61,6 +62,7 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [showLogout, setShowLogout] = useState(false)
+  const { logout } = useAuth()
 
   return (
     <>
@@ -113,7 +115,7 @@ function SidebarContent({ collapsed, activePath, onClose, isMobile }) {
       {showLogout && (
         <LogoutModal
           onCancel={() => setShowLogout(false)}
-          onConfirm={() => { setShowLogout(false); navigate('/login') }}
+          onConfirm={() => { logout(); setShowLogout(false); navigate('/login') }}
         />
       )}
     </>

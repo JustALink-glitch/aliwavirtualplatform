@@ -13,6 +13,18 @@ const statusStyles = {
   upcoming: 'bg-gray-100 text-gray-500 font-bold uppercase text-[9px]',
 }
 
+const getDurationMs = (duration) => {
+  const durationStr = String(duration || '1 hour').toLowerCase()
+  const match = durationStr.match(/([0-9.]+)/)
+  const value = match ? parseFloat(match[1]) : 1
+
+  if (durationStr.includes('minute') || durationStr.includes('min')) {
+    return value * 60 * 1000
+  }
+
+  return value * 60 * 60 * 1000
+}
+
 function ScheduleSessionModal({ onClose, onCreated }) {
   const { user } = useAuth()
   const [courses, setCourses] = useState([])
@@ -110,6 +122,17 @@ function ScheduleSessionModal({ onClose, onCreated }) {
     window.location.href = oauthUrl
   }
 
+  const handleDisconnectZoom = async () => {
+    if (!window.confirm('Are you sure you want to disconnect your Zoom account? Automatic meeting generation will stop.')) return
+    try {
+      await zoomAPI.disconnectZoom()
+      setZoomConnected(false)
+      toast.success('Zoom account disconnected successfully.')
+    } catch (err) {
+      toast.error(err.message || 'Failed to disconnect Zoom account.')
+    }
+  }
+
   const handle = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   return (
@@ -129,9 +152,18 @@ function ScheduleSessionModal({ onClose, onCreated }) {
             Checking Zoom connection status...
           </div>
         ) : zoomConnected === true ? (
-          <div className="flex items-center gap-2 text-[10px] bg-green-50 border border-green-100 rounded-lg p-2.5 text-green-700 font-bold">
-            <CheckCircle2 size={13} />
-            <span>✓ Zoom authorized! Meetings will auto-generate.</span>
+          <div className="bg-green-50 border border-green-100 rounded-lg p-3 space-y-2 text-left">
+            <div className="flex items-center gap-2 text-[10px] text-green-700 font-bold">
+              <CheckCircle2 size={13} className="flex-shrink-0" />
+              <span>✓ Zoom authorized! Meetings will auto-generate.</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDisconnectZoom}
+              className="w-full text-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[10px] font-black rounded-lg py-1.5 transition-all shadow-sm"
+            >
+              Disconnect Zoom Account
+            </button>
           </div>
         ) : zoomConnected === false ? (
           <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 space-y-2 text-left">
@@ -146,6 +178,9 @@ function ScheduleSessionModal({ onClose, onCreated }) {
             >
               Connect Zoom Account
             </button>
+            <p className="text-[9px] text-amber-600/90 font-medium text-center leading-normal">
+              Tip: To connect a different Zoom account, log out of <a href="https://zoom.us/logout" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-amber-800">zoom.us</a> first.
+            </p>
           </div>
         ) : null}
 
@@ -282,16 +317,12 @@ export default function TrainerSessionsPage() {
 
   // Determine status dynamically
   const getSessionStatus = (session) => {
+    if (session.status === 'completed') return 'completed'
+    if (session.status === 'live') return 'live'
+
     const scheduled = new Date(session.scheduled_at)
     const now = new Date()
-    
-    // Parse duration (default 1 hour if not matched)
-    let durationHours = 1
-    if (session.duration) {
-      const match = session.duration.match(/([0-9.]+)/)
-      if (match) durationHours = parseFloat(match[1])
-    }
-    const endsAt = new Date(scheduled.getTime() + durationHours * 60 * 60 * 1000)
+    const endsAt = new Date(scheduled.getTime() + getDurationMs(session.duration))
 
     if (now >= scheduled && now <= endsAt) return 'live'
     if (now > endsAt) return 'completed'

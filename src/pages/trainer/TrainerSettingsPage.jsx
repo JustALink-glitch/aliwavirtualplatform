@@ -4,6 +4,7 @@ import TrainerTopBar from '../../components/trainer/TrainerTopBar'
 import { User, Bell, Shield, Save, Camera, Eye, EyeOff } from 'lucide-react'
 import { trainersAPI } from '../../services'
 import { useAuth } from '../../context/AuthContext'
+import { getUserPhone, normalizeUser } from '../../utils/helpers'
 import toast from 'react-hot-toast'
 
 const tabs = [
@@ -26,10 +27,10 @@ function ProfileTab({ user, onUpdate }) {
   useEffect(() => {
     if (user) {
       setForm({
-        firstName: user.first_name || '',
-        lastName: user.last_name || '',
+        firstName: user.firstName || user.first_name || '',
+        lastName: user.lastName || user.last_name || '',
         email: user.email || '',
-        phone: user.phone_number || '',
+        phone: getUserPhone(user),
         expertise: user.expertise || 'Data Analytics',
         experience: user.experience || '3 years'
       })
@@ -54,6 +55,7 @@ function ProfileTab({ user, onUpdate }) {
       if (res.success || res.user) {
         toast.success('Profile updated successfully!')
         onUpdate(res.user || { ...user, first_name: form.firstName, last_name: form.lastName, phone_number: form.phone })
+        window.dispatchEvent(new Event('notifications:refresh'))
       } else {
         toast.error(res.message || 'Failed to update profile')
       }
@@ -301,8 +303,9 @@ export default function TrainerSettingsPage() {
   }, [user])
 
   const handleUpdateUser = (updated) => {
-    setCurrentUser(updated)
-    updateUser(updated)
+    const normalized = normalizeUser(updated)
+    setCurrentUser(normalized)
+    updateUser(normalized)
   }
 
   return (

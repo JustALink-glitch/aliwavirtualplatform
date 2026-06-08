@@ -12,7 +12,20 @@ const statusStyles = {
   live: 'bg-green-150 text-green-700',
   attended: 'bg-blue-50 text-blue-600',
   missed: 'bg-red-50 text-red-500',
+  ended: 'bg-slate-100 text-slate-600',
   upcoming: 'bg-gray-100 text-gray-500',
+}
+
+const getDurationMs = (duration) => {
+  const durationStr = String(duration || '1 hour').toLowerCase()
+  const match = durationStr.match(/([0-9.]+)/)
+  const value = match ? parseFloat(match[1]) : 1
+
+  if (durationStr.includes('minute') || durationStr.includes('min')) {
+    return value * 60 * 1000
+  }
+
+  return value * 60 * 60 * 1000
 }
 
 function JoinModal({ session, onClose }) {
@@ -83,18 +96,15 @@ export default function StudentSessionsPage() {
 
   const getSessionStatus = (session) => {
     if (session.status === 'attended' || session.status === 'missed') return session.status
+    if (session.status === 'completed') return 'ended'
+    if (session.status === 'live') return 'live'
 
     const scheduled = new Date(session.scheduled_at)
     const now = new Date()
-    let durationHours = 1
-    if (session.duration) {
-      const match = session.duration.match(/([0-9.]+)/)
-      if (match) durationHours = parseFloat(match[1])
-    }
-    const endsAt = new Date(scheduled.getTime() + durationHours * 60 * 60 * 1000)
+    const endsAt = new Date(scheduled.getTime() + getDurationMs(session.duration))
 
     if (now >= scheduled && now <= endsAt) return 'live'
-    if (now > endsAt) return 'missed'
+    if (now > endsAt) return 'ended'
     return 'upcoming'
   }
 
@@ -131,7 +141,7 @@ export default function StudentSessionsPage() {
     fetchSessions()
   }, [user])
 
-  const tabs = ['All', 'Live', 'Upcoming', 'Attended']
+  const tabs = ['All', 'Live', 'Upcoming', 'Ended', 'Attended']
   const liveSession = sessions.find(s => s.status === 'live')
 
   const filtered = sessions.filter(s =>
@@ -256,6 +266,9 @@ export default function StudentSessionsPage() {
           )}
                           {session.status === 'attended' && (
                             <span className="text-xs text-green-600 font-bold">Attended ✓</span>
+                          )}
+                          {session.status === 'ended' && (
+                            <span className="text-xs text-slate-500 font-bold">Ended</span>
                           )}
                           {session.status === 'upcoming' && (
                             <span className="text-xs text-gray-400 font-bold">Scheduled</span>

@@ -1,11 +1,9 @@
 import { Menu, Search, Bell, User, Settings, LogOut } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
-
-const notifications = [
-  { title: 'New assignment submitted', desc: 'Abdulhameed submitted Hero Section Design', time: '20 mins ago', unread: true },
-  { title: 'Student at risk', desc: 'Michael Kaine attendance dropped to 48%', time: '1 hour ago', unread: true },
-  { title: 'Session reminder', desc: 'Your Data Analytics class starts in 30 mins', time: '2 hours ago', unread: false },
-]
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import { getUserFullName, getUserInitials } from '../../utils/helpers'
+import notificationsAPI from '../../services/notifications'
 
 function useOutsideClick(ref, cb) {
   useEffect(() => {
@@ -15,16 +13,47 @@ function useOutsideClick(ref, cb) {
   }, [cb])
 }
 
-export default function TrainerTopBar({ onToggleSidebar }) {
+export default function TrainerTopBar({ onToggleSidebar, onSearch, searchValue = '', searchPlaceholder = 'Search students, courses...' }) {
   const [showNotif, setShowNotif] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [notifications, setNotifications] = useState([])
   const notifRef = useRef()
   const profileRef = useRef()
   useOutsideClick(notifRef, () => setShowNotif(false))
   useOutsideClick(profileRef, () => setShowProfile(false))
 
-  const unread = notifications.filter(n => n.unread).length
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const unread = notifications.filter(n => !n.read).length
+  const initials = getUserInitials(user, 'TR')
+  const fullName = getUserFullName(user) || 'Trainer'
+  const email = user?.email || ''
+
+  const loadNotifications = async () => {
+    try {
+      const result = await notificationsAPI.list()
+      const items = result.notifications || result || []
+      setNotifications(items.filter(item => item.type !== 'otp'))
+    } catch (error) {
+      console.error('Failed to load notifications:', error)
+    }
+  }
+
+  useEffect(() => {
+    let intervalId
+    loadNotifications()
+    intervalId = setInterval(loadNotifications, 5000)
+
+    const refreshListener = () => loadNotifications()
+    window.addEventListener('notifications:refresh', refreshListener)
+
+    return () => {
+      clearInterval(intervalId)
+      window.removeEventListener('notifications:refresh', refreshListener)
+    }
+  }, [])
+
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0 relative">
@@ -42,7 +71,10 @@ export default function TrainerTopBar({ onToggleSidebar }) {
       <div className="flex-1 max-w-md ml-auto hidden md:block">
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
           <Search size={15} className="text-gray-400 flex-shrink-0" />
-          <input placeholder="Search students, courses..."
+          <input
+            value={searchValue}
+            onChange={(e) => onSearch?.(e.target.value)}
+            placeholder={searchPlaceholder}
             className="flex-1 text-sm bg-transparent outline-none text-gray-600 placeholder-gray-400" />
         </div>
       </div>
@@ -68,22 +100,33 @@ export default function TrainerTopBar({ onToggleSidebar }) {
           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg w-72 z-30">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-gray-800">Notifications</h3>
-              <button className="text-xs text-[#2563EB] font-semibold">Mark all read</button>
+              <button
+                className="text-xs text-[#2563EB] font-semibold"
+                onClick={async () => {
+                  setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
+                  await notificationsAPI.markAllRead()
+                }}
+              >
+                Mark all read
+              </button>
             </div>
             <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-              {notifications.map((n, i) => (
-                <div key={i} className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${n.unread ? 'bg-blue-50/40' : ''}`}>
-                  <div className="flex gap-2">
-                    {n.unread && <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full mt-1.5 flex-shrink-0" />}
-                    {!n.unread && <div className="w-1.5 flex-shrink-0" />}
-                    <div>
-                      <p className="text-xs font-semibold text-gray-800">{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{n.desc}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
+              {notifications.length === 0 ? (
+                <div className="px-4 py-6 text-center text-xs text-gray-500">No new notifications.</div>
+              ) : (
+                notifications.map((n, i) => (
+                  <div key={n.id || i} className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${n.read ? '' : 'bg-blue-50/40'}`}>
+                    <div className="flex gap-2">
+                      {!n.read ? <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full mt-1.5 flex-shrink-0" /> : <div className="w-1.5 flex-shrink-0" />}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message || n.desc || ''}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at || n.time || '').toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="px-4 py-2.5 border-t border-gray-100 text-center">
               <button className="text-xs text-[#2563EB] font-semibold">View all notifications</button>
@@ -96,25 +139,25 @@ export default function TrainerTopBar({ onToggleSidebar }) {
       <div className="relative" ref={profileRef}>
         <div onClick={() => setShowProfile(!showProfile)}
           className="w-8 h-8 rounded-full bg-[#2563EB] flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:bg-blue-700 transition-colors">
-          AO
+          {initials}
         </div>
         {showProfile && (
           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg w-48 z-30">
             <div className="px-4 py-3 border-b border-gray-100">
-              <p className="text-sm font-bold text-gray-800">Abdulhameed O.</p>
-              <p className="text-xs text-gray-400 mt-0.5">abdulhameed@gmail.com</p>
+              <p className="text-sm font-bold text-gray-800">{fullName}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{email}</p>
               <p className="text-xs text-[#2563EB] font-medium mt-0.5">Trainer</p>
             </div>
             <div className="py-1">
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => navigate(`/${user?.role || 'trainer'}/settings`)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                 <User size={13} className="text-gray-400" /> My Profile
               </button>
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => navigate(`/${user?.role || 'trainer'}/settings`)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                 <Settings size={13} className="text-gray-400" /> Settings
               </button>
             </div>
             <div className="border-t border-gray-100 py-1">
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50">
+              <button onClick={() => { logout(); navigate('/login') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50">
                 <LogOut size={13} /> Sign Out
               </button>
             </div>
@@ -127,7 +170,10 @@ export default function TrainerTopBar({ onToggleSidebar }) {
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 px-4 py-3 md:hidden z-20">
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
             <Search size={15} className="text-gray-400 flex-shrink-0" />
-            <input autoFocus placeholder="Search students, courses..."
+            <input autoFocus
+              value={searchValue}
+              onChange={(e) => onSearch?.(e.target.value)}
+              placeholder={searchPlaceholder}
               className="flex-1 text-sm bg-transparent outline-none text-gray-600 placeholder-gray-400" />
           </div>
         </div>

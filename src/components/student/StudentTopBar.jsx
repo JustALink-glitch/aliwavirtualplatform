@@ -1,12 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Menu, Search, Bell, User, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
-
-const notifications = [
-  { title: 'New session scheduled', desc: 'Data Analytics class on Apr 22 at 4:30 PM', time: '1 hour ago', unread: true },
-  { title: 'Assignment graded', desc: 'Your Hero Section Design got 85/100', time: '2 hours ago', unread: true },
-  { title: 'Resource uploaded', desc: 'New lecture slides added to Data Analytics', time: '1 day ago', unread: false },
-]
+import { getUserFullName, getUserInitials } from '../../utils/helpers'
+import notificationsAPI from '../../services/notifications'
 
 function useOutsideClick(ref, cb) {
   useEffect(() => {
@@ -16,20 +13,46 @@ function useOutsideClick(ref, cb) {
   }, [cb])
 }
 
-export default function StudentTopBar({ onToggleSidebar }) {
+export default function StudentTopBar({ onToggleSidebar, onSearch, searchValue = '', searchPlaceholder = 'Search courses, sessions...' }) {
   const [showNotif, setShowNotif] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [notifications, setNotifications] = useState([])
   const notifRef = useRef()
   const profileRef = useRef()
   useOutsideClick(notifRef, () => setShowNotif(false))
   useOutsideClick(profileRef, () => setShowProfile(false))
 
-  const unread = notifications.filter(n => n.unread).length
-  const { user } = useAuth()
-  const fullName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Student'
+  const unread = notifications.filter(n => !n.read).length
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const fullName = getUserFullName(user) || 'Student'
   const email = user?.email || ''
-  const initials = user ? `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase() : 'ST'
+  const initials = getUserInitials(user, 'ST')
+
+  const loadNotifications = async () => {
+    try {
+      const result = await notificationsAPI.list()
+      const items = result.notifications || result || []
+      setNotifications(items.filter(item => item.type !== 'otp'))
+    } catch (error) {
+      console.error('Failed to load notifications:', error)
+    }
+  }
+
+  useEffect(() => {
+    let intervalId
+    loadNotifications()
+    intervalId = setInterval(loadNotifications, 5000)
+
+    const refreshListener = () => loadNotifications()
+    window.addEventListener('notifications:refresh', refreshListener)
+
+    return () => {
+      clearInterval(intervalId)
+      window.removeEventListener('notifications:refresh', refreshListener)
+    }
+  }, [])
 
   return (
     <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 flex-shrink-0 relative">
@@ -47,7 +70,10 @@ export default function StudentTopBar({ onToggleSidebar }) {
       <div className="flex-1 max-w-md ml-auto hidden md:block">
         <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
           <Search size={15} className="text-gray-400 flex-shrink-0" />
-          <input placeholder="Search courses, sessions..."
+          <input
+            value={searchValue}
+            onChange={(e) => onSearch?.(e.target.value)}
+            placeholder={searchPlaceholder}
             className="flex-1 text-sm bg-transparent outline-none text-gray-600 placeholder-gray-400" />
         </div>
       </div>
@@ -73,22 +99,33 @@ export default function StudentTopBar({ onToggleSidebar }) {
           <div className="absolute right-0 top-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg w-72 z-30">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-gray-800">Notifications</h3>
-              <button className="text-xs text-[#2563EB] font-semibold">Mark all read</button>
+              <button
+                className="text-xs text-[#2563EB] font-semibold"
+                onClick={async () => {
+                  setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))
+                  await notificationsAPI.markAllRead()
+                }}
+              >
+                Mark all read
+              </button>
             </div>
             <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto">
-              {notifications.map((n, i) => (
-                <div key={i} className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${n.unread ? 'bg-blue-50/40' : ''}`}>
-                  <div className="flex gap-2">
-                    {n.unread && <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full mt-1.5 flex-shrink-0" />}
-                    {!n.unread && <div className="w-1.5 flex-shrink-0" />}
-                    <div>
-                      <p className="text-xs font-semibold text-gray-800">{n.title}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">{n.desc}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">{n.time}</p>
+              {notifications.length === 0 ? (
+                <div className="px-4 py-6 text-center text-xs text-gray-500">No new notifications.</div>
+              ) : (
+                notifications.map((n, i) => (
+                  <div key={n.id || i} className={`px-4 py-3 hover:bg-gray-50 cursor-pointer ${n.read ? '' : 'bg-blue-50/40'}`}>
+                    <div className="flex gap-2">
+                      {!n.read ? <div className="w-1.5 h-1.5 bg-[#2563EB] rounded-full mt-1.5 flex-shrink-0" /> : <div className="w-1.5 flex-shrink-0" />}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-800">{n.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{n.message || n.desc || ''}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">{new Date(n.created_at || n.time || '').toLocaleString()}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
             <div className="px-4 py-2.5 border-t border-gray-100 text-center">
               <button className="text-xs text-[#2563EB] font-semibold">View all notifications</button>
@@ -111,15 +148,15 @@ export default function StudentTopBar({ onToggleSidebar }) {
               <p className="text-xs text-green-600 font-medium mt-0.5">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Student'}</p>
             </div>
             <div className="py-1">
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => navigate(`/${user?.role || 'student'}/settings`)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                 <User size={13} className="text-gray-400" /> My Profile
               </button>
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+              <button onClick={() => navigate(`/${user?.role || 'student'}/settings`)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
                 <Settings size={13} className="text-gray-400" /> Settings
               </button>
             </div>
             <div className="border-t border-gray-100 py-1">
-              <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50">
+              <button onClick={() => { logout(); navigate('/login') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium text-red-500 hover:bg-red-50">
                 <LogOut size={13} /> Sign Out
               </button>
             </div>
@@ -132,7 +169,10 @@ export default function StudentTopBar({ onToggleSidebar }) {
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-100 px-4 py-3 md:hidden z-20">
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
             <Search size={15} className="text-gray-400 flex-shrink-0" />
-            <input autoFocus placeholder="Search courses, sessions..."
+            <input autoFocus
+              value={searchValue}
+              onChange={(e) => onSearch?.(e.target.value)}
+              placeholder={searchPlaceholder}
               className="flex-1 text-sm bg-transparent outline-none text-gray-600 placeholder-gray-400" />
           </div>
         </div>

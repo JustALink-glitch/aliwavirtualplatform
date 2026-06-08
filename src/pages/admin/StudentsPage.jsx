@@ -162,11 +162,11 @@ export default function StudentsPage() {
     id: s.id,
     name: `${s.first_name || ''} ${s.last_name || ''}`.trim() || 'No Name',
     email: s.email,
-    phone: s.phone_number || 'N/A',
+    phone: s.phone_number || s.phone || 'N/A',
     gender: s.gender || 'N/A',
     status: (s.status || 'pending').toLowerCase(),
     color: cardColors[idx % cardColors.length],
-    course: 'General Curriculum',
+    course: s.course || 'General Curriculum',
     joined: s.created_at ? new Date(s.created_at).toLocaleDateString() : 'N/A'
   }))
 
@@ -188,7 +188,7 @@ export default function StudentsPage() {
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
       <Sidebar collapsed={collapsed} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
 
         <div className="flex-1 overflow-y-auto p-6">
           {/* Header */}

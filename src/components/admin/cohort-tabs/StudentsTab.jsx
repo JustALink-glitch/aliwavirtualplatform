@@ -150,7 +150,7 @@ export default function StudentsTab({ cohortId }) {
     gender: s.gender || 'N/A',
     status: (s.status || 'pending').toLowerCase(),
     color: cardColors[idx % cardColors.length],
-    course: 'General Curriculum',
+    course: s.course || 'General Curriculum',
     joined: s.created_at ? new Date(s.created_at).toLocaleDateString() : 'N/A',
     attendance: 87, // Mock metrics for UI
     assignments: 'N/A'

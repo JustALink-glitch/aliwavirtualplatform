@@ -224,11 +224,11 @@ export default function TrainersPage() {
     id: t.id,
     name: `${t.first_name || ''} ${t.last_name || ''}`.trim() || 'No Name',
     email: t.email,
-    phone: t.phone_number || 'N/A',
+    phone: t.phone || t.phone_number || 'N/A',
     gender: t.gender || 'N/A',
     status: (t.status || 'pending').toLowerCase(),
     color: cardColors[idx % cardColors.length],
-    course: 'General Curriculum',
+    course: t.course || 'General Curriculum',
   }))
 
   const sorted = [...mappedTrainers].sort((a, b) => {
@@ -249,7 +249,7 @@ export default function TrainersPage() {
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
       <Sidebar collapsed={collapsed} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
 
         <div className="flex-1 overflow-y-auto p-6">
           {/* Header */}

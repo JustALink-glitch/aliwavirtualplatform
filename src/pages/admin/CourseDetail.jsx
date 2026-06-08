@@ -249,7 +249,7 @@ export default function CourseDetail() {
       <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
         <Sidebar collapsed={collapsed} activePath="/admin/courses" />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
           <div className="flex-1 flex items-center justify-center">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#2563EB]"></div>
           </div>
@@ -263,7 +263,7 @@ export default function CourseDetail() {
       <div className="flex h-screen bg-[#F8F9FC] font-[Manrope] overflow-hidden">
         <Sidebar collapsed={collapsed} activePath="/admin/courses" />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+          <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
           <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
             <HelpCircle size={48} className="text-gray-300 mb-2" />
             <p className="text-sm font-bold text-gray-700">Course Not Found</p>
@@ -278,7 +278,7 @@ export default function CourseDetail() {
     <div className="flex h-screen bg-[#F8F9FC] font-[Manrope,sans-serif] overflow-hidden">
       <Sidebar collapsed={collapsed} activePath="/admin/courses" />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} />
+        <TopBar onToggleSidebar={() => setCollapsed(!collapsed)} showCohortSelector={false} />
 
         <div className="flex-1 overflow-y-auto">
           {/* Breadcrumb + actions */}
