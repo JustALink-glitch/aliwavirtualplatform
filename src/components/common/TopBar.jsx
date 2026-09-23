@@ -42,19 +42,24 @@ export default function TopBar({
   const unreadCount = notifications.filter(n => !n.read).length
 
   const loadNotifications = async () => {
-    try {
-      const result = await notificationsAPI.list()
-      const items = result.notifications || result || []
-      setNotifications(items.filter(item => item.type !== 'otp'))
-    } catch (error) {
-      console.error('Failed to load notifications:', error)
-    }
+  try {
+    const result = await notificationsAPI.list()
+    const items = result.notifications || result || []
+    const filtered = items.filter(item => item.type !== 'otp')
+
+    setNotifications(prev => {
+      if (JSON.stringify(prev) === JSON.stringify(filtered)) return prev
+      return filtered
+    })
+  } catch (error) {
+    console.error('Failed to load notifications:', error)
   }
+}
 
   useEffect(() => {
     let intervalId
     loadNotifications()
-    intervalId = setInterval(loadNotifications, 5000)
+    intervalId = setInterval(loadNotifications, 30000)
 
     const refreshListener = () => loadNotifications()
     window.addEventListener('notifications:refresh', refreshListener)
