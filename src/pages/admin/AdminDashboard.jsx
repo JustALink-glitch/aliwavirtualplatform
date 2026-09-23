@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Sidebar from '../../components/common/Sidebar'
 import TopBar from '../../components/common/TopBar'
 import StatCards from '../../components/admin/StatCards'
@@ -16,10 +16,11 @@ export default function AdminDashboard() {
   const [attendance, setAttendance] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const isFirstLoad = useRef(true)
 
   const fetchData = async () => {
     try {
-      setLoading(true)
+      if (isFirstLoad.current) setLoading(true)
       const [coursesRes, studentsRes, trainersRes, sessionsRes, attendanceRes] = await Promise.all([
         coursesAPI.list().catch(() => ({ courses: [] })),
         studentsAPI.list().catch(() => ({ users: [] })),
@@ -36,8 +37,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error fetching dashboard statistics:', err)
     } finally {
-      setLoading(false)
-    }
+  isFirstLoad.current = false
+  setLoading(false)
+}
   }
 
   useEffect(() => {
