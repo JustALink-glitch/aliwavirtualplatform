@@ -4,7 +4,7 @@ import { OnboardingHeader, OnboardingLayout } from '@/components/onboarding/Onbo
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
-import { Prompt } from '@/components/ui/TextLink'
+import { Prompt, TextLink } from '@/components/ui/TextLink'
 import { useAuth } from '@/auth/useAuth'
 import { homePath } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
@@ -13,8 +13,8 @@ import { supabase } from '@/lib/supabase'
 export function SignInPage() {
   const { state } = useAuth()
   const location = useLocation()
-  const routeState = location.state as { from?: string; confirmEmail?: string } | null
-  const [email, setEmail] = useState(routeState?.confirmEmail ?? '')
+  const routeState = location.state as { from?: string; confirmEmail?: string; email?: string } | null
+  const [email, setEmail] = useState(routeState?.confirmEmail ?? routeState?.email ?? '')
   const [password, setPassword] = useState('')
   const [failed, setFailed] = useState<'credentials' | 'unconfirmed' | 'network' | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -94,7 +94,9 @@ export function SignInPage() {
             onChange={(e) => setPassword(e.target.value)}
             error={failed === 'credentials' ? 'Email or password is incorrect.' : null}
           />
-          {/* Forgot password (S1) is the next flow to build. */}
+          <TextLink to="/forgot-password" state={{ email: email.trim() }} className="self-start">
+            Forgot password?
+          </TextLink>
         </div>
         <Button type="submit" fullWidth disabled={submitting || !email || !password}>
           {submitting ? 'Signing in…' : 'Sign in'}

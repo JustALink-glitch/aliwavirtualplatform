@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
-import { InfoCircleIcon } from './icons'
+import { InfoCircleIcon, InfoTriangleIcon } from './icons'
 
 const tones = {
   info: { box: 'border-info bg-info-bg', title: 'text-info-fg' },
@@ -20,12 +20,14 @@ export function AlertBanner({
   children?: ReactNode
 }) {
   const style = tones[tone]
+  // Errors and warnings use the triangle (S1.04x); info and success use the circle.
+  const Icon = tone === 'error' || tone === 'warning' ? InfoTriangleIcon : InfoCircleIcon
   return (
     <div
       role={tone === 'error' ? 'alert' : 'status'}
       className={clsx('flex w-full items-start gap-3 rounded-md border py-3 pr-3 pl-4', style.box)}
     >
-      <InfoCircleIcon size={18} className={clsx('shrink-0', style.title)} />
+      <Icon size={18} className={clsx('shrink-0', style.title)} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-body">
         <p className={clsx('text-body-strong', style.title)}>{title}</p>
         {children && <div className="text-primary">{children}</div>}

@@ -87,7 +87,10 @@ export function SignUpPage() {
             placeholder="Your full name"
             autoFocus
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              setFullName(e.target.value)
+              setErrors((prev) => ({ ...prev, fullName: undefined }))
+            }}
             error={errors.fullName}
           />
           <TextField
@@ -99,6 +102,7 @@ export function SignUpPage() {
             onChange={(e) => {
               setEmail(e.target.value)
               setEmailInUse(false)
+              setErrors((prev) => ({ ...prev, email: undefined }))
             }}
             helper="We’ll use this to sign you in."
             error={errors.email ?? (emailInUse ? 'An account with this email already exists.' : null)}
@@ -114,7 +118,10 @@ export function SignUpPage() {
             autoComplete="new-password"
             placeholder="Create a password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setErrors((prev) => ({ ...prev, password: undefined }))
+            }}
             helper="Use at least 10 characters."
             error={errors.password}
           />

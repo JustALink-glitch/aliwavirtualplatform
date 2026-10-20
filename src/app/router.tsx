@@ -4,8 +4,10 @@ import { AppShell } from '@/components/shell/AppShell'
 import { StatePanel } from '@/components/StatePanel'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
+import { ForgotPasswordPage } from '@/pages/onboarding/ForgotPasswordPage'
 import { InvitationPage } from '@/pages/onboarding/InvitationPage'
 import { OrganisationPage } from '@/pages/onboarding/OrganisationPage'
+import { ResetPasswordPage } from '@/pages/onboarding/ResetPasswordPage'
 import { SignUpPage } from '@/pages/onboarding/SignUpPage'
 import { WorkspaceReadyPage } from '@/pages/onboarding/WorkspaceReadyPage'
 import { SignInPage } from '@/pages/SignInPage'
@@ -33,6 +35,9 @@ export const routes: RouteObject[] = [
   { path: '/signup', element: <SignUpPage /> },
   { path: '/signup/organisation', element: <OrganisationPage /> },
   { path: '/signup/ready', element: <WorkspaceReadyPage /> },
+  // Account recovery, all roles (S1)
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
+  { path: '/reset-password', element: <ResetPasswordPage /> },
   // Staff and participant invitations (T1 / P1)
   { path: '/invite/:token', element: <InvitationPage /> },
   areaRoutes('admin'),

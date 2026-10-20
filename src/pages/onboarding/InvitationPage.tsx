@@ -127,7 +127,10 @@ function SetPassword({ token, invitation }: { token: string; invitation: Invitat
             label="Full name"
             autoComplete="name"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              setFullName(e.target.value)
+              setErrors((prev) => ({ ...prev, fullName: undefined }))
+            }}
             helper="As your admin entered it. You can change it."
             error={errors.fullName}
           />
@@ -137,7 +140,10 @@ function SetPassword({ token, invitation }: { token: string; invitation: Invitat
             autoComplete="new-password"
             autoFocus
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setErrors((prev) => ({ ...prev, password: undefined }))
+            }}
             helper="At least 10 characters."
             error={errors.password}
           />
@@ -146,7 +152,10 @@ function SetPassword({ token, invitation }: { token: string; invitation: Invitat
             type="password"
             autoComplete="new-password"
             value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
+            onChange={(e) => {
+              setConfirm(e.target.value)
+              setErrors((prev) => ({ ...prev, confirm: undefined }))
+            }}
             error={errors.confirm}
           />
         </div>
