@@ -1,0 +1,248 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter';
+
+/* Dark theme is opt-in via <html data-theme="dark">. V1 screens are designed in light mode (§12). */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+/*
+ * Synqop design tokens — Development Reference V1 §09, one-to-one with Figma variables.
+ * Semantic CSS variables switch per theme; Tailwind utilities read them via @theme inline,
+ * e.g. bg-canvas, bg-surface, text-primary, border-default, bg-status-success-bg.
+ */
+:root {
+  --bg-canvas: #f8fafc;
+  --surface-default: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f8fafc;
+  --surface-hover: #eff2f6;
+  --surface-selected: #e9effd;
+  --surface-skeleton: #eff2f6;
+
+  --brand-primary: #2563eb;
+  --brand-primary-hover: #225ad6;
+  --brand-subtle: #e9effd;
+  --brand-accent: #41c7fd;
+
+  --text-primary: #151b24;
+  --text-secondary: #5c6777;
+  --text-muted: #76808d;
+  --text-disabled: #a1a8b1;
+  --text-brand: #225ad6;
+  --text-on-brand: #ffffff;
+
+  --icon-default: #5c6777;
+  --icon-strong: #151b24;
+  --icon-muted: #a1a8b1;
+  --icon-brand: #2563eb;
+
+  --border-default: #e7ecf1;
+  --border-strong: #cbd5e1;
+  --border-brand: #9bb7f6;
+  --focus-ring: #2563eb;
+  --action-destructive: #dc2626;
+
+  --success-bg: #e8f6ed;
+  --success-fg: #107435;
+  --success-solid: #16a34a;
+  --warning-bg: #fbf1e6;
+  --warning-fg: #9a5404;
+  --warning-solid: #d97706;
+  --error-bg: #fce9e9;
+  --error-fg: #9c1b1b;
+  --error-solid: #dc2626;
+  --info-bg: #e6f3f9;
+  --info-fg: #015e8d;
+  --info-solid: #0284c7;
+  --neutral-bg: #eff2f6;
+  --neutral-fg: #334155;
+  --neutral-solid: #76808d;
+
+  --chart-present: #2563eb;
+  --chart-excused: #9bb7f6;
+  --chart-absent: #e19238;
+  --chart-track: #e7ecf1;
+  --chart-grid: #e7ecf1;
+  --overlay-scrim: rgb(21 27 36 / 0.48);
+
+  /* Layout: desktop values; tablet and mobile below. */
+  --page-gutter: 32px;
+  --panel-padding: 20px;
+  --sidebar-width: 248px;
+  --topbar-height: 64px;
+  --control-height: 36px;
+  --rail-width: 356px;
+
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg-canvas: #0e131a;
+  --surface-default: #151b24;
+  --surface-raised: #1c242f;
+  --surface-subtle: #1c242f;
+  --surface-hover: #242e3c;
+  --surface-selected: #102a63;
+  --surface-skeleton: #242e3c;
+  --brand-primary-hover: #5182ef;
+  --brand-subtle: #102a63;
+  --text-primary: #eff2f6;
+  --text-secondary: #a1a8b1;
+  --text-disabled: #2e3b4d;
+  --text-brand: #6d96f2;
+  --icon-default: #a1a8b1;
+  --icon-strong: #eff2f6;
+  --icon-muted: #5c6777;
+  --icon-brand: #6d96f2;
+  --border-default: #242e3c;
+  --border-strong: #2e3b4d;
+  --border-brand: #1a46a7;
+  --focus-ring: #5182ef;
+  --action-destructive: #c82323;
+  --success-bg: #09441f;
+  --success-fg: #63c186;
+  --success-solid: #45b56e;
+  --warning-bg: #5b3203;
+  --warning-fg: #e6a458;
+  --warning-solid: #e19238;
+  --error-bg: #5c1010;
+  --error-fg: #e86e6e;
+  --error-solid: #e35151;
+  --info-bg: #013754;
+  --info-fg: #55add9;
+  --info-solid: #359dd2;
+  --neutral-bg: #242e3c;
+  --neutral-fg: #cbd5e1;
+  --chart-present: #5182ef;
+  --chart-excused: #1a46a7;
+  --chart-track: #242e3c;
+  --chart-grid: #242e3c;
+  --overlay-scrim: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@media (max-width: 1279px) {
+  :root {
+    --page-gutter: 24px;
+    --sidebar-width: 72px;
+    --control-height: 40px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --page-gutter: 16px;
+    --panel-padding: 16px;
+    --sidebar-width: 0px;
+    --topbar-height: 56px;
+    --control-height: 44px;
+    --rail-width: 0px;
+  }
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-canvas: var(--bg-canvas);
+  --color-surface: var(--surface-default);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-selected: var(--surface-selected);
+  --color-skeleton: var(--surface-skeleton);
+
+  --color-brand: var(--brand-primary);
+  --color-brand-hover: var(--brand-primary-hover);
+  --color-brand-subtle: var(--brand-subtle);
+  --color-brand-accent: var(--brand-accent);
+
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-muted: var(--text-muted);
+  --color-disabled: var(--text-disabled);
+  --color-brand-text: var(--text-brand);
+  --color-on-brand: var(--text-on-brand);
+
+  --color-icon: var(--icon-default);
+  --color-icon-strong: var(--icon-strong);
+  --color-icon-muted: var(--icon-muted);
+  --color-icon-brand: var(--icon-brand);
+
+  --color-default: var(--border-default);
+  --color-strong: var(--border-strong);
+  --color-brand-border: var(--border-brand);
+  --color-focus: var(--focus-ring);
+  --color-destructive: var(--action-destructive);
+
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-success: var(--success-solid);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning: var(--warning-solid);
+  --color-error-bg: var(--error-bg);
+  --color-error-fg: var(--error-fg);
+  --color-error: var(--error-solid);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-info: var(--info-solid);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-fg: var(--neutral-fg);
+  --color-neutral: var(--neutral-solid);
+
+  --color-chart-present: var(--chart-present);
+  --color-chart-excused: var(--chart-excused);
+  --color-chart-absent: var(--chart-absent);
+  --color-chart-track: var(--chart-track);
+  --color-chart-grid: var(--chart-grid);
+  --color-scrim: var(--overlay-scrim);
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --spacing-gutter: var(--page-gutter);
+  --spacing-panel: var(--panel-padding);
+  --spacing-sidebar: var(--sidebar-width);
+  --spacing-topbar: var(--topbar-height);
+  --spacing-control: var(--control-height);
+  --spacing-rail: var(--rail-width);
+
+  --shadow-raised: 0 1px 2px rgb(21 27 36 / 0.06), 0 1px 3px rgb(21 27 36 / 0.04);
+  --shadow-overlay: 0 8px 24px rgb(21 27 36 / 0.12), 0 2px 6px rgb(21 27 36 / 0.06);
+  --shadow-dialog: 0 24px 48px rgb(21 27 36 / 0.18), 0 4px 12px rgb(21 27 36 / 0.08);
+}
+
+/* Typography styles (§09). Names match Figma text styles. */
+@utility text-display { font-size: 40px; line-height: 48px; font-weight: 600; }
+@utility text-page-title { font-size: 26px; line-height: 32px; font-weight: 600; @media (max-width: 767px) { font-size: 22px; line-height: 28px; } }
+@utility text-heading-group { font-size: 20px; line-height: 28px; font-weight: 600; }
+@utility text-heading-section { font-size: 15px; line-height: 20px; font-weight: 600; }
+@utility text-body { font-size: 13px; line-height: 18px; font-weight: 400; }
+@utility text-body-strong { font-size: 13px; line-height: 18px; font-weight: 500; }
+@utility text-body-emphasis { font-size: 13px; line-height: 18px; font-weight: 600; }
+@utility text-body-large { font-size: 14px; line-height: 20px; font-weight: 400; }
+@utility text-label-button { font-size: 13px; line-height: 18px; font-weight: 600; }
+@utility text-label-nav { font-size: 14px; line-height: 20px; font-weight: 500; }
+@utility text-caption { font-size: 12px; line-height: 16px; font-weight: 400; }
+@utility text-caption-strong { font-size: 12px; line-height: 16px; font-weight: 500; }
+@utility text-metric-large { font-size: 26px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
+@utility text-metric-small { font-size: 20px; line-height: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+@utility text-chart-label { font-size: 11px; line-height: 14px; font-weight: 500; }
+
+@layer base {
+  html {
+    background: var(--bg-canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    @apply text-body;
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
