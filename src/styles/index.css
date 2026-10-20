@@ -209,6 +209,8 @@
   --spacing-control: var(--control-height);
   --spacing-rail: var(--rail-width);
 
+  /* Focus/Ring effect (§09): 2px surface gap, then 4px focus colour. */
+  --shadow-focus: 0 0 0 2px var(--surface-default), 0 0 0 4px var(--focus-ring);
   --shadow-raised: 0 1px 2px rgb(21 27 36 / 0.06), 0 1px 3px rgb(21 27 36 / 0.04);
   --shadow-overlay: 0 8px 24px rgb(21 27 36 / 0.12), 0 2px 6px rgb(21 27 36 / 0.06);
   --shadow-dialog: 0 24px 48px rgb(21 27 36 / 0.18), 0 4px 12px rgb(21 27 36 / 0.08);
@@ -216,8 +218,8 @@
 
 /* Typography styles (§09). Names match Figma text styles. */
 @utility text-display { font-size: 40px; line-height: 48px; font-weight: 600; }
-@utility text-page-title { font-size: 26px; line-height: 32px; font-weight: 600; @media (max-width: 767px) { font-size: 22px; line-height: 28px; } }
-@utility text-heading-group { font-size: 20px; line-height: 28px; font-weight: 600; }
+@utility text-page-title { font-size: 26px; line-height: 32px; font-weight: 600; letter-spacing: -0.5px; @media (max-width: 767px) { font-size: 22px; line-height: 28px; } }
+@utility text-heading-group { font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.3px; }
 @utility text-heading-section { font-size: 15px; line-height: 20px; font-weight: 600; }
 @utility text-body { font-size: 13px; line-height: 18px; font-weight: 400; }
 @utility text-body-strong { font-size: 13px; line-height: 18px; font-weight: 500; }

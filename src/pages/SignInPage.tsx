@@ -1,73 +1,107 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
+import { OnboardingHeader, OnboardingLayout } from '@/components/onboarding/OnboardingLayout'
+import { AlertBanner } from '@/components/ui/AlertBanner'
+import { Button } from '@/components/ui/Button'
+import { TextField } from '@/components/ui/TextField'
+import { Prompt } from '@/components/ui/TextLink'
 import { useAuth } from '@/auth/useAuth'
 import { homePath } from '@/lib/roles'
 import { supabase } from '@/lib/supabase'
 
-/** Minimal sign-in so the shell can be exercised. The designed screen replaces this. */
+/** R1.02 Sign in (+ x incorrect email or password). One sign-in for every role. */
 export function SignInPage() {
   const { state } = useAuth()
   const location = useLocation()
-  const [email, setEmail] = useState('')
+  const routeState = location.state as { from?: string; confirmEmail?: string } | null
+  const [email, setEmail] = useState(routeState?.confirmEmail ?? '')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [failed, setFailed] = useState<'credentials' | 'unconfirmed' | 'network' | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   if (state.status === 'signed-in') {
-    const from = (location.state as { from?: string } | null)?.from
-    return <Navigate to={from ?? homePath(state.me.membership.role)} replace />
+    return <Navigate to={routeState?.from ?? homePath(state.me.membership.role)} replace />
+  }
+  if (state.status === 'no-access' && state.reason === 'no_organisation') {
+    // R1.03a — resumed after sign-in.
+    return <Navigate to="/signup/organisation" replace />
   }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitting(true)
-    setError(null)
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    setFailed(null)
+    const { error } = await supabase.auth
+      .signInWithPassword({ email: email.trim().toLowerCase(), password })
+      .catch(() => ({ error: { code: 'network' } }))
     setSubmitting(false)
-    if (signInError) setError('Email or password is incorrect.')
+    if (error) {
+      setFailed(error.code === 'email_not_confirmed' ? 'unconfirmed' : error.code === 'network' ? 'network' : 'credentials')
+    }
   }
 
+  const ended = state.status === 'no-access' && state.reason === 'access_ended'
+
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-sm rounded-lg border border-default bg-surface p-6 shadow-raised">
-        <h1 className="text-heading-group text-primary">Sign in to Synqop</h1>
-        <label className="mt-5 block text-caption-strong text-secondary" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mt-1 h-control w-full rounded-md border border-strong bg-surface px-3 text-body-large text-primary"
-        />
-        <label className="mt-4 block text-caption-strong text-secondary" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mt-1 h-control w-full rounded-md border border-strong bg-surface px-3 text-body-large text-primary"
-        />
-        {error && (
-          <p role="alert" className="mt-3 text-caption text-error-fg">
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={submitting}
-          className="mt-5 h-control w-full rounded-md bg-brand text-label-button text-on-brand hover:bg-brand-hover disabled:opacity-60"
-        >
+    <OnboardingLayout
+      panelTitle="Welcome back"
+      panelBody="Sign in to continue. If you didn’t finish setting up, we’ll take you to where you left off."
+      footer="Owners and admins manage plans and billing from Settings after setup."
+    >
+      <OnboardingHeader title="Sign in to Synqop" />
+
+      {routeState?.confirmEmail && !failed && (
+        <AlertBanner title="Confirm your email">
+          We sent a link to {routeState.confirmEmail}. Open it to confirm your account, then sign in.
+        </AlertBanner>
+      )}
+      {failed === 'unconfirmed' && (
+        <AlertBanner tone="warning" title="Confirm your email first">
+          Open the link we sent to {email.trim()} to confirm your account, then sign in.
+        </AlertBanner>
+      )}
+      {failed === 'network' && (
+        <AlertBanner tone="error" title="Couldn’t reach Synqop">
+          Check your connection and try again.
+        </AlertBanner>
+      )}
+      {ended && (
+        <AlertBanner tone="error" title="Your access has ended">
+          Your organisation has ended your access. Contact your administrator if you think this is a mistake.
+        </AlertBanner>
+      )}
+
+      <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
+          <TextField
+            label="Work email"
+            type="email"
+            autoComplete="email"
+            placeholder="name@organisation.org"
+            autoFocus
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            invalid={failed === 'credentials'}
+          />
+          <TextField
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="Enter your password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={failed === 'credentials' ? 'Email or password is incorrect.' : null}
+          />
+          {/* Forgot password (S1) is the next flow to build. */}
+        </div>
+        <Button type="submit" fullWidth disabled={submitting || !email || !password}>
           {submitting ? 'Signing in…' : 'Sign in'}
-        </button>
+        </Button>
       </form>
-    </main>
+
+      <Prompt text="New to Synqop?" to="/signup" label="Create an account" />
+    </OnboardingLayout>
   )
 }

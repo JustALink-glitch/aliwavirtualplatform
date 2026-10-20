@@ -5,18 +5,27 @@ import type { Role } from '@/lib/roles'
 export interface Me {
   user: { id: string; email: string | null }
   membership: { id: string; organisationId: string; role: Role }
+  organisation: { id: string; name: string; timeZone: string } | null
 }
+
+/** Why a signed-in account can't use the app (API error codes from /v1/me). */
+export type NoAccessReason = 'no_organisation' | 'access_ended' | 'unknown'
 
 export type AuthState =
   | { status: 'loading' }
   | { status: 'signed-out' }
-  /** Signed in to Supabase, but the API found no active membership (deactivated, or invite not accepted). */
-  | { status: 'no-access'; error: Error }
+  /**
+   * Signed in to Supabase, but no active membership: `no_organisation` → resume organisation set-up (R1.03a);
+   * `access_ended` → deactivated (P1.04w).
+   */
+  | { status: 'no-access'; reason: NoAccessReason; session: Session }
   | { status: 'signed-in'; session: Session; me: Me }
 
 export interface AuthContextValue {
   state: AuthState
   signOut: () => Promise<void>
+  /** Re-fetch /v1/me, e.g. right after creating an organisation or accepting an invitation. */
+  refresh: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null)

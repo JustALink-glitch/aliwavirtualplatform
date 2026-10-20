@@ -1,9 +1,9 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { api } from '@/lib/api'
+import { api, ApiError } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
-import { AuthContext, type AuthContextValue, type AuthState, type Me } from './useAuth'
+import { AuthContext, type AuthContextValue, type AuthState, type Me, type NoAccessReason } from './useAuth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -11,9 +11,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next)
-      if (!next) queryClient.clear()
+      // Only on a real sign-out. INITIAL_SESSION also arrives with no session for signed-out
+      // visitors, and clearing then would wipe queries already in flight (e.g. an invitation lookup).
+      if (event === 'SIGNED_OUT') queryClient.clear()
     })
     return () => data.subscription.unsubscribe()
   }, [queryClient])
@@ -30,7 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let state: AuthState
     if (session === undefined) state = { status: 'loading' }
     else if (session === null) state = { status: 'signed-out' }
-    else if (me.isError) state = { status: 'no-access', error: me.error }
+    else if (me.isError) {
+      const code = me.error instanceof ApiError ? me.error.code : ''
+      const reason: NoAccessReason = code === 'no_organisation' || code === 'access_ended' ? code : 'unknown'
+      state = { status: 'no-access', reason, session }
+    }
     else if (!me.data) state = { status: 'loading' }
     else state = { status: 'signed-in', session, me: me.data }
 
@@ -39,8 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: async () => {
         await supabase.auth.signOut()
       },
+      refresh: async () => {
+        await queryClient.invalidateQueries({ queryKey: ['me'] })
+      },
     }
-  }, [session, me.data, me.isError, me.error])
+  }, [session, me.data, me.isError, me.error, queryClient])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

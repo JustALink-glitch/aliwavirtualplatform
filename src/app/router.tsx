@@ -4,6 +4,10 @@ import { AppShell } from '@/components/shell/AppShell'
 import { StatePanel } from '@/components/StatePanel'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
+import { InvitationPage } from '@/pages/onboarding/InvitationPage'
+import { OrganisationPage } from '@/pages/onboarding/OrganisationPage'
+import { SignUpPage } from '@/pages/onboarding/SignUpPage'
+import { WorkspaceReadyPage } from '@/pages/onboarding/WorkspaceReadyPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { navigation } from './navigation'
 
@@ -25,6 +29,12 @@ function areaRoutes(area: Area): RouteObject {
 export const routes: RouteObject[] = [
   { path: '/', element: <Navigate to="/sign-in" replace /> },
   { path: '/sign-in', element: <SignInPage /> },
+  // Admin sign-up (R1)
+  { path: '/signup', element: <SignUpPage /> },
+  { path: '/signup/organisation', element: <OrganisationPage /> },
+  { path: '/signup/ready', element: <WorkspaceReadyPage /> },
+  // Staff and participant invitations (T1 / P1)
+  { path: '/invite/:token', element: <InvitationPage /> },
   areaRoutes('admin'),
   areaRoutes('trainer'),
   areaRoutes('participant'),

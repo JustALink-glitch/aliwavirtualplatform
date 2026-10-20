@@ -18,12 +18,20 @@ export function RequireArea({ area, children }: { area: Area; children: ReactNod
   if (state.status === 'signed-out') {
     return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
   }
+  if (state.status === 'no-access' && state.reason === 'no_organisation') {
+    // Signed up but never finished set-up: resume at the organisation step (R1.03a).
+    return <Navigate to="/signup/organisation" replace />
+  }
   if (state.status === 'no-access') {
     return (
       <StatePanel
         kind="restricted"
-        title="No access to an organisation"
-        description="This account isn't active in any Synqop organisation. If you were invited, use the link in your invitation email, or ask your administrator."
+        title={state.reason === 'access_ended' ? 'Your access has ended' : 'No access to an organisation'}
+        description={
+          state.reason === 'access_ended'
+            ? 'Your organisation has ended your access to Synqop. Contact your administrator if you think this is a mistake.'
+            : "This account isn't active in any Synqop organisation. If you were invited, use the link in your invitation email."
+        }
         action={{ label: 'Sign out', onClick: signOut }}
       />
     )
