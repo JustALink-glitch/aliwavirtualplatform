@@ -46,7 +46,7 @@ export function PageHeader({
         </div>
         {description && <p className="text-body text-secondary max-md:text-body-large">{description}</p>}
       </div>
-      {actions && <div className="flex shrink-0 gap-2 max-md:[&>*]:h-11 max-md:[&>*]:flex-1">{actions}</div>}
+      {actions && <div className="flex shrink-0 gap-2 max-md:flex-wrap max-md:[&>*]:h-11 max-md:[&>*]:flex-1 max-md:[&>*]:basis-[40%]">{actions}</div>}
     </header>
   )
 }

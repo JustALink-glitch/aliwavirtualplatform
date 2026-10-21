@@ -5,6 +5,8 @@ import { StatePanel } from '@/components/StatePanel'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ParticipantsPage } from '@/pages/admin/people/ParticipantsPage'
+import { ImportParticipantsPage } from '@/pages/admin/participants/ImportParticipantsPage'
+import { ParticipantDetailPage } from '@/pages/admin/participants/ParticipantDetailPage'
 import { CohortCourses, CohortLayout, CohortOverview, CohortParticipants, CohortSessions, CohortTrainers } from '@/pages/admin/programmes/CohortDetailPage'
 import { EditCohortPage, NewCohortPage } from '@/pages/admin/programmes/CohortFormPage'
 import { CohortsPage } from '@/pages/admin/programmes/CohortsPage'
@@ -30,6 +32,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'trainers', element: <TrainersPage /> },
     { path: 'trainers/:id', element: <TrainerDetailPage /> },
     { path: 'participants', element: <ParticipantsPage /> },
+    { path: 'participants/import', element: <ImportParticipantsPage /> },
+    { path: 'participants/:id', element: <ParticipantDetailPage /> },
     { path: 'programmes', element: <ProgrammesPage /> },
     { path: 'programmes/new', element: <NewProgrammePage /> },
     { path: 'programmes/:id', element: <ProgrammeDetailPage /> },

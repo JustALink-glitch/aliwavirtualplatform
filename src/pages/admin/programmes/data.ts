@@ -123,6 +123,7 @@ export function useCohorts() {
 
 export function useCohort(id: string) {
   return useQuery({
+    enabled: Boolean(id),
     queryKey: keys.cohort(id),
     queryFn: ({ signal }) =>
       api<{ cohort: CohortSummary; courses: CohortCourse[]; programmeCourses: { id: string; name: string }[] }>(`/v1/cohorts/${id}`, { signal }),

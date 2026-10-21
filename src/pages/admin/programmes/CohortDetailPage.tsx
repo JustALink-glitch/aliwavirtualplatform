@@ -16,6 +16,7 @@ import { CohortStatusBadge } from './badges'
 import { ArchiveCohortDialog } from './CohortFormPage'
 import { useCohort, useRestoreCohort, type CohortCourse, type CohortSummary } from './data'
 import { deliveryLabel } from './labels'
+import { CohortParticipantsList } from '@/pages/admin/participants/CohortParticipantsList'
 
 interface CohortContext {
   cohort: CohortSummary
@@ -99,6 +100,9 @@ export function CohortLayout() {
               <Button variant={cohort.status === 'completed' ? 'primary' : 'secondary'} onClick={() => navigate(`/admin/cohorts/${cohort.id}/edit`)}>
                 Edit cohort
               </Button>
+              {cohort.status !== 'completed' && (
+                <Button onClick={() => navigate(`/admin/participants/import?cohort=${cohort.id}`)}>Import participants</Button>
+              )}
             </>
           )
         }
@@ -223,18 +227,10 @@ export function CohortOverview() {
   )
 }
 
-/** A3.03 Participants tab — empty until participants are added. */
+/** A3.03 Participants tab. */
 export function CohortParticipants() {
   const { cohort } = useOutletContext<CohortContext>()
-  return (
-    <Panel className="py-12">
-      <EmptyState
-        icon={<UserGroupIcon size={24} />}
-        title="No participants in this cohort yet"
-        body={`People you add to ${cohort.name} get an email invitation to set a password, then see its courses and sessions.`}
-      />
-    </Panel>
-  )
+  return <CohortParticipantsList cohort={cohort} />
 }
 
 /** A3.04 Sessions tab — empty until sessions are scheduled. */

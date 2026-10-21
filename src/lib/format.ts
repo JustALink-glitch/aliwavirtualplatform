@@ -85,3 +85,14 @@ export function formatDayWithYear(value: string | Date, timeZone?: string): stri
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
   return `${get('weekday')} ${get('day')} ${get('month')} ${get('year')}`
 }
+
+/** "Today", "Yesterday", or "Mon 12 Oct" — for "Last active". */
+export function relativeDay(value: string | Date, timeZone?: string): string {
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
+  const today = todayIn(timeZone)
+  const yesterday = new Date(`${today}T12:00:00Z`)
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1)
+  if (day === today) return 'Today'
+  if (day === yesterday.toISOString().slice(0, 10)) return 'Yesterday'
+  return formatDay(value, timeZone)
+}
