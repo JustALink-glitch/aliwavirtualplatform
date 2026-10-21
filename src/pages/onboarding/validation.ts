@@ -2,10 +2,11 @@
 
 export const MIN_PASSWORD_LENGTH = 10
 
-export function validateFullName(value: string): string | undefined {
+/** `whose` = "your" on sign-up and invitations; "their" when an admin enters someone else. */
+export function validateFullName(value: string, whose: 'your' | 'their' = 'your'): string | undefined {
   const name = value.trim().replace(/\s+/g, ' ')
-  if (!name) return 'Enter your full name.'
-  if (!name.includes(' ')) return 'Enter your first and last name.'
+  if (!name) return `Enter ${whose} full name.`
+  if (!name.includes(' ')) return `Enter ${whose} first and last name.`
   return undefined
 }
 

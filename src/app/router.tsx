@@ -4,6 +4,9 @@ import { AppShell } from '@/components/shell/AppShell'
 import { StatePanel } from '@/components/StatePanel'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
+import { ParticipantsPage } from '@/pages/admin/people/ParticipantsPage'
+import { TrainerDetailPage } from '@/pages/admin/people/TrainerDetailPage'
+import { TrainersPage } from '@/pages/admin/people/TrainersPage'
 import { ForgotPasswordPage } from '@/pages/onboarding/ForgotPasswordPage'
 import { InvitationPage } from '@/pages/onboarding/InvitationPage'
 import { OrganisationPage } from '@/pages/onboarding/OrganisationPage'
@@ -13,7 +16,17 @@ import { WorkspaceReadyPage } from '@/pages/onboarding/WorkspaceReadyPage'
 import { SignInPage } from '@/pages/SignInPage'
 import { navigation } from './navigation'
 
+/** Screens that are built; everything else in the sidebar shows a placeholder. */
+const built: Partial<Record<Area, RouteObject[]>> = {
+  admin: [
+    { path: 'trainers', element: <TrainersPage /> },
+    { path: 'trainers/:id', element: <TrainerDetailPage /> },
+    { path: 'participants', element: <ParticipantsPage /> },
+  ],
+}
+
 function areaRoutes(area: Area): RouteObject {
+  const ready = built[area] ?? []
   return {
     path: `/${area}`,
     element: (
@@ -21,10 +34,15 @@ function areaRoutes(area: Area): RouteObject {
         <AppShell area={area} />
       </RequireArea>
     ),
-    children: navigation[area].map((item) => ({
-      ...(item.path ? { path: item.path } : { index: true }),
-      element: <PlaceholderPage title={item.label} screen={item.screen} />,
-    })),
+    children: [
+      ...ready,
+      ...navigation[area]
+        .filter((item) => !ready.some((route) => route.path === item.path))
+        .map((item) => ({
+          ...(item.path ? { path: item.path } : { index: true }),
+          element: <PlaceholderPage title={item.label} screen={item.screen} />,
+        })),
+    ],
   }
 }
 

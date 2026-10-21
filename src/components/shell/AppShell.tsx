@@ -1,73 +1,369 @@
 import clsx from 'clsx'
-import { LogOut } from 'lucide-react'
-import { NavLink, Outlet } from 'react-router'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import logo from '@/assets/synqop-logo.svg'
 import { navFor, type NavItem } from '@/app/navigation'
-import { useAuth } from '@/auth/useAuth'
+import { useAuth, type Me } from '@/auth/useAuth'
+import { Avatar } from '@/components/ui/Avatar'
+import {
+  BellIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  MenuIcon,
+  SearchIcon,
+  SettingsIcon,
+  SignOutIcon,
+  UserIcon,
+} from '@/components/ui/icons'
+import { initials, roleLabel, shortName } from '@/lib/people'
 import type { Area } from '@/lib/roles'
 
+const WORKSPACE_LABEL: Record<Area, string> = {
+  admin: 'Programme team',
+  trainer: 'Trainer workspace',
+  participant: 'Participant',
+}
+
 /**
- * App shell (§09 Navigation): sidebar + top bar. Desktop layout only for now;
- * the tablet icon rail and mobile drawer (G1.05) come with the shell build-out.
+ * App shell (G1): sidebar + top bar.
+ * ≥1280 full sidebar · 768–1279 icon rail · <768 mobile top bar with a navigation drawer (G1.05).
  */
 export function AppShell({ area }: { area: Area }) {
-  const { state, signOut } = useAuth()
-  if (state.status !== 'signed-in') return null
+  const { state } = useAuth()
+  const location = useLocation()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [drawerPath, setDrawerPath] = useState(location.pathname)
 
-  const items = navFor(area, state.me.membership.role)
-  const main = items.filter((item) => !item.bottom)
-  const bottom = items.filter((item) => item.bottom)
+  // Close the drawer when a link in it navigates.
+  if (drawerOpen && drawerPath !== location.pathname) {
+    setDrawerPath(location.pathname)
+    setDrawerOpen(false)
+  }
+
+  if (state.status !== 'signed-in') return null
+  const { me } = state
+  const items = navFor(area, me.membership.role)
 
   return (
     <div className="flex min-h-dvh bg-canvas">
-      <aside className="flex w-sidebar shrink-0 flex-col border-r border-default bg-surface max-md:hidden">
-        <div className="flex h-topbar items-center px-5 text-heading-section">Synqop</div>
-        <nav aria-label="Main" className="flex flex-1 flex-col gap-0.5 px-3">
-          {main.map((item) => (
-            <SidebarLink key={item.path} area={area} item={item} />
-          ))}
-          <div className="mt-auto pb-3">
-            {bottom.map((item) => (
-              <SidebarLink key={item.path} area={area} item={item} />
-            ))}
-          </div>
-        </nav>
+      <aside className="sticky top-0 flex h-dvh w-sidebar shrink-0 flex-col gap-5 border-r border-default bg-surface px-4 pt-5 pb-4 max-md:hidden max-xl:items-center max-xl:px-3">
+        <Link to={`/${area}`} className="rounded-md px-2 py-1 max-xl:hidden" aria-label="Synqop home">
+          <img src={logo} alt="Synqop" width={110} height={33} />
+        </Link>
+        <OrganisationLabel me={me} area={area} />
+        <SidebarNav area={area} items={items} />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-topbar items-center justify-end gap-3 border-b border-default bg-surface px-gutter">
-          <span className="text-body text-secondary">{state.me.user.email}</span>
-          <button
-            type="button"
-            onClick={signOut}
-            className="inline-flex h-9 items-center gap-1.5 rounded-md px-2.5 text-label-button text-secondary hover:bg-surface-hover"
-          >
-            <LogOut aria-hidden className="size-4" />
-            Sign out
-          </button>
-        </header>
-        <main className="flex-1 px-gutter py-6">
+        <TopBar me={me} area={area} />
+        <MobileTopBar me={me} area={area} onMenu={() => {
+          setDrawerPath(location.pathname)
+          setDrawerOpen(true)
+        }} />
+        <main className="flex flex-1 flex-col gap-4 px-gutter pt-5 pb-12 max-md:pb-6">
           <Outlet />
         </main>
       </div>
+
+      {drawerOpen && <NavigationDrawer me={me} area={area} items={items} onClose={() => setDrawerOpen(false)} />}
     </div>
   )
 }
 
-function SidebarLink({ area, item }: { area: Area; item: NavItem }) {
+function OrganisationLabel({ me, area, compact }: { me: Me; area: Area; compact?: boolean }) {
+  const name = me.organisation?.name ?? ''
+  return (
+    <div className={clsx('flex h-[52px] items-center gap-3 rounded-md px-2', !compact && 'max-xl:px-0')} title={name}>
+      <span
+        aria-hidden="true"
+        className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand text-caption-strong text-on-brand"
+      >
+        {initials(name)}
+      </span>
+      <span className={clsx('flex min-w-0 flex-col', !compact && 'max-xl:sr-only')}>
+        <span className="truncate text-body-emphasis text-primary">{name}</span>
+        <span className="truncate text-caption text-secondary">{WORKSPACE_LABEL[area]}</span>
+      </span>
+    </div>
+  )
+}
+
+function SidebarNav({ area, items, inDrawer }: { area: Area; items: NavItem[]; inDrawer?: boolean }) {
+  const main = items.filter((item) => !item.bottom)
+  const bottom = items.filter((item) => item.bottom)
+  return (
+    <nav aria-label="Main" className={clsx('flex flex-1 flex-col', !inDrawer && 'max-xl:w-full')}>
+      <ul className="flex flex-col gap-0.5">
+        {main.map((item) => (
+          <li key={item.path}>
+            <SidebarLink area={area} item={item} inDrawer={inDrawer} />
+          </li>
+        ))}
+      </ul>
+      <ul className="mt-auto flex flex-col gap-0.5 border-t border-default pt-3">
+        {bottom.map((item) => (
+          <li key={item.path}>
+            <SidebarLink area={area} item={item} inDrawer={inDrawer} />
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+function SidebarLink({ area, item, inDrawer }: { area: Area; item: NavItem; inDrawer?: boolean }) {
   const Icon = item.icon
   return (
     <NavLink
       to={item.path ? `/${area}/${item.path}` : `/${area}`}
       end={!item.path}
+      title={inDrawer ? undefined : item.label}
       className={({ isActive }) =>
         clsx(
-          'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-label-nav',
+          'flex items-center gap-3 rounded-md px-3 text-label-nav tracking-[-0.1px] transition-colors',
+          'focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none',
+          inDrawer ? 'h-11' : 'h-10 max-xl:justify-center max-xl:px-0',
           isActive ? 'bg-surface-selected text-brand-text' : 'text-secondary hover:bg-surface-hover hover:text-primary',
         )
       }
     >
-      <Icon aria-hidden className="size-5" />
-      <span className="max-lg:sr-only">{item.label}</span>
+      <Icon size={20} className="shrink-0" />
+      <span className={clsx('truncate', !inDrawer && 'max-xl:sr-only')}>{item.label}</span>
     </NavLink>
+  )
+}
+
+function TopBar({ me, area }: { me: Me; area: Area }) {
+  return (
+    <header className="sticky top-0 z-20 flex h-topbar items-center gap-3 border-b border-default bg-surface px-gutter max-md:hidden">
+      <GlobalSearch area={area} />
+      <div className="flex-1" />
+      <NotificationsButton />
+      <span aria-hidden="true" className="h-6 w-px bg-default" />
+      <AccountMenu me={me} area={area} />
+    </header>
+  )
+}
+
+/**
+ * Global search (G1.02). Results arrive with cohorts and participants;
+ * until then the field is shown but says so rather than pretending to search.
+ */
+function GlobalSearch({ area }: { area: Area }) {
+  const ref = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        ref.current?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const placeholder =
+    area === 'admin' ? 'Search participants, cohorts, courses or trainers' : 'Search your cohorts and courses'
+  return (
+    <label className="flex h-9 w-[400px] min-w-0 items-center gap-2 rounded-md border border-default bg-surface-subtle pr-2 pl-3 focus-within:shadow-[var(--shadow-focus)] max-xl:w-[320px]">
+      <SearchIcon size={16} className="shrink-0 text-icon" />
+      <input
+        ref={ref}
+        type="search"
+        aria-label="Search"
+        aria-describedby="global-search-note"
+        placeholder={placeholder}
+        className="min-w-0 flex-1 bg-transparent text-body text-primary outline-none placeholder:text-muted"
+      />
+      <span id="global-search-note" className="sr-only">
+        Search becomes available once you have cohorts and participants.
+      </span>
+      <kbd className="rounded-sm border border-default bg-surface px-1.5 py-0.5 font-sans text-[11px] leading-[14px] font-medium text-secondary">
+        ⌘K
+      </kbd>
+    </label>
+  )
+}
+
+function NotificationsButton({ size = 36 }: { size?: 36 | 44 }) {
+  return (
+    <button
+      type="button"
+      aria-label="Notifications"
+      className={clsx(
+        'inline-flex shrink-0 items-center justify-center rounded-md text-icon hover:bg-surface-hover',
+        'focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none',
+        size === 36 ? 'size-9 border border-default' : 'size-11',
+      )}
+    >
+      <BellIcon size={size === 36 ? 18 : 22} />
+    </button>
+  )
+}
+
+/** Account menu (G1.03). */
+function AccountMenu({ me, area }: { me: Me; area: Area }) {
+  const { signOut } = useAuth()
+  const [open, setOpen] = useState(false)
+  const wrapper = useRef<HTMLDivElement>(null)
+  const name = shortName(me.membership.firstName, me.membership.lastName)
+  const role = roleLabel[me.membership.role]
+
+  useEffect(() => {
+    if (!open) return
+    function onPointer(event: PointerEvent) {
+      if (!wrapper.current?.contains(event.target as Node)) setOpen(false)
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', onPointer)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('pointerdown', onPointer)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={wrapper} className="relative">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex items-center gap-3 rounded-md py-0.5 pr-1 pl-0.5 hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+      >
+        <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+        <span className="flex flex-col items-start text-left">
+          <span className="text-body-strong text-primary">{name}</span>
+          <span className="text-caption text-secondary">{role}</span>
+        </span>
+        <ChevronDownIcon size={16} className="text-icon" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label="Account"
+          className="absolute top-[calc(100%+8px)] right-0 z-30 w-[260px] rounded-lg border border-default bg-surface py-2 shadow-[var(--shadow-overlay)]"
+        >
+          <div className="flex flex-col gap-0.5 border-b border-default px-4 py-3">
+            <span className="text-body-strong text-primary">{name}</span>
+            <span className="text-caption break-words text-secondary">
+              {me.user.email} · {role}
+            </span>
+          </div>
+          <MenuLink to={`/${area}/settings`} icon={<UserIcon size={16} />} onSelect={() => setOpen(false)}>
+            Profile &amp; password
+          </MenuLink>
+          <MenuLink to={`/${area}/settings`} icon={<SettingsIcon size={16} />} onSelect={() => setOpen(false)}>
+            Settings
+          </MenuLink>
+          <div className="border-t border-default">
+            <button type="button" role="menuitem" onClick={signOut} className={menuItemClass}>
+              <SignOutIcon size={16} className="text-icon" />
+              Sign out
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const menuItemClass =
+  'flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-body text-primary hover:bg-surface-hover focus-visible:bg-surface-hover focus-visible:outline-none'
+
+function MenuLink({ to, icon, onSelect, children }: { to: string; icon: ReactNode; onSelect: () => void; children: ReactNode }) {
+  return (
+    <Link to={to} role="menuitem" onClick={onSelect} className={menuItemClass}>
+      <span className="text-icon">{icon}</span>
+      {children}
+    </Link>
+  )
+}
+
+function MobileTopBar({ me, area, onMenu }: { me: Me; area: Area; onMenu: () => void }) {
+  return (
+    <header className="sticky top-0 z-20 flex h-topbar items-center gap-1 border-b border-default bg-surface pr-2 pl-1 md:hidden">
+      <button
+        type="button"
+        aria-label="Open navigation"
+        onClick={onMenu}
+        className="inline-flex size-11 items-center justify-center rounded-md text-icon hover:bg-surface-hover"
+      >
+        <MenuIcon size={22} />
+      </button>
+      <Link to={`/${area}`} aria-label="Synqop home">
+        <img src={logo} alt="Synqop" width={100} height={30} />
+      </Link>
+      <div className="flex-1" />
+      <NotificationsButton size={44} />
+      <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+    </header>
+  )
+}
+
+/** G1.05 Navigation menu (mobile). */
+function NavigationDrawer({ me, area, items, onClose }: { me: Me; area: Area; items: NavItem[]; onClose: () => void }) {
+  const { signOut } = useAuth()
+  const panel = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    panel.current?.focus()
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    const overflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = overflow
+    }
+  }, [onClose])
+
+  return (
+    <div className="fixed inset-0 z-40 md:hidden">
+      <div className="absolute inset-0 bg-scrim" onClick={onClose} aria-hidden="true" />
+      <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        tabIndex={-1}
+        className="relative flex h-full w-[320px] max-w-[85vw] flex-col gap-4 bg-surface px-4 pt-3 pb-4 outline-none"
+      >
+        <div className="flex items-center justify-between">
+          <img src={logo} alt="Synqop" width={100} height={30} />
+          <button
+            type="button"
+            aria-label="Close navigation"
+            onClick={onClose}
+            className="inline-flex size-11 items-center justify-center rounded-md text-icon hover:bg-surface-hover"
+          >
+            <CloseIcon size={22} />
+          </button>
+        </div>
+        <OrganisationLabel me={me} area={area} compact />
+        <SidebarNav area={area} items={items} inDrawer />
+        <div className="flex items-center gap-3 border-t border-default pt-3">
+          <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="truncate text-body-strong text-primary">
+              {shortName(me.membership.firstName, me.membership.lastName)}
+            </span>
+            <span className="truncate text-caption text-secondary">{me.user.email}</span>
+          </span>
+          <button
+            type="button"
+            onClick={signOut}
+            aria-label="Sign out"
+            className="inline-flex size-11 items-center justify-center rounded-md text-icon hover:bg-surface-hover"
+          >
+            <SignOutIcon size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

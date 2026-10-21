@@ -4,7 +4,7 @@ import type { Role } from '@/lib/roles'
 
 export interface Me {
   user: { id: string; email: string | null }
-  membership: { id: string; organisationId: string; role: Role }
+  membership: { id: string; organisationId: string; role: Role; firstName: string; lastName: string }
   organisation: { id: string; name: string; timeZone: string } | null
 }
 
