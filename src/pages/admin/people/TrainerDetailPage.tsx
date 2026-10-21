@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@/auth/useAuth'
 import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { BookOpenIcon, MailIcon, PlusIcon } from '@/components/ui/icons'
+import { DetailList } from '@/components/ui/FormLayout'
 import { EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatTime } from '@/lib/format'
@@ -152,20 +153,35 @@ function TrainerDetail({ member, history }: { member: MemberDetail; history: His
           title="Teaching"
           description={invited ? `Courses ${member.firstName} will lead or assist once signed in.` : `Courses ${member.firstName} leads or assists.`}
         />
-        <EmptyState
-          icon={<BookOpenIcon size={24} />}
-          title="Not assigned to a course yet"
-          body={
-            invited
-              ? `You can assign ${member.firstName} once your programme has courses. They’ll see a course after they sign in for the first time.`
-              : `Assign ${member.firstName} once your programme has courses.`
-          }
-          actions={
-            <Button icon={<PlusIcon size={16} />} disabled title="Add a programme and its courses first">
-              Assign to course
-            </Button>
-          }
-        />
+        {member.teaching.courses.length > 0 ? (
+          <DetailList
+            items={[
+              { label: 'Courses', value: member.teaching.courses.map((c) => c.name).join(', ') },
+              {
+                label: 'Cohorts',
+                value: member.teaching.cohorts.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && ', '}
+                    <Link to={`/admin/cohorts/${c.id}`} className="hover:underline">
+                      {c.name}
+                    </Link>
+                  </span>
+                )),
+              },
+            ]}
+          />
+        ) : (
+          <EmptyState
+            icon={<BookOpenIcon size={24} />}
+            title="Not assigned to a course yet"
+            body={`Choose ${member.firstName} as a course’s lead trainer when you add it to a programme.${invited ? ' They’ll see the course after they sign in for the first time.' : ''}`}
+            actions={
+              <Button icon={<PlusIcon size={16} />} onClick={() => navigate('/admin/courses/new')}>
+                Add course
+              </Button>
+            }
+          />
+        )}
       </Panel>
 
       {history.length > 0 && (

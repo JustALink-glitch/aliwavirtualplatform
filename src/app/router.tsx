@@ -5,6 +5,14 @@ import { StatePanel } from '@/components/StatePanel'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ParticipantsPage } from '@/pages/admin/people/ParticipantsPage'
+import { CohortCourses, CohortLayout, CohortOverview, CohortParticipants, CohortSessions, CohortTrainers } from '@/pages/admin/programmes/CohortDetailPage'
+import { EditCohortPage, NewCohortPage } from '@/pages/admin/programmes/CohortFormPage'
+import { CohortsPage } from '@/pages/admin/programmes/CohortsPage'
+import { CoursesPage } from '@/pages/admin/programmes/CoursesPage'
+import { NewCoursePage } from '@/pages/admin/programmes/NewCoursePage'
+import { ProgrammeDetailPage } from '@/pages/admin/programmes/ProgrammeDetailPage'
+import { EditProgrammePage, NewProgrammePage } from '@/pages/admin/programmes/ProgrammeFormPage'
+import { ProgrammesPage } from '@/pages/admin/programmes/ProgrammesPage'
 import { TrainerDetailPage } from '@/pages/admin/people/TrainerDetailPage'
 import { TrainersPage } from '@/pages/admin/people/TrainersPage'
 import { ForgotPasswordPage } from '@/pages/onboarding/ForgotPasswordPage'
@@ -22,6 +30,26 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'trainers', element: <TrainersPage /> },
     { path: 'trainers/:id', element: <TrainerDetailPage /> },
     { path: 'participants', element: <ParticipantsPage /> },
+    { path: 'programmes', element: <ProgrammesPage /> },
+    { path: 'programmes/new', element: <NewProgrammePage /> },
+    { path: 'programmes/:id', element: <ProgrammeDetailPage /> },
+    { path: 'programmes/:id/edit', element: <EditProgrammePage /> },
+    { path: 'courses', element: <CoursesPage /> },
+    { path: 'courses/new', element: <NewCoursePage /> },
+    { path: 'cohorts', element: <CohortsPage /> },
+    { path: 'cohorts/new', element: <NewCohortPage /> },
+    { path: 'cohorts/:id/edit', element: <EditCohortPage /> },
+    {
+      path: 'cohorts/:id',
+      element: <CohortLayout />,
+      children: [
+        { index: true, element: <CohortOverview /> },
+        { path: 'participants', element: <CohortParticipants /> },
+        { path: 'sessions', element: <CohortSessions /> },
+        { path: 'courses', element: <CohortCourses /> },
+        { path: 'trainers', element: <CohortTrainers /> },
+      ],
+    },
   ],
 }
 

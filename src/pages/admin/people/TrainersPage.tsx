@@ -212,8 +212,12 @@ function TrainerTable({ rows }: { rows: Member[] }) {
                 </div>
               </div>
             </td>
-            <td className="text-body text-muted">No cohorts yet</td>
-            <td className="text-body text-muted max-xl:hidden">—</td>
+            <td>
+              <TeachingCell items={member.teaching.cohorts} one="cohort" empty="No cohorts yet" />
+            </td>
+            <td className="max-xl:hidden">
+              <TeachingCell items={member.teaching.courses} one="course" empty="—" />
+            </td>
             <td className="text-right text-body text-muted tabular-nums max-lg:hidden">—</td>
             <td>
               <StatusBadge member={member} />
@@ -235,7 +239,9 @@ function TrainerList({ rows }: { rows: Member[] }) {
             <Avatar size={32} initials={initials(member.firstName, member.lastName)} seed={member.id} />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-body-strong text-primary">{fullNameOf(member)}</span>
-              <span className="truncate text-caption text-secondary">No cohorts yet</span>
+              <span className="truncate text-caption text-secondary">
+                {member.teaching.cohorts.length ? member.teaching.cohorts.map((c) => c.name).join(' · ') : 'No cohorts yet'}
+              </span>
             </span>
             <StatusBadge member={member} />
             <ChevronRightIcon size={16} className="shrink-0 text-icon-muted" />
@@ -243,5 +249,18 @@ function TrainerList({ rows }: { rows: Member[] }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+/** "2 cohorts" over "Cohort 5 · Fellowship 2" (B2.01). */
+function TeachingCell({ items, one, empty }: { items: { id: string; name: string }[]; one: string; empty: string }) {
+  if (items.length === 0) return <span className="text-body text-muted">{empty}</span>
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="truncate text-body-strong text-primary">
+        {items.length} {items.length === 1 ? one : `${one}s`}
+      </span>
+      <span className="truncate text-caption text-secondary">{items.map((i) => i.name).join(' · ')}</span>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react'
+import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { ChevronDownIcon, InfoCircleIcon } from './icons'
 
 interface FieldChrome {
@@ -108,6 +108,34 @@ export function SelectField({
         </select>
         <ChevronDownIcon size={16} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-icon" />
       </div>
+    </Chrome>
+  )
+}
+
+/** Multi-line text field (Description fields on A1.03, A2.03): 96px tall. */
+export function TextAreaField({
+  label,
+  optional,
+  helper,
+  error,
+  id: idProp,
+  disabled,
+  className,
+  ...textarea
+}: FieldChrome & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const generated = useId()
+  const id = idProp ?? generated
+  return (
+    <Chrome id={id} label={label} optional={optional} helper={helper} error={error} disabled={disabled}>
+      <textarea
+        id={id}
+        disabled={disabled}
+        rows={4}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error || helper ? `${id}-help` : undefined}
+        className={clsx(controlClass(Boolean(error), disabled), 'h-24 resize-y py-2.5', className)}
+        {...textarea}
+      />
     </Chrome>
   )
 }

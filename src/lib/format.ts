@@ -51,3 +51,37 @@ export function browserTimeZone(): string {
     return 'Africa/Lagos'
   }
 }
+
+/** A calendar date "2026-10-05" as "Mon 5 Oct" (or "Mon 5 Oct 2026"). Dates have no time zone. */
+export function formatDate(isoDate: string, options: { year?: boolean } = {}): string {
+  const date = new Date(`${isoDate}T00:00:00Z`)
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(options.year && { year: 'numeric' }),
+    timeZone: 'UTC',
+  }).formatToParts(date)
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('weekday')} ${get('day')} ${get('month')}${options.year ? ` ${get('year')}` : ''}`
+}
+
+/** "Mon 5 Oct – Fri 18 Dec 2026" (the year once when both dates share it). */
+export function formatDateRange(start: string, end: string): string {
+  const sameYear = start.slice(0, 4) === end.slice(0, 4)
+  return `${formatDate(start, { year: !sameYear })} – ${formatDate(end, { year: true })}`
+}
+
+/** Today in a time zone, as "2026-10-21". */
+export function todayIn(timeZone?: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+}
+
+export const plural = (count: number, one: string, many = `${one}s`) => `${count} ${count === 1 ? one : many}`
+
+/** A moment as "Mon 6 Apr 2026" in a time zone. */
+export function formatDayWithYear(value: string | Date, timeZone?: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone }).formatToParts(new Date(value))
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
+  return `${get('weekday')} ${get('day')} ${get('month')} ${get('year')}`
+}

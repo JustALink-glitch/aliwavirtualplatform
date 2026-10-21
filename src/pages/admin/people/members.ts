@@ -15,6 +15,8 @@ export interface Member {
   joinedAt: string | null
   /** The live invitation link's expiry, if one exists. */
   invitationExpiresAt: string | null
+  /** Live cohorts and courses this person teaches (trainers). */
+  teaching: { cohorts: { id: string; name: string }[]; courses: { id: string; name: string }[] }
 }
 
 export interface MemberDetail extends Member {
