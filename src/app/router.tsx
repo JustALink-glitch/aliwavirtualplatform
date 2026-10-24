@@ -8,7 +8,11 @@ import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
 import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
 import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
+import { DashboardPage } from '@/pages/participant/DashboardPage'
 import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
+import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
+import { MySessionPage, MySessionsPage } from '@/pages/participant/MySessionsPage'
+import { SettingsPage } from '@/pages/participant/SettingsPage'
 import { MyAssignmentPage } from '@/pages/participant/MyAssignmentPage'
 import { MyAssignmentsPage } from '@/pages/participant/MyAssignmentsPage'
 import type { Area } from '@/lib/roles'
@@ -88,6 +92,12 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
   ],
   participant: [
+    { index: true, element: <DashboardPage /> },
+    { path: 'courses', element: <MyCoursesPage /> },
+    { path: 'courses/:id', element: <CoursePage /> },
+    { path: 'sessions', element: <MySessionsPage /> },
+    { path: 'sessions/:id', element: <MySessionPage /> },
+    { path: 'settings', element: <SettingsPage /> },
     { path: 'assignments', element: <MyAssignmentsPage /> },
     { path: 'assignments/:id', element: <MyAssignmentPage /> },
     { path: 'grades', element: <GradesPage /> },
@@ -107,7 +117,7 @@ function areaRoutes(area: Area): RouteObject {
     children: [
       ...ready,
       ...navigation[area]
-        .filter((item) => !ready.some((route) => route.path === item.path))
+        .filter((item) => !ready.some((route) => route.path === item.path || (item.path === '' && route.index)))
         .map((item) => ({
           ...(item.path ? { path: item.path } : { index: true }),
           element: <PlaceholderPage title={item.label} screen={item.screen} />,

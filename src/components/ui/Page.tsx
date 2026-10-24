@@ -9,9 +9,12 @@ export function PageHeader({
   badge,
   description,
   breadcrumb,
+  eyebrow,
   actions,
 }: {
   title: string
+  /** A small line above the title, e.g. today's date on P2.01. */
+  eyebrow?: ReactNode
   badge?: ReactNode
   description?: ReactNode
   breadcrumb?: { label: string; to?: string }[]
@@ -40,6 +43,7 @@ export function PageHeader({
             </ol>
           </nav>
         )}
+        {eyebrow && <p className="text-body text-secondary">{eyebrow}</p>}
         <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <h1 className="text-page-title break-words text-primary">{title}</h1>
           {badge}
