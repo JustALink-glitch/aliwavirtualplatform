@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import logo from '@/assets/synqop-logo.svg'
 import { navFor, type NavItem } from '@/app/navigation'
+import { useAttentionCount } from '@/pages/admin/attention/data'
 import { useAuth, type Me } from '@/auth/useAuth'
 import { Avatar } from '@/components/ui/Avatar'
 import {
@@ -129,7 +130,19 @@ function SidebarLink({ area, item, inDrawer }: { area: Area; item: NavItem; inDr
     >
       <Icon size={20} className="shrink-0" />
       <span className={clsx('truncate', !inDrawer && 'max-xl:sr-only')}>{item.label}</span>
+      {area === 'admin' && item.path === 'needs-attention' && <AttentionCount hidden={!inDrawer} />}
     </NavLink>
+  )
+}
+
+/** Open Needs attention flags, next to the sidebar item (G1). */
+function AttentionCount({ hidden }: { hidden: boolean }) {
+  const { data } = useAttentionCount(true)
+  if (!data?.count) return null
+  return (
+    <span className={clsx('ml-auto rounded-full bg-warning-bg px-2 text-caption-strong text-warning-fg tabular-nums', hidden && 'max-xl:hidden')} aria-label={`${data.count} need attention`}>
+      {data.count}
+    </span>
   )
 }
 

@@ -8,6 +8,7 @@ import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
 import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
 import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
+import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
 import { DashboardPage } from '@/pages/participant/DashboardPage'
 import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
@@ -49,6 +50,8 @@ import { navigation } from './navigation'
 /** Screens that are built; everything else in the sidebar shows a placeholder. */
 const built: Partial<Record<Area, RouteObject[]>> = {
   admin: [
+    { path: 'needs-attention', element: <NeedsAttentionPage /> },
+    { path: 'needs-attention/interventions', element: <InterventionsPage /> },
     { path: 'trainers', element: <TrainersPage /> },
     { path: 'trainers/:id', element: <TrainerDetailPage /> },
     { path: 'participants', element: <ParticipantsPage /> },

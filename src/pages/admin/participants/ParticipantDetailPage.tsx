@@ -11,10 +11,12 @@ import { Badge, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { ApiError } from '@/lib/api'
 import { formatDate, formatDay, formatDayWithYear, formatTime, relativeDay } from '@/lib/format'
 import { enrolmentLabel, linkExpired, useParticipant, useResendParticipantInvitation, type Enrolment, type HistoryEntry, type ParticipantDetail } from './data'
+import { FlagStatusPanel, InterventionsPanel, RecordInterventionDialog, ResolveFlagDialog, WhyFlaggedPanel } from '@/pages/admin/attention/AttentionPanels'
+import { useParticipantAttention } from '@/pages/admin/attention/data'
 import { ParticipantBadge } from './ParticipantBadge'
 import { DeferDialog, EditParticipantDialog, TransferDialog, WithdrawDialog } from './ParticipantDialogs'
 
-type Open = 'edit' | 'defer' | 'withdraw' | 'transfer' | null
+type Open = 'edit' | 'defer' | 'withdraw' | 'transfer' | 'intervention' | 'resolve' | null
 type Notice = { tone: 'success' | 'warning' | 'error'; title: string; body?: string }
 
 /** /admin/participants/:id — B1.04 Participant detail, B1.04i invitation expired. */
@@ -49,6 +51,8 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
   const current = enrolments.find((e) => e.status === 'active')
   const shown = current ?? enrolments[0]
   const invited = person.status === 'invited'
+  const attention = useParticipantAttention(person.id, enrolments.length > 0)
+  const flags = attention.data?.flags ?? []
   const expired = invited && linkExpired(person.invitationExpiresAt)
 
   async function onResend() {
@@ -75,7 +79,12 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
       <PageHeader
         breadcrumb={[{ label: 'Participants', to: '/admin/participants' }, { label: name }]}
         title={name}
-        badge={<ParticipantBadge memberStatus={person.status} invitationExpiresAt={person.invitationExpiresAt} enrolmentStatus={shown?.status} />}
+        badge={
+          <>
+            <ParticipantBadge memberStatus={person.status} invitationExpiresAt={person.invitationExpiresAt} enrolmentStatus={shown?.status} />
+            {flags.length > 0 && <Badge tone="warning">Needs attention</Badge>}
+          </>
+        }
         description={['Participant', shown?.cohort.name, shown?.programme.name].filter(Boolean).join(' · ')}
         actions={
           <>
@@ -100,6 +109,11 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
                   { label: 'Withdraw', onSelect: () => setOpen('withdraw'), destructive: true },
                 ]}
               />
+            )}
+            {attention.data && (
+              <Button variant={flags.length && !invited ? 'primary' : 'secondary'} onClick={() => setOpen('intervention')}>
+                Record intervention
+              </Button>
             )}
             {invited && (
               <Button icon={<MailIcon size={16} />} onClick={onResend} disabled={resend.isPending}>
@@ -129,6 +143,7 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
 
       <div className="flex items-start gap-4 max-lg:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
+          {attention.data && flags.length > 0 && <WhyFlaggedPanel firstName={person.firstName} data={attention.data} />}
           <Panel aria-labelledby="enrolments-title">
             <PanelHeader id="enrolments-title" title="Cohorts" description="Where they’re enrolled, and any changes." />
             {enrolments.length === 0 ? (
@@ -191,9 +206,26 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
               ]}
             />
           </Panel>
+          {attention.data && (flags.length > 0 || attention.data.interventions.length > 0) && (
+            <InterventionsPanel data={attention.data} onRecord={() => setOpen('intervention')} />
+          )}
+          {attention.data && flags.length > 0 && <FlagStatusPanel data={attention.data} onResolve={() => setOpen('resolve')} />}
         </div>
       </div>
 
+      {open === 'intervention' && attention.data && (
+        <RecordInterventionDialog
+          memberId={person.id}
+          name={name}
+          cohortName={attention.data.cohort.name}
+          timeZone={timeZone}
+          onClose={() => setOpen(null)}
+          onSaved={() => done('Intervention recorded')}
+        />
+      )}
+      {open === 'resolve' && attention.data && (
+        <ResolveFlagDialog memberId={person.id} firstName={person.firstName} data={attention.data} onClose={() => setOpen(null)} onDone={() => done(`${person.firstName}’s flag was resolved`)} />
+      )}
       {open === 'edit' && <EditParticipantDialog open onClose={() => setOpen(null)} person={person} current={current} onSaved={done} />}
       {open === 'defer' && current && <DeferDialog open onClose={() => setOpen(null)} person={person} enrolment={current} timeZone={timeZone} onDone={done} />}
       {open === 'withdraw' && current && <WithdrawDialog open onClose={() => setOpen(null)} person={person} enrolment={current} timeZone={timeZone} onDone={done} />}
