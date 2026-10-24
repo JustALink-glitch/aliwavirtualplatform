@@ -97,10 +97,12 @@ export function FlagStatusPanel({ data, onResolve }: { data: ParticipantAttentio
           { label: 'Resolution', value: <span className="font-normal">Clears automatically when the rules stop matching, or an admin resolves it with a note.</span> },
         ]}
       />
-      {data.canResolve && (
+      {data.canResolve ? (
         <Button variant="secondary" icon={<CheckCircleIcon size={16} />} onClick={onResolve}>
           Resolve flag
         </Button>
+      ) : (
+        <p className="text-caption text-secondary">Only admins resolve flags. Record what you did and they’ll review it.</p>
       )}
     </Panel>
   )

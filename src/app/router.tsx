@@ -10,6 +10,7 @@ import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
 import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
+import { MyParticipantsPage, TrainerParticipantPage } from '@/pages/trainer/MyParticipantsPage'
 import { DashboardPage } from '@/pages/participant/DashboardPage'
 import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
@@ -96,6 +97,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'grading/:id/edit', element: <AssignmentFormPage mode="edit" /> },
     { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
     { path: 'sessions/:id/feedback', element: <SessionFeedbackPage area="trainer" /> },
+    { path: 'participants', element: <MyParticipantsPage /> },
+    { path: 'participants/:id', element: <TrainerParticipantPage /> },
   ],
   participant: [
     { index: true, element: <DashboardPage /> },
