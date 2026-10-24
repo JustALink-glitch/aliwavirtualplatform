@@ -11,20 +11,23 @@ import { SelectField, TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
 import { formatDate, plural, todayIn, weekdayList } from '@/lib/format'
 import { MAX_SESSIONS_PER_SCHEDULE, occurrences, weekdayOf, type Weekday } from '@/lib/schedule'
-import { useCohort, useCohorts } from '@/pages/admin/programmes/data'
-import { useScheduleSessions, type SessionMode } from './data'
+import { useScheduleSessions, useSessionOptions, type SessionMode } from './data'
+import { useSessionPaths } from './paths'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-type Errors = Partial<Record<'cohortId' | 'courseId' | 'trainerMemberId' | 'date' | 'start' | 'end' | 'repeat' | 'count' | 'until' | 'location' | 'joinUrl', string>>
+type Errors = Partial<
+  Record<'cohortId' | 'courseId' | 'trainerMemberId' | 'date' | 'start' | 'end' | 'repeat' | 'count' | 'until' | 'location' | 'joinUrl', string>
+>
 
-/** /admin/courses/sessions/new?cohort=&course= — C1.02 Schedule session. */
+/** /admin/courses/sessions/new?cohort=&course= — C1.02; /trainer/sessions/new — T3.03 Schedule session. */
 export function ScheduleSessionPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
   const { state } = useAuth()
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
   const today = todayIn(timeZone)
-  const cohorts = useCohorts()
+  const paths = useSessionPaths()
+  const options = useSessionOptions()
   const schedule = useScheduleSessions()
 
   const [cohortId, setCohortId] = useState(params.get('cohort') ?? '')
@@ -44,10 +47,9 @@ export function ScheduleSessionPage() {
   const [errors, setErrors] = useState<Errors>({})
   const [failed, setFailed] = useState<string | null>(null)
 
-  const cohort = useCohort(cohortId)
-  const open = (cohorts.data ?? []).filter((c) => ['active', 'upcoming', 'draft'].includes(c.status))
-  const selectedCohort = cohort.data?.cohort
-  const courses = cohort.data?.courses ?? []
+  const open = (options.data?.cohorts ?? []).filter((c) => ['active', 'upcoming', 'draft'].includes(c.status))
+  const selectedCohort = open.find((c) => c.id === cohortId)
+  const courses = selectedCohort?.courses ?? []
   const course = courses.find((c) => c.courseId === courseId)
   const trainers = course?.trainers.filter((t) => t.status !== 'deactivated') ?? []
   // Default to the course's lead until the admin picks someone.
@@ -57,16 +59,16 @@ export function ScheduleSessionPage() {
   const effectiveDays = weekdays.length ? weekdays : effectiveDate ? [weekdayOf(effectiveDate)] : []
 
   const repeat: { weekdays: Weekday[]; count?: number; until?: string } | null =
-    repeats === 'weekly'
-      ? { weekdays: effectiveDays as Weekday[], ...(ends === 'count' ? { count: Number(count) || 0 } : until ? { until } : {}) }
-      : null
+    repeats === 'weekly' ? { weekdays: effectiveDays as Weekday[], ...(ends === 'count' ? { count: Number(count) || 0 } : until ? { until } : {}) } : null
   const dates = effectiveDate && (!repeat || (repeat.count ?? repeat.until)) ? occurrences(effectiveDate, repeat) : []
   const outside = selectedCohort ? dates.filter((d) => d < selectedCohort.startsOn || d > selectedCohort.endsOn) : []
 
-  const set = <T,>(setter: (v: T) => void, key: keyof Errors) => (value: T) => {
-    setter(value)
-    setErrors((prev) => ({ ...prev, [key]: undefined }))
-  }
+  const set =
+    <T,>(setter: (v: T) => void, key: keyof Errors) =>
+    (value: T) => {
+      setter(value)
+      setErrors((prev) => ({ ...prev, [key]: undefined }))
+    }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -76,7 +78,8 @@ export function ScheduleSessionPage() {
       date: effectiveDate ? undefined : 'Choose a date.',
       end: end > start ? undefined : 'End must be after the start.',
       location: mode === 'in_person' && !location.trim() ? 'Enter where it happens.' : undefined,
-      joinUrl: mode === 'online' && joinUrl.trim() && !/^https:\/\/\S+$/.test(joinUrl.trim()) ? 'Paste the full meeting link, starting with https://' : undefined,
+      joinUrl:
+        mode === 'online' && joinUrl.trim() && !/^https:\/\/\S+$/.test(joinUrl.trim()) ? 'Paste the full meeting link, starting with https://' : undefined,
       count:
         repeats === 'weekly' && ends === 'count' && (!Number.isInteger(Number(count)) || Number(count) < 1 || Number(count) > MAX_SESSIONS_PER_SCHEDULE)
           ? `Enter a number from 1 to ${MAX_SESSIONS_PER_SCHEDULE}.`
@@ -105,7 +108,7 @@ export function ScheduleSessionPage() {
         location,
         joinUrl,
       })
-      navigate(result.created === 1 ? `/admin/courses/sessions/${result.firstSessionId}` : `/admin/cohorts/${cohortId}/sessions`, {
+      navigate(result.created === 1 ? paths.session(result.firstSessionId) : paths.cohortSessions(cohortId), {
         state: { scheduled: result.created },
       })
     } catch (error) {
@@ -122,7 +125,7 @@ export function ScheduleSessionPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }, { label: 'Schedule session' }]}
+        breadcrumb={[{ label: paths.listLabel, to: paths.list }, { label: 'Schedule session' }]}
         title="Schedule session"
         description="Sessions belong to a course in a cohort. Admins and trainers can schedule them."
       />
@@ -162,7 +165,7 @@ export function ScheduleSessionPage() {
                     setTrainerId(null)
                   }}
                   error={errors.courseId}
-                  helper={cohortId && cohort.data && courses.length === 0 ? 'This cohort runs no courses yet. Add them in Edit cohort.' : undefined}
+                  helper={cohortId && selectedCohort && courses.length === 0 ? 'This cohort runs no courses yet. Add them in Edit cohort.' : undefined}
                 >
                   <option value="">{cohortId ? 'Select a course' : 'Choose a cohort first'}</option>
                   {courses.map((c) => (
@@ -178,7 +181,11 @@ export function ScheduleSessionPage() {
                 disabled={!course}
                 onChange={(e) => set(setTrainerId, 'trainerMemberId')(e.target.value)}
                 error={errors.trainerMemberId}
-                helper={course && trainers.length === 0 ? 'This course has no trainers in this cohort yet. You can add one later.' : 'From the course’s trainers in this cohort.'}
+                helper={
+                  course && trainers.length === 0
+                    ? 'This course has no trainers in this cohort yet. You can add one later.'
+                    : 'From the course’s trainers in this cohort.'
+                }
               >
                 <option value="">{trainers.length ? 'No trainer' : 'No trainers yet'}</option>
                 {trainers.map((t) => (
@@ -194,7 +201,15 @@ export function ScheduleSessionPage() {
             <FormSection title="When">
               <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-md:grid-cols-2">
                 <div className="max-md:col-span-2">
-                  <TextField label="Date" type="date" value={effectiveDate} min={selectedCohort?.startsOn} max={selectedCohort?.endsOn} onChange={(e) => set(setDate, 'date')(e.target.value)} error={errors.date} />
+                  <TextField
+                    label="Date"
+                    type="date"
+                    value={effectiveDate}
+                    min={selectedCohort?.startsOn}
+                    max={selectedCohort?.endsOn}
+                    onChange={(e) => set(setDate, 'date')(e.target.value)}
+                    error={errors.date}
+                  />
                 </div>
                 <TextField label="Start" type="time" value={start} onChange={(e) => set(setStart, 'start')(e.target.value)} error={errors.start} />
                 <TextField label="End" type="time" value={end} onChange={(e) => set(setEnd, 'end')(e.target.value)} error={errors.end} />
@@ -245,11 +260,27 @@ export function ScheduleSessionPage() {
                     />
                     {ends === 'count' ? (
                       <div className="w-40">
-                        <TextField label="Sessions" type="number" min={1} max={MAX_SESSIONS_PER_SCHEDULE} value={count} onChange={(e) => set(setCount, 'count')(e.target.value)} error={errors.count} />
+                        <TextField
+                          label="Sessions"
+                          type="number"
+                          min={1}
+                          max={MAX_SESSIONS_PER_SCHEDULE}
+                          value={count}
+                          onChange={(e) => set(setCount, 'count')(e.target.value)}
+                          error={errors.count}
+                        />
                       </div>
                     ) : (
                       <div className="w-56">
-                        <TextField label="Last date" type="date" min={effectiveDate} max={selectedCohort?.endsOn} value={until} onChange={(e) => set(setUntil, 'until')(e.target.value)} error={errors.until} />
+                        <TextField
+                          label="Last date"
+                          type="date"
+                          min={effectiveDate}
+                          max={selectedCohort?.endsOn}
+                          value={until}
+                          onChange={(e) => set(setUntil, 'until')(e.target.value)}
+                          error={errors.until}
+                        />
                       </div>
                     )}
                   </div>
@@ -269,7 +300,13 @@ export function ScheduleSessionPage() {
                 onChange={(value) => set(setMode, 'location')(value)}
               />
               {mode === 'in_person' ? (
-                <TextField label="Location" placeholder="e.g. Lab 2 · Yaba hub" value={location} onChange={(e) => set(setLocation, 'location')(e.target.value)} error={errors.location} />
+                <TextField
+                  label="Location"
+                  placeholder="e.g. Lab 2 · Yaba hub"
+                  value={location}
+                  onChange={(e) => set(setLocation, 'location')(e.target.value)}
+                  error={errors.location}
+                />
               ) : (
                 <TextField
                   label="Meeting link"

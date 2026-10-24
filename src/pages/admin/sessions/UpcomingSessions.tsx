@@ -33,7 +33,11 @@ export function UpcomingSessions({ cohort }: { cohort: CohortSummary }) {
         <EmptyState
           icon={<CalendarIcon size={24} />}
           title={all.length ? 'No more sessions scheduled' : 'No sessions scheduled yet'}
-          body={all.length ? 'Every scheduled session has been held. Schedule more from the Sessions tab.' : 'Sessions you schedule for this cohort’s courses appear here, with who’s teaching and where.'}
+          body={
+            all.length
+              ? 'Every scheduled session has been held. Schedule more from the Sessions tab.'
+              : 'Sessions you schedule for this cohort’s courses appear here, with who’s teaching and where.'
+          }
         />
       ) : (
         <ul>

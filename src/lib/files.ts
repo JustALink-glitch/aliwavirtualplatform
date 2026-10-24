@@ -13,9 +13,41 @@ export function fileSize(bytes: number): string {
 }
 
 /** "PDF", "Notebook", "SQL" — a short kind from the file name, for file rows. */
-export function fileKind(name: string): string {
+export function fileKind(name: string, type?: string | null): string {
+  if (type) {
+    const byType: [RegExp, string][] = [
+      [/pdf/, 'PDF'],
+      [/^image\//, 'Image'],
+      [/^video\//, 'Video'],
+      [/spreadsheet|excel|csv/, 'Spreadsheet'],
+      [/presentation|powerpoint/, 'Slides'],
+      [/word|document/, 'Document'],
+      [/zip/, 'Zip'],
+      [/^text\//, 'Text'],
+    ]
+    const hit = byType.find(([re]) => re.test(type))
+    if (hit) return hit[1]
+  }
+  if (!name.includes('.')) return 'File'
   const ext = name.split('.').pop()?.toLowerCase() ?? ''
-  const known: Record<string, string> = { pdf: 'PDF', ipynb: 'Notebook', zip: 'Zip', doc: 'Word', docx: 'Word', xls: 'Excel', xlsx: 'Excel', csv: 'CSV', ppt: 'PowerPoint', pptx: 'PowerPoint', sql: 'SQL', py: 'Python', txt: 'Text', png: 'Image', jpg: 'Image', jpeg: 'Image' }
+  const known: Record<string, string> = {
+    pdf: 'PDF',
+    ipynb: 'Notebook',
+    zip: 'Zip',
+    doc: 'Word',
+    docx: 'Word',
+    xls: 'Excel',
+    xlsx: 'Excel',
+    csv: 'CSV',
+    ppt: 'PowerPoint',
+    pptx: 'PowerPoint',
+    sql: 'SQL',
+    py: 'Python',
+    txt: 'Text',
+    png: 'Image',
+    jpg: 'Image',
+    jpeg: 'Image',
+  }
   return known[ext] ?? (ext ? ext.toUpperCase() : 'File')
 }
 

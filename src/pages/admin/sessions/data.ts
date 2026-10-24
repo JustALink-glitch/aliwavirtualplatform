@@ -26,6 +26,42 @@ export interface Session {
   cancelled: { at: string; reason: string | null; by: string | null } | null
 }
 
+/** What the signed-in person can do with a session (§02 permission matrix). */
+export interface SessionPermissions {
+  schedule: boolean
+  attendance: boolean
+  resources: boolean
+  report: boolean
+}
+
+export interface SessionResource {
+  id: string
+  kind: 'file' | 'link'
+  name: string
+  url: string | null
+  size: number | null
+  type: string | null
+  wholeCourse: boolean
+  visible: boolean
+  addedBy: string | null
+  addedAt: string
+}
+
+export interface SessionDetail {
+  session: Session
+  can: SessionPermissions
+  resources: SessionResource[]
+}
+
+export interface ScheduleOption {
+  id: string
+  name: string
+  status: string
+  startsOn: string
+  endsOn: string
+  courses: { id: string; courseId: string; name: string; trainers: { id: string; firstName: string; lastName: string; isLead: boolean; status: string }[] }[]
+}
+
 export interface SessionList {
   timeZone: string
   hasAny: boolean
@@ -76,10 +112,14 @@ export function useSession(id: string) {
   return useQuery({
     enabled: Boolean(id),
     queryKey: keys.detail(id),
-    queryFn: ({ signal }) => api<{ session: Session }>(`/v1/sessions/${id}`, { signal }),
+    queryFn: ({ signal }) => api<SessionDetail>(`/v1/sessions/${id}`, { signal }),
     retry: (count, error) => (error as { status?: number }).status !== 404 && count < 2,
   })
 }
+
+/** Cohorts and courses the signed-in person can schedule in (C1.02, T3.03). */
+export const useSessionOptions = () =>
+  useQuery({ queryKey: [...keys.all, 'options'], queryFn: ({ signal }) => api<{ cohorts: ScheduleOption[] }>('/v1/sessions/options', { signal }) })
 
 /** Sessions change cohort delivery numbers, so refresh cohort lists too. */
 function useSessionMutation<TInput, TResult>(fn: (input: TInput) => Promise<TResult>) {
@@ -102,6 +142,18 @@ export const useCancelSession = (id: string) =>
   useSessionMutation((input: { reason: string; notify: boolean }) =>
     api<{ cancelled: true; emailed: number }>(`/v1/sessions/${id}/cancel`, { method: 'POST', body: input }),
   )
+
+export interface ResourceInput {
+  kind: 'file' | 'link'
+  name: string
+  url?: string
+  path?: string
+  scope: 'session' | 'course'
+  visible: boolean
+}
+
+export const useAddResource = (sessionId: string) =>
+  useSessionMutation((input: ResourceInput) => api<{ resource: { id: string } }>(`/v1/sessions/${sessionId}/resources`, { method: 'POST', body: input }))
 
 /** "Online · Zoom", "Online", "Lab 2 · Yaba hub". */
 export function whereLabel(session: Pick<Session, 'mode' | 'location' | 'joinUrl' | 'zoomMeetingId'>): string {

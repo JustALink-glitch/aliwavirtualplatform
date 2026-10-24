@@ -11,32 +11,38 @@ import { Badge, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatDayWithYear, formatTime, formatTimeRange, plural, weekdayList } from '@/lib/format'
-import { isPast, useCancelSession, useSession, whereLabel, type Session } from './data'
+import { isPast, useCancelSession, useSession, whereLabel, type SessionDetail } from './data'
+import { useSessionPaths } from './paths'
+import { ResourcesPanel } from './ResourcesPanel'
 import { SessionStatusBadge } from './SessionRow'
 
-/** /admin/courses/sessions/:id — C1.03 Session detail, C1.03b held, cancelled. */
+/** /admin/courses/sessions/:id — C1.03 Session detail; /trainer/sessions/:id — T3.02, T3.02b held. */
 export function SessionDetailPage() {
   const { id = '' } = useParams()
+  const paths = useSessionPaths()
   const query = useSession(id)
   if (query.isPending) return <div aria-busy="true" aria-label="Loading session" className="h-40" />
   if (query.isError) {
     const missing = query.error instanceof ApiError && query.error.status === 404
     return (
       <>
-        <PageHeader title={missing ? 'Session not found' : 'Couldn’t load this session'} breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }]} />
+        <PageHeader title={missing ? 'Session not found' : 'Couldn’t load this session'} breadcrumb={[{ label: paths.listLabel, to: paths.list }]} />
         <Panel>
           <StatePanel kind={missing ? 'no-results' : 'error'} title={missing ? 'This session doesn’t exist' : 'Something went wrong'} />
         </Panel>
       </>
     )
   }
-  return <SessionView session={query.data.session} />
+  return <SessionView data={query.data} />
 }
 
-function SessionView({ session: s }: { session: Session }) {
+function SessionView({ data }: { data: SessionDetail }) {
+  const { session: s, can } = data
   const { state } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const paths = useSessionPaths()
+  const trainerArea = paths.area === 'trainer'
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
   const [cancelling, setCancelling] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -47,6 +53,9 @@ function SessionView({ session: s }: { session: Session }) {
   const scheduled = s.status === 'scheduled'
   const past = s.status === 'held' || s.status === 'in_progress'
   const reportOverdue = s.status === 'held' && !s.report.submittedAt && isPast(s.report.dueAt)
+  const rate = s.attendance.recorded ? Math.round((s.attendance.present / s.attendance.recorded) * 100) : null
+  const canJoin = Boolean(s.joinUrl) && (s.status === 'scheduled' || s.status === 'in_progress')
+  const reportDue = `${formatDay(s.report.dueAt, timeZone)}, ${formatTime(s.report.dueAt, timeZone)}`
 
   async function copy() {
     if (!s.joinUrl) return
@@ -54,30 +63,51 @@ function SessionView({ session: s }: { session: Session }) {
     setCopied(true)
   }
 
+  const actions = (
+    <>
+      {scheduled && can.schedule && (
+        <>
+          <Button variant="secondary" onClick={() => setCancelling(true)}>
+            Cancel session
+          </Button>
+          <Button variant={trainerArea && canJoin ? 'secondary' : 'primary'} onClick={() => navigate('edit')}>
+            Edit session
+          </Button>
+        </>
+      )}
+      {trainerArea && s.status === 'held' && can.attendance && s.attendance.recorded > 0 && (
+        <Button variant="secondary" onClick={() => navigate('attendance')}>
+          Edit attendance
+        </Button>
+      )}
+      {trainerArea && canJoin && (
+        <a
+          href={s.joinUrl!}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+        >
+          {whereLabel(s) === 'Online · Zoom' ? 'Join Zoom' : 'Join meeting'}
+        </a>
+      )}
+    </>
+  )
+
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }, { label: `${s.title} · ${day}` }]}
+        breadcrumb={[{ label: paths.listLabel, to: paths.list }, { label: `${s.title} · ${day}` }]}
         title={s.title}
         badge={<SessionStatusBadge status={s.status} />}
         description={[
           s.cohort.name,
           s.number && `Session ${s.number} of ${s.total}`,
           `${day}, ${formatTimeRange(s.startsAt, s.endsAt, timeZone)}`,
-          s.trainer?.name,
+          trainerArea ? whereLabel(s) : s.trainer?.name,
         ]
           .filter(Boolean)
           .join(' · ')}
-        actions={
-          scheduled && (
-            <>
-              <Button variant="secondary" onClick={() => setCancelling(true)}>
-                Cancel session
-              </Button>
-              <Button onClick={() => navigate('edit')}>Edit session</Button>
-            </>
-          )
-        }
+        actions={actions}
       />
       {notice && <AlertBanner tone="success" title={notice} />}
       {s.cancelled && (
@@ -85,110 +115,140 @@ function SessionView({ session: s }: { session: Session }) {
           {s.cancelled.reason ? `Reason: ${s.cancelled.reason}. ` : ''}Cancelled sessions don’t count towards attendance or delivery, and need no report.
         </AlertBanner>
       )}
+      {trainerArea && can.report && reportOverdue && (
+        <AlertBanner tone="warning" title="Your session report is overdue">
+          It was due {reportDue}. Admins can see it’s late — a late report still counts.
+        </AlertBanner>
+      )}
 
       <div className="flex items-start gap-4 max-lg:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
-          <Panel aria-labelledby="details-title">
-            <PanelHeader id="details-title" title="Details" />
-            <DetailList
-              items={[
-                { label: 'When', value: when },
-                {
-                  label: 'Where',
-                  value: s.joinUrl ? (
-                    <>
-                      {whereLabel(s)} ·{' '}
-                      <a href={s.joinUrl} target="_blank" rel="noreferrer" className="font-normal break-all text-brand-text underline">
-                        {s.joinUrl}
-                      </a>
-                    </>
-                  ) : s.mode === 'online' ? (
-                    <>
-                      Online · <span className="font-normal text-muted">no meeting link yet</span>
-                    </>
-                  ) : (
-                    whereLabel(s)
-                  ),
-                },
-                { label: 'Course', value: s.course.name },
-                {
-                  label: 'Cohort',
-                  value: (
-                    <>
-                      <Link to={`/admin/cohorts/${s.cohort.id}`} className="hover:underline">
-                        {s.cohort.name}
-                      </Link>
-                      <span className="font-normal text-secondary"> · {plural(s.expected, 'participant')} expected</span>
-                    </>
-                  ),
-                },
-                {
-                  label: 'Trainer',
-                  value: s.trainer ? (
-                    <Link to={`/admin/trainers/${s.trainer.id}`} className="hover:underline">
-                      {s.trainer.name}
-                      {s.trainer.isLead ? ' (lead)' : ''}
-                    </Link>
-                  ) : (
-                    <span className="font-normal text-muted">Not assigned</span>
-                  ),
-                },
-              ]}
-            />
-          </Panel>
+          {trainerArea && !s.cancelled && (
+            <Panel aria-labelledby="attendance-title" className="gap-0">
+              <PanelHeader
+                id="attendance-title"
+                title="Attendance"
+                description={
+                  scheduled
+                    ? s.mode === 'in_person'
+                      ? 'In person — you mark the register when the session starts.'
+                      : 'The register opens when the session starts. Mark it by hand until Zoom is connected.'
+                    : s.attendance.recorded
+                      ? `${s.attendance.recorded} of ${s.expected} recorded.`
+                      : 'Not recorded yet.'
+                }
+              />
+              <DetailList
+                items={[
+                  { label: 'Expected', value: plural(s.expected, 'participant') },
+                  ...(past ? [{ label: 'Present', value: s.attendance.recorded ? `${s.attendance.present} · ${rate}% of those recorded` : '—' }] : []),
+                  {
+                    label: 'Register',
+                    value: scheduled ? (
+                      `Opens at ${formatTime(s.startsAt, timeZone)}`
+                    ) : s.attendance.recorded ? (
+                      'Saved'
+                    ) : (
+                      <Badge tone="warning">Not recorded</Badge>
+                    ),
+                  },
+                ]}
+              />
+              {past && can.attendance && (
+                <div className="pt-3">
+                  <Button variant={s.attendance.recorded ? 'secondary' : 'primary'} onClick={() => navigate('attendance')}>
+                    {s.attendance.recorded ? 'Open register' : 'Take attendance'}
+                  </Button>
+                </div>
+              )}
+            </Panel>
+          )}
+          {!trainerArea && (
+            <Panel aria-labelledby="details-title">
+              <PanelHeader id="details-title" title="Details" />
+              <DetailList items={details(data, when, paths, true)} />
+            </Panel>
+          )}
+          {!s.cancelled && <ResourcesPanel data={data} />}
+          {trainerArea && s.status === 'held' && (
+            <Panel className="gap-0">
+              <PanelHeader title="Participant feedback" description="Anonymous. Only you and admins see it." />
+              <Link
+                to="feedback"
+                className="flex items-center justify-between gap-3 border-b border-default py-3 text-body-strong text-primary hover:text-brand-text"
+              >
+                See ratings and comments
+                <span className="text-caption-strong text-brand-text">View</span>
+              </Link>
+            </Panel>
+          )}
         </div>
 
         <div className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
-          {!s.cancelled && (
-            <>
-              <Panel aria-labelledby="attendance-title">
-                <PanelHeader
-                  id="attendance-title"
-                  title="Attendance"
-                  description={
-                    scheduled
-                      ? 'Marked from the register once the session starts. You or the trainer can record it.'
-                      : s.attendance.recorded
-                        ? `${s.attendance.recorded} of ${s.expected} recorded`
-                        : 'Not recorded yet.'
-                  }
-                />
-                {past && s.attendance.recorded > 0 && (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-metric-large text-primary">{Math.round((s.attendance.present / s.attendance.recorded) * 100)}%</span>
-                    <span className="text-caption text-secondary">
-                      {s.attendance.present} present ÷ {s.attendance.recorded} recorded
-                    </span>
-                  </div>
-                )}
-                {past && s.attendance.recorded === 0 && <Badge tone="warning">Not recorded</Badge>}
-                {past && (
-                  <Button variant={s.attendance.recorded ? 'secondary' : 'primary'} fullWidth onClick={() => navigate('attendance')}>
-                    {s.attendance.recorded ? 'Open register' : 'Take attendance'}
-                  </Button>
-                )}
-                {s.status === 'held' && (
-                  <Button variant="secondary" fullWidth onClick={() => navigate('feedback')}>
-                    Participant feedback
-                  </Button>
-                )}
-              </Panel>
-              <Panel aria-labelledby="report-title">
-                <PanelHeader
-                  id="report-title"
-                  title="Session report"
-                  description={
-                    s.report.submittedAt
-                      ? `Submitted ${formatDay(s.report.submittedAt, timeZone)}.`
-                      : `${s.trainer ? s.trainer.name.split(' ')[0] : 'The trainer'} submits it after the session. Due ${formatDay(s.report.dueAt, timeZone)}, ${formatTime(s.report.dueAt, timeZone)}.`
-                  }
-                />
-                {reportOverdue && <Badge tone="error">Overdue</Badge>}
-                {s.report.submittedAt && <Badge tone="success">Submitted</Badge>}
-              </Panel>
-            </>
+          {!s.cancelled && !trainerArea && (
+            <Panel aria-labelledby="attendance-title">
+              <PanelHeader
+                id="attendance-title"
+                title="Attendance"
+                description={
+                  scheduled
+                    ? 'Marked from the register once the session starts. You or the trainer can record it.'
+                    : s.attendance.recorded
+                      ? `${s.attendance.recorded} of ${s.expected} recorded`
+                      : 'Not recorded yet.'
+                }
+              />
+              {past && rate !== null && (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-metric-large text-primary">{rate}%</span>
+                  <span className="text-caption text-secondary">
+                    {s.attendance.present} present ÷ {s.attendance.recorded} recorded
+                  </span>
+                </div>
+              )}
+              {past && s.attendance.recorded === 0 && (
+                <div>
+                  <Badge tone="warning">Not recorded</Badge>
+                </div>
+              )}
+              {past && (
+                <Button variant={s.attendance.recorded ? 'secondary' : 'primary'} fullWidth onClick={() => navigate('attendance')}>
+                  {s.attendance.recorded ? 'Open register' : 'Take attendance'}
+                </Button>
+              )}
+              {s.status === 'held' && (
+                <Button variant="secondary" fullWidth onClick={() => navigate('feedback')}>
+                  Participant feedback
+                </Button>
+              )}
+            </Panel>
           )}
-          {s.joinUrl && !s.cancelled && (
+          {!s.cancelled && (
+            <Panel aria-labelledby="report-title">
+              <PanelHeader
+                id="report-title"
+                title="Session report"
+                description={
+                  s.report.submittedAt
+                    ? `Submitted ${formatDay(s.report.submittedAt, timeZone)}.`
+                    : trainerArea
+                      ? `Due ${reportDue} — ${s.status === 'held' ? 'after the session ended' : 'after the session ends'}.`
+                      : `${s.trainer ? s.trainer.name.split(' ')[0] : 'The trainer'} submits it after the session. Due ${reportDue}.`
+                }
+              />
+              {(reportOverdue || s.report.submittedAt) && (
+                <div>{reportOverdue ? <Badge tone="error">Overdue</Badge> : <Badge tone="success">Submitted</Badge>}</div>
+              )}
+              {trainerArea && !s.report.submittedAt && !can.report && <p className="text-caption text-secondary">Written by the course’s lead trainer.</p>}
+            </Panel>
+          )}
+          {trainerArea && (
+            <Panel aria-labelledby="details-title" className="gap-0">
+              <PanelHeader id="details-title" title="Details" />
+              <DetailList items={details(data, when, paths, false)} />
+            </Panel>
+          )}
+          {s.joinUrl && !s.cancelled && !trainerArea && (
             <Button variant="secondary" fullWidth onClick={copy}>
               {copied ? 'Link copied' : 'Copy meeting link'}
             </Button>
@@ -196,13 +256,64 @@ function SessionView({ session: s }: { session: Session }) {
         </div>
       </div>
 
-      {scheduled && <CancelSessionDialog open={cancelling} onClose={() => setCancelling(false)} session={s} timeZone={timeZone} />}
+      {scheduled && can.schedule && <CancelSessionDialog open={cancelling} onClose={() => setCancelling(false)} data={data} timeZone={timeZone} />}
     </>
   )
 }
 
-/** C1.05 Cancel session. */
-function CancelSessionDialog({ open, onClose, session: s, timeZone }: { open: boolean; onClose: () => void; session: Session; timeZone: string | undefined }) {
+function details(data: SessionDetail, when: string, paths: ReturnType<typeof useSessionPaths>, full: boolean) {
+  const s = data.session
+  const where = s.joinUrl ? (
+    <>
+      {whereLabel(s)} ·{' '}
+      <a href={s.joinUrl} target="_blank" rel="noreferrer" className={`font-normal text-brand-text underline ${full ? 'break-all' : 'whitespace-nowrap'}`}>
+        {full ? s.joinUrl : 'meeting link'}
+      </a>
+    </>
+  ) : s.mode === 'online' ? (
+    <>
+      Online · <span className="font-normal text-muted">no meeting link yet</span>
+    </>
+  ) : (
+    whereLabel(s)
+  )
+  const trainerLink = paths.trainer
+  return [
+    { label: 'When', value: when },
+    { label: 'Where', value: where },
+    ...(full ? [{ label: 'Course', value: s.course.name }] : []),
+    {
+      label: 'Cohort',
+      value: (
+        <>
+          <Link to={paths.cohort(s.cohort.id)} className="hover:underline">
+            {s.cohort.name}
+          </Link>
+          {full && <span className="font-normal text-secondary"> · {plural(s.expected, 'participant')} expected</span>}
+        </>
+      ),
+    },
+    {
+      label: 'Trainer',
+      value: s.trainer ? (
+        trainerLink ? (
+          <Link to={trainerLink(s.trainer.id)} className="hover:underline">
+            {s.trainer.name}
+            {s.trainer.isLead ? ' (lead)' : ''}
+          </Link>
+        ) : (
+          `${s.trainer.name}${s.trainer.isLead ? ' (lead)' : ''}`
+        )
+      ) : (
+        <span className="font-normal text-muted">Not assigned</span>
+      ),
+    },
+  ]
+}
+
+/** C1.05 / T3.07 Cancel session. */
+function CancelSessionDialog({ open, onClose, data, timeZone }: { open: boolean; onClose: () => void; data: SessionDetail; timeZone: string | undefined }) {
+  const s = data.session
   const cancel = useCancelSession(s.id)
   const navigate = useNavigate()
   const [reason, setReason] = useState('')

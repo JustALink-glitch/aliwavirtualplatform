@@ -8,6 +8,7 @@ import { Cell, Row, Table, type Column } from '@/components/ui/Table'
 import { formatDay, formatTime, plural } from '@/lib/format'
 import { downloadCsv, markLabel, useAttendanceHistory, type HistoryEntry } from './attendanceData'
 import { useSession } from './data'
+import { useSessionPaths } from './paths'
 
 const columns: Column[] = [
   { label: 'When', width: 150 },
@@ -25,6 +26,7 @@ const describe = (e: HistoryEntry) =>
 /** /admin/courses/sessions/:id/attendance/history — C2.05 Attendance history. */
 export function AttendanceHistoryPage() {
   const { id = '' } = useParams()
+  const paths = useSessionPaths()
   const { state } = useAuth()
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
   const session = useSession(id)
@@ -38,12 +40,12 @@ export function AttendanceHistoryPage() {
     <>
       <PageHeader
         breadcrumb={[
-          { label: 'Courses & sessions', to: '/admin/courses' },
+          { label: paths.listLabel, to: paths.list },
           ...(s
             ? [
                 {
                   label: `${s.title} · ${day}`,
-                  to: `/admin/courses/sessions/${id}/attendance`,
+                  to: `${paths.session(id)}/attendance`,
                 },
               ]
             : []),

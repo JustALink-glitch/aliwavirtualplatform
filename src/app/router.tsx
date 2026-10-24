@@ -18,7 +18,9 @@ import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
 import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
 import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
+import { MyCohortCourses, MyCohortLayout, MyCohortOverview, MyCohortParticipants, MyCohortSessions, MyCohortsPage } from '@/pages/trainer/MyCohortsPage'
 import { MyParticipantsPage, TrainerParticipantPage } from '@/pages/trainer/MyParticipantsPage'
+import { MySessionsPage as TrainerSessionsPage } from '@/pages/trainer/MySessionsPage'
 import { DashboardPage } from '@/pages/participant/DashboardPage'
 import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
@@ -120,7 +122,24 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'grading/:id', element: <AssignmentPage area="trainer" /> },
     { path: 'grading/:id/edit', element: <AssignmentFormPage mode="edit" /> },
     { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
+    { path: 'sessions', element: <TrainerSessionsPage /> },
+    { path: 'sessions/new', element: <ScheduleSessionPage /> },
+    { path: 'sessions/:id', element: <SessionDetailPage /> },
+    { path: 'sessions/:id/edit', element: <EditSessionPage /> },
+    { path: 'sessions/:id/attendance', element: <AttendancePage /> },
+    { path: 'sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
     { path: 'sessions/:id/feedback', element: <SessionFeedbackPage area="trainer" /> },
+    { path: 'cohorts', element: <MyCohortsPage /> },
+    {
+      path: 'cohorts/:id',
+      element: <MyCohortLayout />,
+      children: [
+        { index: true, element: <MyCohortOverview /> },
+        { path: 'participants', element: <MyCohortParticipants /> },
+        { path: 'sessions', element: <MyCohortSessions /> },
+        { path: 'courses', element: <MyCohortCourses /> },
+      ],
+    },
     { path: 'participants', element: <MyParticipantsPage /> },
     { path: 'participants/:id', element: <TrainerParticipantPage /> },
   ],

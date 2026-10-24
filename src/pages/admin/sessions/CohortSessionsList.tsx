@@ -14,11 +14,11 @@ import { paginate } from '@/lib/paginate'
 import { initials } from '@/lib/people'
 import type { CohortSummary } from '@/pages/admin/programmes/data'
 import { isPast, useSessions, whereLabel, type Session } from './data'
+import { useSessionPaths } from './paths'
 import { SessionStatusBadge } from './SessionRow'
 
 type Filter = 'all' | 'upcoming' | 'held' | 'cancelled'
-const inFilter = (s: Session, f: Filter) =>
-  f === 'all' || (f === 'upcoming' ? s.status === 'scheduled' || s.status === 'in_progress' : s.status === f)
+const inFilter = (s: Session, f: Filter) => f === 'all' || (f === 'upcoming' ? s.status === 'scheduled' || s.status === 'in_progress' : s.status === f)
 
 const columns: Column[] = [
   { label: 'Date and time', width: 150 },
@@ -40,6 +40,7 @@ function ReportCell({ s }: { s: Session }) {
 export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const paths = useSessionPaths()
   const scheduled = (location.state as { scheduled?: number } | null)?.scheduled
   const { state } = useAuth()
   const query = useSessions({ cohortId: cohort.id })
@@ -55,12 +56,16 @@ export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
     ...all.filter((s) => s.status === 'held' || s.status === 'cancelled').reverse(),
   ]
   const term = search.trim().toLowerCase()
-  const visible = ordered.filter((s) => inFilter(s, filter) && (!term || s.title.toLowerCase().includes(term) || (s.trainer?.name.toLowerCase().includes(term) ?? false)))
+  const visible = ordered.filter(
+    (s) => inFilter(s, filter) && (!term || s.title.toLowerCase().includes(term) || (s.trainer?.name.toLowerCase().includes(term) ?? false)),
+  )
   const paged = paginate(visible, page)
   const count = (f: Filter) => all.filter((s) => inFilter(s, f)).length
 
-  const scheduleButton = open && (
-    <Button icon={<PlusIcon size={16} />} onClick={() => navigate(`/admin/courses/sessions/new?cohort=${cohort.id}`)}>
+  // Assistants can't schedule (§02).
+  const canSchedule = state.status === 'signed-in' && state.me.membership.role !== 'assistant_trainer'
+  const scheduleButton = open && canSchedule && (
+    <Button icon={<PlusIcon size={16} />} onClick={() => navigate(paths.newSession(cohort.id))}>
       Schedule session
     </Button>
   )
@@ -99,10 +104,15 @@ export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
       ) : (
         <>
           <div className="flex items-center gap-3 max-lg:flex-wrap max-md:flex-col max-md:items-stretch">
-            <SearchField aria-label="Search sessions" placeholder="Search sessions" value={search} onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }} />
+            <SearchField
+              aria-label="Search sessions"
+              placeholder="Search sessions"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
             <FilterChips
               label="Status"
               value={filter}
@@ -126,15 +136,23 @@ export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
                 <div className="max-md:hidden">
                   <Table columns={columns}>
                     {paged.rows.map((s) => (
-                      <Row key={s.id} to={`/admin/courses/sessions/${s.id}`}>
+                      <Row key={s.id} to={paths.session(s.id)}>
                         <Cell>
-                          <Stacked primary={formatDay(s.startsAt, timeZone)} secondary={formatTimeRange(s.startsAt, s.endsAt, timeZone)} muted={Boolean(s.cancelled)} />
+                          <Stacked
+                            primary={formatDay(s.startsAt, timeZone)}
+                            secondary={formatTimeRange(s.startsAt, s.endsAt, timeZone)}
+                            muted={Boolean(s.cancelled)}
+                          />
                         </Cell>
                         <Cell>
                           <Stacked
                             primary={s.title}
                             muted={Boolean(s.cancelled)}
-                            secondary={s.cancelled ? `Cancelled${s.cancelled.by ? ` by ${s.cancelled.by}` : ''}` : [s.number && `Session ${s.number} of ${s.total}`, whereLabel(s)].filter(Boolean).join(' · ')}
+                            secondary={
+                              s.cancelled
+                                ? `Cancelled${s.cancelled.by ? ` by ${s.cancelled.by}` : ''}`
+                                : [s.number && `Session ${s.number} of ${s.total}`, whereLabel(s)].filter(Boolean).join(' · ')
+                            }
                           />
                         </Cell>
                         <Cell hideBelow="lg">
@@ -151,13 +169,21 @@ export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
                           <SessionStatusBadge status={s.status} />
                         </Cell>
                         <Cell align="right" hideBelow="xl" className={s.attendance.recorded ? 'text-body-strong' : 'text-muted'}>
-                          {s.status === 'held' || s.status === 'in_progress' ? (s.attendance.recorded ? `${s.attendance.present} of ${s.expected}` : 'Not recorded') : '—'}
+                          {s.status === 'held' || s.status === 'in_progress'
+                            ? s.attendance.recorded
+                              ? `${s.attendance.present} of ${s.expected}`
+                              : 'Not recorded'
+                            : '—'}
                         </Cell>
                         <Cell hideBelow="xl">
                           <ReportCell s={s} />
                         </Cell>
                         <Cell>
-                          <Link to={`/admin/courses/sessions/${s.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-caption-strong text-brand-text">
+                          <Link
+                            to={paths.session(s.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-caption-strong text-brand-text"
+                          >
                             Open
                             <ChevronRightIcon size={14} />
                           </Link>
@@ -169,7 +195,7 @@ export function CohortSessionsList({ cohort }: { cohort: CohortSummary }) {
                 <ul className="md:hidden">
                   {paged.rows.map((s) => (
                     <li key={s.id} className="border-b border-default last:border-b-0">
-                      <Link to={`/admin/courses/sessions/${s.id}`} className="flex items-center gap-3 py-3">
+                      <Link to={paths.session(s.id)} className="flex items-center gap-3 py-3">
                         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <span className="truncate text-body-strong text-primary">{s.title}</span>
                           <span className="truncate text-caption text-secondary">

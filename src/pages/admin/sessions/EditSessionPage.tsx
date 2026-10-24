@@ -11,14 +11,15 @@ import { PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { SelectField, TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatTime, localDate, plural, weekdayList } from '@/lib/format'
-import { useCohort } from '@/pages/admin/programmes/data'
-import { useEditSession, useSession, useSessions, type EditInput, type Session, type SessionMode } from './data'
+import { useEditSession, useSession, useSessionOptions, useSessions, type EditInput, type Session, type SessionMode } from './data'
+import { useSessionPaths } from './paths'
 
 type Errors = Partial<Record<'date' | 'start' | 'end' | 'location' | 'joinUrl' | 'trainerMemberId' | 'scope', string>>
 
-/** /admin/courses/sessions/:id/edit — C1.06 Edit session (+ C1.04 for repeating sessions). */
+/** /admin/courses/sessions/:id/edit — C1.06; /trainer/sessions/:id/edit — T3.06 Edit session (+ C1.04 for repeating sessions). */
 export function EditSessionPage() {
   const { id = '' } = useParams()
+  const paths = useSessionPaths()
   const query = useSession(id)
   if (query.isPending) return <div aria-busy="true" className="h-40" />
   if (query.isError) {
@@ -28,10 +29,24 @@ export function EditSessionPage() {
       </Panel>
     )
   }
+  if (!query.data.can.schedule) {
+    return (
+      <>
+        <PageHeader title="You can’t edit this session" breadcrumb={[{ label: paths.listLabel, to: paths.list }]} />
+        <Panel>
+          <StatePanel
+            kind="restricted"
+            title="Only admins and the course’s lead trainer can change sessions"
+            description="Ask them if this session needs to move."
+          />
+        </Panel>
+      </>
+    )
+  }
   if (query.data.session.status !== 'scheduled') {
     return (
       <>
-        <PageHeader title="This session can’t be edited" breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }]} />
+        <PageHeader title="This session can’t be edited" breadcrumb={[{ label: paths.listLabel, to: paths.list }]} />
         <Panel>
           <StatePanel kind="restricted" title="Held and cancelled sessions don’t change" description="Their attendance and reports are kept as they are." />
         </Panel>
@@ -46,7 +61,8 @@ function EditForm({ session: s }: { session: Session }) {
   const { state } = useAuth()
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
   const edit = useEditSession(s.id)
-  const cohort = useCohort(s.cohort.id)
+  const paths = useSessionPaths()
+  const options = useSessionOptions()
   const series = useSessions({ cohortId: s.cohort.id })
 
   const [date, setDate] = useState(localDate(s.startsAt, timeZone))
@@ -61,19 +77,25 @@ function EditForm({ session: s }: { session: Session }) {
   const [failed, setFailed] = useState<string | null>(null)
   const [askScope, setAskScope] = useState(false)
 
-  const course = cohort.data?.courses.find((c) => c.courseId === s.course.id)
+  const cohort = options.data?.cohorts.find((c) => c.id === s.cohort.id)
+  const course = cohort?.courses.find((c) => c.courseId === s.course.id)
   const trainers = course?.trainers.filter((t) => t.status !== 'deactivated') ?? []
-  const cohortDates = cohort.data?.cohort
+  const cohortDates = cohort
   const originalDate = localDate(s.startsAt, timeZone)
   const remaining = (series.data?.sessions ?? []).filter((x) => x.series?.id === s.series?.id && x.status === 'scheduled')
   const following = remaining.filter((x) => x.startsAt >= s.startsAt).length
 
   function validate(): boolean {
     const next: Errors = {
-      date: !date ? 'Choose a date.' : cohortDates && (date < cohortDates.startsOn || date > cohortDates.endsOn) ? `Choose a date within ${s.cohort.name}.` : undefined,
+      date: !date
+        ? 'Choose a date.'
+        : cohortDates && (date < cohortDates.startsOn || date > cohortDates.endsOn)
+          ? `Choose a date within ${s.cohort.name}.`
+          : undefined,
       end: end > start ? undefined : 'End must be after the start.',
       location: mode === 'in_person' && !location.trim() ? 'Enter where it happens.' : undefined,
-      joinUrl: mode === 'online' && joinUrl.trim() && !/^https:\/\/\S+$/.test(joinUrl.trim()) ? 'Paste the full meeting link, starting with https://' : undefined,
+      joinUrl:
+        mode === 'online' && joinUrl.trim() && !/^https:\/\/\S+$/.test(joinUrl.trim()) ? 'Paste the full meeting link, starting with https://' : undefined,
     }
     setErrors(next)
     return !Object.values(next).some(Boolean)
@@ -83,9 +105,11 @@ function EditForm({ session: s }: { session: Session }) {
     setFailed(null)
     try {
       const result = await edit.mutateAsync({ scope, date, start, end, mode, location, joinUrl, trainerMemberId: trainerId || null, notify })
-      navigate(`/admin/courses/sessions/${s.id}`, {
+      navigate(paths.session(s.id), {
         replace: true,
-        state: { notice: `${result.updated > 1 ? `${result.updated} sessions` : 'Session'} updated${notify ? ` · ${plural(result.emailed, 'email')} sent` : ''}.` },
+        state: {
+          notice: `${result.updated > 1 ? `${result.updated} sessions` : 'Session'} updated${notify ? ` · ${plural(result.emailed, 'email')} sent` : ''}.`,
+        },
       })
     } catch (error) {
       setAskScope(false)
@@ -109,7 +133,7 @@ function EditForm({ session: s }: { session: Session }) {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }, { label: `${s.title} · ${day}`, to: `/admin/courses/sessions/${s.id}` }, { label: 'Edit' }]}
+        breadcrumb={[{ label: paths.listLabel, to: paths.list }, { label: `${s.title} · ${day}`, to: paths.session(s.id) }, { label: 'Edit' }]}
         title="Edit session"
         description={[s.title, s.cohort.name, s.number && `Session ${s.number} of ${s.total}`].filter(Boolean).join(' · ')}
       />
@@ -124,7 +148,15 @@ function EditForm({ session: s }: { session: Session }) {
             <FormSection title="When">
               <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-3 max-md:grid-cols-2">
                 <div className="max-md:col-span-2">
-                  <TextField label="Date" type="date" value={date} min={cohortDates?.startsOn} max={cohortDates?.endsOn} onChange={(e) => setDate(e.target.value)} error={errors.date} />
+                  <TextField
+                    label="Date"
+                    type="date"
+                    value={date}
+                    min={cohortDates?.startsOn}
+                    max={cohortDates?.endsOn}
+                    onChange={(e) => setDate(e.target.value)}
+                    error={errors.date}
+                  />
                 </div>
                 <TextField label="Start" type="time" value={start} onChange={(e) => setStart(e.target.value)} error={errors.start} />
                 <TextField label="End" type="time" value={end} onChange={(e) => setEnd(e.target.value)} error={errors.end} />
@@ -143,7 +175,15 @@ function EditForm({ session: s }: { session: Session }) {
               {mode === 'in_person' ? (
                 <TextField label="Location" value={location} onChange={(e) => setLocation(e.target.value)} error={errors.location} />
               ) : (
-                <TextField label="Meeting link" optional type="url" placeholder="https://zoom.us/j/…" value={joinUrl} onChange={(e) => setJoinUrl(e.target.value)} error={errors.joinUrl} />
+                <TextField
+                  label="Meeting link"
+                  optional
+                  type="url"
+                  placeholder="https://zoom.us/j/…"
+                  value={joinUrl}
+                  onChange={(e) => setJoinUrl(e.target.value)}
+                  error={errors.joinUrl}
+                />
               )}
             </FormSection>
             <FormSection title="Trainer">
@@ -165,7 +205,7 @@ function EditForm({ session: s }: { session: Session }) {
             </FormSection>
             <Checkbox label="Email participants and the trainer about the change" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
             <div className="flex gap-3 max-md:flex-col-reverse max-md:[&>*]:h-11">
-              <Button variant="secondary" onClick={() => navigate(`/admin/courses/sessions/${s.id}`)} disabled={edit.isPending}>
+              <Button variant="secondary" onClick={() => navigate(paths.session(s.id))} disabled={edit.isPending}>
                 Cancel
               </Button>
               <Button type="submit" disabled={edit.isPending}>
@@ -179,7 +219,8 @@ function EditForm({ session: s }: { session: Session }) {
             <Panel>
               <PanelHeader title="This session repeats" />
               <p className="text-caption text-secondary">
-                {s.title} runs on {weekdayList(s.series.weekdays, { plural: true })}. When you save, you choose whether the change applies to this session only, or to this and the following sessions.
+                {s.title} runs on {weekdayList(s.series.weekdays, { plural: true })}. When you save, you choose whether the change applies to this session only,
+                or to this and the following sessions.
               </p>
               <p className="text-caption text-secondary">Moving the date keeps the session number. Attendance and the report move with it.</p>
             </Panel>

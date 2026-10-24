@@ -17,6 +17,7 @@ import { formatDay, formatTime, formatTimeRange, plural } from '@/lib/format'
 import { initials } from '@/lib/people'
 import { downloadCsv, markLabel, sourceLabel, useEditMark, useRegister, useSaveRegister, type Mark, type Register, type RegisterRow } from './attendanceData'
 import { useSession, whereLabel, type Session } from './data'
+import { useSessionPaths } from './paths'
 
 type Filter = 'all' | Mark | 'none'
 const tone: Record<Mark, 'success' | 'error' | 'warning'> = { present: 'success', absent: 'error', excused: 'warning' }
@@ -28,15 +29,36 @@ export function MarkBadge({ status }: { status: Mark | null }) {
 /** /admin/courses/sessions/:id/attendance — C2.01 Session attendance with C2.03 marking and C2.02 edits. */
 export function AttendancePage() {
   const { id = '' } = useParams()
+  const paths = useSessionPaths()
   const session = useSession(id)
   const register = useRegister(id)
   if (session.isPending || register.isPending) return <div aria-busy="true" aria-label="Loading attendance" className="h-40" />
   if (session.isError || register.isError) {
     return (
       <>
-        <PageHeader title="Couldn’t load attendance" breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses' }]} />
+        <PageHeader title="Couldn’t load attendance" breadcrumb={[{ label: paths.listLabel, to: paths.list }]} />
         <Panel>
           <StatePanel kind="error" title="Something went wrong" description="Check your connection and try again." />
+        </Panel>
+      </>
+    )
+  }
+  if (!session.data.can.attendance) {
+    return (
+      <>
+        <PageHeader
+          title="You can’t take this register"
+          breadcrumb={[
+            { label: paths.listLabel, to: paths.list },
+            { label: session.data.session.title, to: paths.session(id) },
+          ]}
+        />
+        <Panel>
+          <StatePanel
+            kind="restricted"
+            title="Your organisation doesn’t let assistant trainers take attendance"
+            description="The course’s lead trainer or an admin can record it."
+          />
         </Panel>
       </>
     )
@@ -45,6 +67,7 @@ export function AttendancePage() {
 }
 
 function AttendanceView({ session: s, data }: { session: Session; data: Register }) {
+  const paths = useSessionPaths()
   const { state } = useAuth()
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
   const save = useSaveRegister(s.id)
@@ -67,9 +90,17 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
     try {
       const result = await save.mutateAsync(Object.entries(pending).map(([memberId, status]) => ({ memberId, status })))
       setPending({})
-      setNotice({ tone: 'success', title: `${plural(result.marked, 'person', 'people')} marked`, body: unmarked.length - result.marked > 0 ? `${plural(unmarked.length - result.marked, 'person is', 'people are')} still not recorded.` : undefined })
+      setNotice({
+        tone: 'success',
+        title: `${plural(result.marked, 'person', 'people')} marked`,
+        body: unmarked.length - result.marked > 0 ? `${plural(unmarked.length - result.marked, 'person is', 'people are')} still not recorded.` : undefined,
+      })
     } catch (error) {
-      setNotice({ tone: 'error', title: 'The register wasn’t saved', body: error instanceof ApiError && error.status < 500 ? error.message : 'Check your connection and try again.' })
+      setNotice({
+        tone: 'error',
+        title: 'The register wasn’t saved',
+        body: error instanceof ApiError && error.status < 500 ? error.message : 'Check your connection and try again.',
+      })
     }
   }
 
@@ -95,13 +126,17 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
   return (
     <>
       <PageHeader
-        breadcrumb={[
-          { label: 'Courses & sessions', to: '/admin/courses' },
-          { label: `${s.title} · ${day}`, to: `/admin/courses/sessions/${s.id}` },
-          { label: 'Attendance' },
-        ]}
+        breadcrumb={[{ label: paths.listLabel, to: paths.list }, { label: `${s.title} · ${day}`, to: paths.session(s.id) }, { label: 'Attendance' }]}
         title={s.title}
-        badge={recorded === 0 ? <Badge tone="warning">Not recorded</Badge> : unmarked.length ? <Badge tone="info">Partly recorded</Badge> : <Badge tone="success">Attendance recorded</Badge>}
+        badge={
+          recorded === 0 ? (
+            <Badge tone="warning">Not recorded</Badge>
+          ) : unmarked.length ? (
+            <Badge tone="info">Partly recorded</Badge>
+          ) : (
+            <Badge tone="success">Attendance recorded</Badge>
+          )
+        }
         description={[s.cohort.name, `${day}, ${formatTimeRange(s.startsAt, s.endsAt, timeZone)}`, whereLabel(s), s.trainer?.name].filter(Boolean).join(' · ')}
         actions={
           <>
@@ -120,7 +155,9 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
 
       {!open && (
         <AlertBanner title={data.status === 'cancelled' ? 'This session was cancelled' : 'Attendance opens when the session starts'}>
-          {data.status === 'cancelled' ? 'Cancelled sessions have no attendance.' : `You can mark the register from ${day}, ${formatTime(s.startsAt, timeZone)}.`}
+          {data.status === 'cancelled'
+            ? 'Cancelled sessions have no attendance.'
+            : `You can mark the register from ${day}, ${formatTime(s.startsAt, timeZone)}.`}
         </AlertBanner>
       )}
       {notice && (
@@ -131,9 +168,19 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
 
       <Metrics
         items={[
-          { label: 'Present', icon: <CheckCircleIcon size={18} />, value: data.counts.present, context: `of ${plural(data.expected, 'person', 'people')} expected` },
+          {
+            label: 'Present',
+            icon: <CheckCircleIcon size={18} />,
+            value: data.counts.present,
+            context: `of ${plural(data.expected, 'person', 'people')} expected`,
+          },
           { label: 'Excused', icon: <InfoTriangleIcon size={18} />, value: data.counts.excused, context: 'Counts as not present' },
-          { label: 'Absent', icon: <UserGroupIcon size={18} />, value: data.counts.absent, context: data.counts.notRecorded ? `${data.counts.notRecorded} not recorded yet` : 'No check-in or excuse' },
+          {
+            label: 'Absent',
+            icon: <UserGroupIcon size={18} />,
+            value: data.counts.absent,
+            context: data.counts.notRecorded ? `${data.counts.notRecorded} not recorded yet` : 'No check-in or excuse',
+          },
           {
             label: 'Attendance',
             icon: <ChartIcon size={18} />,

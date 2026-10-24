@@ -64,7 +64,12 @@ export function SessionsPage() {
 
       {query.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load sessions" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load sessions"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       ) : query.data && !query.data.hasAny && !cohortId ? (
         <Panel className="py-16">
@@ -82,10 +87,20 @@ export function SessionsPage() {
       ) : (
         <>
           <div className="flex items-center gap-2 max-md:flex-wrap">
-            <button type="button" aria-label="Previous week" onClick={() => setWeek(addDays(week, -7))} className="inline-flex size-9 items-center justify-center rounded-md border border-default bg-surface text-icon hover:bg-surface-hover">
+            <button
+              type="button"
+              aria-label="Previous week"
+              onClick={() => setWeek(addDays(week, -7))}
+              className="inline-flex size-9 items-center justify-center rounded-md border border-default bg-surface text-icon hover:bg-surface-hover"
+            >
               <ChevronLeftIcon size={18} />
             </button>
-            <button type="button" aria-label="Next week" onClick={() => setWeek(addDays(week, 7))} className="inline-flex size-9 items-center justify-center rounded-md border border-default bg-surface text-icon hover:bg-surface-hover">
+            <button
+              type="button"
+              aria-label="Next week"
+              onClick={() => setWeek(addDays(week, 7))}
+              className="inline-flex size-9 items-center justify-center rounded-md border border-default bg-surface text-icon hover:bg-surface-hover"
+            >
               <ChevronRightIcon size={18} />
             </button>
             <h2 className="px-1 text-heading-section text-primary" aria-live="polite">

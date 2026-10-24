@@ -54,7 +54,10 @@ export function MyParticipantsPage() {
 
   return (
     <>
-      <PageHeader title="My participants" description="People in the cohorts you teach. Attendance and work are from your courses only; flags use your organisation’s follow-up rules." />
+      <PageHeader
+        title="My participants"
+        description="People in the cohorts you teach. Attendance and work are from your courses only; flags use your organisation’s follow-up rules."
+      />
       {query.isPending ? (
         <Panel aria-busy="true" className="h-[240px]">
           <span className="sr-only">Loading participants</span>
@@ -65,7 +68,11 @@ export function MyParticipantsPage() {
         </Panel>
       ) : all.length === 0 ? (
         <Panel className="py-12">
-          <EmptyState icon={<UserGroupIcon size={24} />} title="No participants yet" body="When you’re teaching a course in a cohort, its participants appear here with their attendance and work in your course." />
+          <EmptyState
+            icon={<UserGroupIcon size={24} />}
+            title="No participants yet"
+            body="When you’re teaching a course in a cohort, its participants appear here with their attendance and work in your course."
+          />
         </Panel>
       ) : (
         <>
@@ -98,10 +105,16 @@ export function MyParticipantsPage() {
                       <Percent value={r.attendance?.rate} />
                     </Cell>
                     <Cell align="right">{r.work.published ? `${r.work.submitted} of ${r.work.published}` : <span className="text-muted">—</span>}</Cell>
-                    <Cell>{r.flag ? <Badge tone={r.flag === 'inactive' ? 'neutral' : 'warning'}>{ruleLabel[r.flag]}</Badge> : <span className="text-muted">—</span>}</Cell>
+                    <Cell>
+                      {r.flag ? <Badge tone={r.flag === 'inactive' ? 'neutral' : 'warning'}>{ruleLabel[r.flag]}</Badge> : <span className="text-muted">—</span>}
+                    </Cell>
                     <Cell hideBelow="xl">{r.lastActive ? relativeDay(r.lastActive, timeZone) : <span className="text-muted">Never</span>}</Cell>
                     <Cell align="right">
-                      <Link to={r.id} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline">
+                      <Link
+                        to={r.id}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline"
+                      >
                         View
                         <ChevronRightIcon size={14} />
                       </Link>
@@ -204,7 +217,11 @@ export function TrainerParticipantPage() {
             <PanelHeader
               id="att-title"
               title="Attendance in your course"
-              description={pct === null ? 'Nothing recorded yet.' : `${d.attendance.present} of ${plural(d.attendance.recorded, 'session')} (${pct}%). The cohort’s flag uses every course; admins see the full picture.`}
+              description={
+                pct === null
+                  ? 'Nothing recorded yet.'
+                  : `${d.attendance.present} of ${plural(d.attendance.recorded, 'session')} (${pct}%). The cohort’s flag uses every course; admins see the full picture.`
+              }
             />
             {d.sessions.length > 0 && (
               <ul className="flex flex-wrap gap-2">
@@ -221,13 +238,20 @@ export function TrainerParticipantPage() {
             <PanelHeader
               id="work-title"
               title="Assignments"
-              description={d.assignments.length ? `${d.courses.join(', ')} · ${d.assignments.filter((a) => a.submittedAt).length} of ${d.assignments.length} submitted` : 'No published assignments in your course yet.'}
+              description={
+                d.assignments.length
+                  ? `${d.courses.join(', ')} · ${d.assignments.filter((a) => a.submittedAt).length} of ${d.assignments.length} submitted`
+                  : 'No published assignments in your course yet.'
+              }
             />
             {d.assignments.length > 0 && (
               <ul>
                 {d.assignments.map((a) => (
                   <li key={a.id} className="border-b border-default last:border-b-0">
-                    <Link to={a.submittedAt ? `/trainer/grading/${a.id}/submissions/${d.participant.id}` : `/trainer/grading/${a.id}`} className="flex items-center gap-3 py-2.5 hover:bg-surface-hover">
+                    <Link
+                      to={a.submittedAt ? `/trainer/grading/${a.id}/submissions/${d.participant.id}` : `/trainer/grading/${a.id}`}
+                      className="flex items-center gap-3 py-2.5 hover:bg-surface-hover"
+                    >
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-body-strong text-primary">{a.title}</span>
                         <span className="truncate text-caption text-secondary">

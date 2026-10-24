@@ -4,6 +4,7 @@ import { UserGroupIcon } from '@/components/ui/icons'
 import { Badge } from '@/components/ui/Page'
 import { formatTime } from '@/lib/format'
 import { whereLabel, type Session, type SessionStatus } from './data'
+import { useSessionPaths } from './paths'
 
 export function SessionStatusBadge({ status }: { status: SessionStatus }) {
   if (status === 'scheduled') return <Badge tone="info">Scheduled</Badge>
@@ -24,19 +25,31 @@ function statusLine(s: Session): { text: string; tone: 'warning' | 'muted' } | n
  * (brand for online, green for in person), course, cohort and trainer, place, and who's expected.
  */
 export function SessionRow({ session: s, timeZone, showCohort = true }: { session: Session; timeZone: string | undefined; showCohort?: boolean }) {
+  const paths = useSessionPaths()
   const line = statusLine(s)
   return (
     <li className="border-b border-default last:border-b-0">
-      <Link to={`/admin/courses/sessions/${s.id}`} className="flex items-stretch gap-3 rounded-sm py-2.5 hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none">
+      <Link
+        to={paths.session(s.id)}
+        className="flex items-stretch gap-3 rounded-sm py-2.5 hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+      >
         <span className="flex w-11 shrink-0 flex-col gap-0.5 tabular-nums">
           <span className={clsx('text-body-emphasis', s.cancelled ? 'text-muted line-through' : 'text-primary')}>{formatTime(s.startsAt, timeZone)}</span>
           <span className="text-caption text-secondary">{formatTime(s.endsAt, timeZone)}</span>
         </span>
-        <span aria-hidden="true" className={clsx('w-[3px] shrink-0 rounded-full', s.cancelled ? 'bg-default' : s.mode === 'online' ? 'bg-brand' : 'bg-success')} />
+        <span
+          aria-hidden="true"
+          className={clsx('w-[3px] shrink-0 rounded-full', s.cancelled ? 'bg-default' : s.mode === 'online' ? 'bg-brand' : 'bg-success')}
+        />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className={clsx('truncate text-body-strong', s.cancelled ? 'text-muted' : 'text-primary')}>
             {s.title}
-            {s.number ? <span className="font-normal text-secondary"> · Session {s.number} of {s.total}</span> : null}
+            {s.number ? (
+              <span className="font-normal text-secondary">
+                {' '}
+                · Session {s.number} of {s.total}
+              </span>
+            ) : null}
           </span>
           <span className="truncate text-caption text-secondary">
             {[showCohort && s.cohort.name, s.trainer?.name ?? 'No trainer yet'].filter(Boolean).join(' · ')}
