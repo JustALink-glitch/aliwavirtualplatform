@@ -167,6 +167,11 @@ function SessionView({ session: s }: { session: Session }) {
                     {s.attendance.recorded ? 'Open register' : 'Take attendance'}
                   </Button>
                 )}
+                {s.status === 'held' && (
+                  <Button variant="secondary" fullWidth onClick={() => navigate('feedback')}>
+                    Participant feedback
+                  </Button>
+                )}
               </Panel>
               <Panel aria-labelledby="report-title">
                 <PanelHeader

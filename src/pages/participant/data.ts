@@ -207,7 +207,7 @@ export const useMySessions = () =>
 export const useMySession = (id: string) =>
   useQuery({
     queryKey: [...keys.all, 'session', id],
-    queryFn: ({ signal }) => api<{ timeZone: string; session: MySession; resources: MyResource[] }>(`/v1/my/sessions/${id}`, { signal }),
+    queryFn: ({ signal }) => api<{ timeZone: string; session: MySession; resources: MyResource[]; feedback: { canRate: boolean; mine: { rating: number; comment: string | null } | null } }>(`/v1/my/sessions/${id}`, { signal }),
     retry: retry404,
   })
 
@@ -260,4 +260,12 @@ export function todayLong(timeZone?: string): string {
 export function daysUntil(isoDate: string, timeZone?: string): number {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
   return Math.round((Date.parse(`${isoDate}T12:00:00Z`) - Date.parse(`${today}T12:00:00Z`)) / 86400000)
+}
+
+export function useRateSession(id: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { rating: number; comment: string }) => api<{ ok: true }>(`/v1/my/sessions/${id}/feedback`, { method: 'PUT', body: input }),
+    onSuccess: () => client.invalidateQueries({ queryKey: [...keys.all, 'session', id] }),
+  })
 }

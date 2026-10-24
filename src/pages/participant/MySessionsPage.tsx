@@ -1,11 +1,16 @@
+import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
+import { Button } from '@/components/ui/Button'
+import { Dialog } from '@/components/ui/Dialog'
 import { DetailList } from '@/components/ui/FormLayout'
+import { TextAreaField } from '@/components/ui/TextField'
+import { ApiError } from '@/lib/api'
 import { CalendarIcon, ChevronRightIcon } from '@/components/ui/icons'
 import { EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { formatDay, formatTime, formatTimeRange, plural, relativeDay } from '@/lib/format'
-import { duration, sessionWhere, useMySession, useMySessions, type MySession } from './data'
+import { duration, sessionWhere, useMySession, useMySessions, useRateSession, type MySession } from './data'
 import { ResourceRow, SessionBadge } from './SessionBits'
 
 const BASE = '/participant/sessions'
@@ -115,7 +120,7 @@ export function MySessionPage() {
       </>
     )
   }
-  const { session: s, resources, timeZone } = query.data
+  const { session: s, resources, timeZone, feedback } = query.data
   const day = relativeDay(s.startsAt, timeZone)
   const dayLabel = day === 'Today' || day === 'Yesterday' ? day : formatDay(s.startsAt, timeZone)
   const statusText = { scheduled: 'Scheduled', in_progress: 'In progress', held: 'Held', cancelled: 'Cancelled' }[s.status]
@@ -178,6 +183,7 @@ export function MySessionPage() {
               <p className="text-caption text-secondary">Looks wrong? Tell your trainer — they can correct it.</p>
             </Panel>
           )}
+          {feedback.canRate && <RatePanel sessionId={s.id} mine={feedback.mine} />}
           {resources.length > 0 && (
             <Panel aria-labelledby="resources-title" className="gap-1">
               <PanelHeader id="resources-title" title="Resources for this session" />
@@ -204,5 +210,95 @@ export function MySessionPage() {
         </aside>
       </div>
     </>
+  )
+}
+
+/** P4.03 "How was this session?" — optional, anonymous, can be changed. */
+function RatePanel({ sessionId, mine }: { sessionId: string; mine: { rating: number; comment: string | null } | null }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <Panel aria-labelledby="rate-title" className="gap-3">
+      <PanelHeader
+        id="rate-title"
+        title="How was this session?"
+        description={mine ? `You rated it ${mine.rating} out of 5. Thanks — it helps your trainer.` : 'Optional and anonymous. Takes 30 seconds.'}
+      />
+      <div>
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          {mine ? 'Change your rating' : 'Rate this session'}
+        </Button>
+      </div>
+      {open && <RateDialog sessionId={sessionId} mine={mine} onClose={() => setOpen(false)} />}
+    </Panel>
+  )
+}
+
+function RateDialog({ sessionId, mine, onClose }: { sessionId: string; mine: { rating: number; comment: string | null } | null; onClose: () => void }) {
+  const rate = useRateSession(sessionId)
+  const [rating, setRating] = useState<number | null>(mine?.rating ?? null)
+  const [comment, setComment] = useState(mine?.comment ?? '')
+  const [error, setError] = useState<string | null>(null)
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (!rating) return setError('Choose a rating from 1 to 5.')
+    try {
+      await rate.mutateAsync({ rating, comment })
+      onClose()
+    } catch (err) {
+      setError(err instanceof ApiError && err.status < 500 ? err.message : 'Your feedback wasn’t sent. Try again.')
+    }
+  }
+
+  return (
+    <Dialog
+      open
+      onClose={() => !rate.isPending && onClose()}
+      width={520}
+      title="How useful was this session?"
+      actions={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={rate.isPending}>
+            Skip
+          </Button>
+          <Button type="submit" form="rate-session" disabled={rate.isPending}>
+            {rate.isPending ? 'Sending…' : 'Send feedback'}
+          </Button>
+        </>
+      }
+    >
+      <form id="rate-session" onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label="Rating, 1 not useful to 5 very useful" className="grid grid-cols-5 gap-2">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={rating === n}
+                onClick={() => {
+                  setRating(n)
+                  setError(null)
+                }}
+                className={
+                  rating === n
+                    ? 'h-9 rounded-full border border-brand bg-brand-subtle text-body-strong text-brand-text focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none max-md:h-11'
+                    : 'h-9 rounded-full border border-default bg-surface text-body text-secondary hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none max-md:h-11'
+                }
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-between text-caption text-secondary">
+            <span>Not useful</span>
+            <span>Very useful</span>
+          </div>
+          {error && <p className="text-caption text-error-fg">{error}</p>}
+        </div>
+        <TextAreaField label="Anything to add?" optional value={comment} maxLength={1000} onChange={(e) => setComment(e.target.value)} />
+        <p className="text-caption text-secondary">Anonymous — your trainer sees the results, not your name.</p>
+      </form>
+    </Dialog>
   )
 }

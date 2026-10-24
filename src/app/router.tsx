@@ -8,6 +8,7 @@ import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
 import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
 import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
+import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
 import { DashboardPage } from '@/pages/participant/DashboardPage'
 import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
@@ -64,6 +65,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'courses/sessions/:id/edit', element: <EditSessionPage /> },
     { path: 'courses/sessions/:id/attendance', element: <AttendancePage /> },
     { path: 'courses/sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
+    { path: 'courses/sessions/:id/feedback', element: <SessionFeedbackPage area="admin" /> },
     { path: 'courses/new', element: <NewCoursePage /> },
     { path: 'courses/assignments', element: <AdminAssignmentsPage /> },
     { path: 'courses/assignments/grading-scales', element: <GradeScalesPage /> },
@@ -90,6 +92,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'grading/:id', element: <AssignmentPage area="trainer" /> },
     { path: 'grading/:id/edit', element: <AssignmentFormPage mode="edit" /> },
     { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
+    { path: 'sessions/:id/feedback', element: <SessionFeedbackPage area="trainer" /> },
   ],
   participant: [
     { index: true, element: <DashboardPage /> },
