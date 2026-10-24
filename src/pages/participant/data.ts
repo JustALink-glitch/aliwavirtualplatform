@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import type { Criterion, Scale, SubmissionType } from '@/pages/assignments/data'
+import type { Certificate, CohortRef, CompletionStatus, Criterion as CompletionCriterion } from '@/pages/admin/completion/data'
 
 export type MyStatus = 'not_submitted' | 'overdue' | 'closed' | 'submitted' | 'late' | 'graded'
 
@@ -269,3 +270,29 @@ export function useRateSession(id: string) {
     onSuccess: () => client.invalidateQueries({ queryKey: [...keys.all, 'session', id] }),
   })
 }
+
+/** P7.01 Progress against the completion rule. */
+export interface MyProgress {
+  organisation: string
+  timeZone: string
+  progress: {
+    cohort: CohortRef
+    status: CompletionStatus
+    requiresApproval: boolean
+    attendance: CompletionCriterion
+    submissions: CompletionCriterion
+    grade: CompletionCriterion
+    review: { decision: 'completed' | 'not_completed'; at: string; by: string | null } | null
+    certificate: { id: string; issuedAt: string } | null
+  } | null
+}
+
+export const useMyProgress = () =>
+  useQuery({ queryKey: [...keys.all, 'progress'], queryFn: ({ signal }) => api<MyProgress>('/v1/my/progress', { signal }) })
+
+export const useMyCertificate = () =>
+  useQuery({
+    queryKey: [...keys.all, 'certificate'],
+    queryFn: ({ signal }) => api<{ timeZone: string; certificate: Certificate }>('/v1/my/certificate', { signal }),
+    retry: retry404,
+  })

@@ -6,13 +6,14 @@ import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ChevronRightIcon, PlusIcon, SearchIcon, UserGroupIcon } from '@/components/ui/icons'
-import { EmptyState, FilterChips, PageHeader, Panel } from '@/components/ui/Page'
+import { EmptyState, FilterChips, Panel } from '@/components/ui/Page'
 import { Percent } from '@/components/ui/Percent'
 import { FilterSelect, SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
 import { plural, relativeDay } from '@/lib/format'
 import { paginate } from '@/lib/paginate'
 import { initials } from '@/lib/people'
+import { ParticipantsHeader } from '@/pages/admin/completion/ParticipantsHeader'
 import { AddParticipantDialog } from '@/pages/admin/participants/AddParticipantDialog'
 import { useParticipants, type ParticipantSummary } from '@/pages/admin/participants/data'
 import { ParticipantBadge } from '@/pages/admin/participants/ParticipantBadge'
@@ -65,7 +66,6 @@ export function ParticipantsPage() {
   )
   const paged = paginate(visible, page)
   const count = (f: Filter) => inCohort.filter((p) => bucket(p) === f).length
-  const summary = query.data?.summary
   const noCohorts = !cohorts.isPending && openCohorts.length === 0
 
   const actions = (
@@ -81,15 +81,7 @@ export function ParticipantsPage() {
 
   return (
     <>
-      <PageHeader
-        title="Participants"
-        description={
-          summary && all.length > 0
-            ? `${plural(summary.inActiveCohorts, 'person', 'people')} in active cohorts · ${summary.inUpcomingCohorts} enrolled in upcoming cohorts.`
-            : 'People enrolled in your cohorts.'
-        }
-        actions={actions}
-      />
+      <ParticipantsHeader actions={actions} />
       {notice && (
         <AlertBanner tone={notice.tone} title={notice.title}>
           {notice.body}

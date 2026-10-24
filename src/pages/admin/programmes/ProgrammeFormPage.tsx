@@ -26,9 +26,8 @@ import {
 const PRESELECTED = ['Employed', 'Internship', 'Further study']
 const FALLBACK_OUTCOMES = ['Employed', 'Internship', 'Further study', 'Started a business', 'Freelancing']
 
-/** Organisation defaults (F1.05). Shown as text until Settings can change them. */
-const COMPLETION_NOTE =
-  'Follows your organisation’s rules: 75% attendance, 80% of assignments submitted, admin approval. Change them in Settings › Completion & certificates.'
+/** Organisation defaults (F1.05). */
+const COMPLETION_NOTE = 'Follows your organisation’s completion rule. Change it in Settings › Completion & certificates.'
 
 /** /admin/programmes/new — A1.03 New programme. */
 export function NewProgrammePage() {

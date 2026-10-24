@@ -248,3 +248,27 @@
     outline-offset: 2px;
   }
 }
+
+/* Certificates (D2, P7.02): "Download PDF" prints only the certificate. */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 0;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-certificate,
+  .print-certificate * {
+    visibility: visible;
+  }
+  .print-certificate {
+    position: fixed;
+    inset: 0;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    justify-content: center;
+  }
+}

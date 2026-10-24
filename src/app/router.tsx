@@ -8,6 +8,14 @@ import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
 import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
 import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
+import { AdminCertificatePage } from '@/pages/admin/completion/CertificatePage'
+import { CertificatesPage } from '@/pages/admin/completion/CertificatesPage'
+import { OutcomesPage } from '@/pages/admin/completion/OutcomesPage'
+import { AttentionRulesPage } from '@/pages/admin/settings/AttentionRulesPage'
+import { CompletionSettingsPage } from '@/pages/admin/settings/CompletionSettingsPage'
+import { SettingsComingSoon, SettingsLayout } from '@/pages/admin/settings/SettingsLayout'
+import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
+import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
 import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
 import { MyParticipantsPage, TrainerParticipantPage } from '@/pages/trainer/MyParticipantsPage'
@@ -57,6 +65,9 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'trainers/:id', element: <TrainerDetailPage /> },
     { path: 'participants', element: <ParticipantsPage /> },
     { path: 'participants/import', element: <ImportParticipantsPage /> },
+    { path: 'participants/certificates', element: <CertificatesPage /> },
+    { path: 'participants/certificates/:id', element: <AdminCertificatePage /> },
+    { path: 'participants/outcomes', element: <OutcomesPage /> },
     { path: 'participants/:id', element: <ParticipantDetailPage /> },
     { path: 'programmes', element: <ProgrammesPage /> },
     { path: 'programmes/new', element: <NewProgrammePage /> },
@@ -89,6 +100,19 @@ const built: Partial<Record<Area, RouteObject[]>> = {
         { path: 'trainers', element: <CohortTrainers /> },
       ],
     },
+    {
+      path: 'settings',
+      element: <SettingsLayout />,
+      children: [
+        { index: true, element: <Navigate to="completion" replace /> },
+        { path: 'completion', element: <CompletionSettingsPage /> },
+        { path: 'attention-rules', element: <AttentionRulesPage /> },
+        ...settingsMenu
+          .flatMap((s) => s.items)
+          .filter((i) => i.path !== 'completion' && i.path !== 'attention-rules')
+          .map((i) => ({ path: i.path, element: <SettingsComingSoon path={i.path} /> })),
+      ],
+    },
   ],
   trainer: [
     { path: 'grading', element: <TrainerAssignmentsPage /> },
@@ -110,7 +134,11 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'assignments', element: <MyAssignmentsPage /> },
     { path: 'assignments/:id', element: <MyAssignmentPage /> },
     { path: 'grades', element: <GradesPage /> },
+    { path: 'grades/progress', element: <ProgressPage /> },
+    { path: 'grades/certificate', element: <MyCertificatePage /> },
     { path: 'grades/:id', element: <FeedbackPage /> },
+    // The link in the certificate email.
+    { path: 'certificate', element: <Navigate to="/participant/grades/certificate" replace /> },
   ],
 }
 

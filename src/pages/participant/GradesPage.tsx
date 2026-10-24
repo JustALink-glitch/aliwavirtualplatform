@@ -6,6 +6,7 @@ import { Cell, Row, Stacked, Table, type Column } from '@/components/ui/Table'
 import { formatDay } from '@/lib/format'
 import { formatDue, scaleName } from '@/pages/assignments/data'
 import { useMyAssignment, useMyGrades } from './data'
+import { GradesHeader } from './ProgressPage'
 import { SubmissionContent } from './MyAssignmentPage'
 
 const BASE = '/participant/grades'
@@ -26,7 +27,7 @@ export function GradesPage() {
 
   return (
     <>
-      <PageHeader title="Grades & feedback" description="Each grade uses the scale your trainer chose for that assignment." />
+      <GradesHeader />
       {query.isPending ? (
         <Panel aria-busy="true" aria-label="Loading grades" className="h-[240px]">
           <span className="sr-only">Loading grades</span>

@@ -7,13 +7,14 @@ export interface Metric {
   icon: ReactNode
 }
 
-/** Metric strip (A1.02, A3.02): one panel, four metrics separated by dividers. */
+/** Metric strip (A1.02, A3.02): one panel, three or four metrics separated by dividers. */
 export function Metrics({ items }: { items: Metric[] }) {
+  const three = items.length === 3
   return (
     <section
       aria-label="Summary"
       // 1px gaps over the border colour draw the dividers in every layout (4 → 2 → 1 columns).
-      className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-default bg-default shadow-[0_1px_2px_rgb(15_23_41/0.04),0_4px_12px_-2px_rgb(15_23_41/0.03)] max-lg:grid-cols-2 max-md:grid-cols-1"
+      className={`grid ${three ? 'grid-cols-3 max-lg:grid-cols-1' : 'grid-cols-4 max-lg:grid-cols-2 max-md:grid-cols-1'} gap-px overflow-hidden rounded-lg border border-default bg-default shadow-[0_1px_2px_rgb(15_23_41/0.04),0_4px_12px_-2px_rgb(15_23_41/0.03)]`}
     >
       {items.map((item) => (
         <div key={item.label} className="flex gap-3 bg-surface px-5 py-4">
