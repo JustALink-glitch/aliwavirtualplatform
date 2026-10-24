@@ -1,14 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { Checkbox, RadioGroup } from '@/components/ui/Choice'
 import { FormLayout, FormSection } from '@/components/ui/FormLayout'
-import { CloseIcon, PlusIcon } from '@/components/ui/icons'
+import { FileRow } from '@/components/ui/FileRow'
+import { CloseIcon, FileIcon, PlusIcon } from '@/components/ui/icons'
 import { FilterChips, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { SelectField, TextAreaField, TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
+import { uploadFile } from '@/lib/files'
 import { addDays } from '@/lib/schedule'
 import { plural, todayIn } from '@/lib/format'
 import {
@@ -27,6 +29,17 @@ import {
 const BASE = '/trainer/grading'
 type Options = NonNullable<ReturnType<typeof useAssignmentOptions>['data']>
 type Errors = Record<string, string | undefined>
+interface AttachedFile {
+  key: string
+  name: string
+  size: number
+  /** Already saved on the assignment. */
+  id?: string
+  /** Uploaded, waiting to be saved. */
+  path?: string
+  uploading?: boolean
+  error?: string
+}
 
 /** /trainer/grading/new and /trainer/grading/:id/edit — T6.02, T6.02b, T6.05. */
 export function AssignmentFormPage({ mode }: { mode: 'new' | 'edit' }) {
@@ -79,6 +92,9 @@ function AssignmentForm({ options, existing }: { options: Options; existing: Ass
   const [title, setTitle] = useState(existing?.title ?? '')
   const [brief, setBrief] = useState(existing?.brief ?? '')
   const [links, setLinks] = useState<string[]>(existing?.links.map((l) => l.url) ?? [])
+  const [files, setFiles] = useState<AttachedFile[]>(existing?.files.map((f) => ({ key: f.id, id: f.id, name: f.name, size: f.size })) ?? [])
+  const picker = useRef<HTMLInputElement>(null)
+  const uploading = files.some((f) => f.uploading)
   const [dueDate, setDueDate] = useState(existing?.dueDate ?? addDays(todayIn(options.timeZone), 7))
   const [dueTime, setDueTime] = useState(existing?.dueTime ?? '23:59')
   const [types, setTypes] = useState<SubmissionType[]>(existing?.submissionTypes ?? ['file'])
@@ -114,6 +130,24 @@ function AssignmentForm({ options, existing }: { options: Options; existing: Ass
   const scales = existing && !options.scales.includes(existing.gradingScale) ? [...options.scales, existing.gradingScale] : options.scales
   const clear = (key: string) => setErrors((prev) => ({ ...prev, [key]: undefined }))
 
+  /** Uploads straight away so saving is quick; the form sends the storage paths. */
+  async function attach(picked: File[]) {
+    clear('files')
+    const added = picked.map((file) => ({ key: crypto.randomUUID(), name: file.name, size: file.size, uploading: true, file }))
+    setFiles((prev) => [...prev, ...added.map(({ file: _file, ...f }) => f)])
+    await Promise.all(
+      added.map(async ({ key, file }) => {
+        try {
+          const path = await uploadFile('/v1/assignments/uploads', file)
+          setFiles((prev) => prev.map((f) => (f.key === key ? { ...f, path, uploading: false } : f)))
+        } catch (error) {
+          const message = error instanceof ApiError && Array.isArray(error.details) ? (error.details as { message: string }[])[0]?.message : error instanceof Error ? error.message : null
+          setFiles((prev) => prev.map((f) => (f.key === key ? { ...f, uploading: false, error: message ?? 'Didn’t upload. Remove it and try again.' } : f)))
+        }
+      }),
+    )
+  }
+
   async function submit(publish: boolean) {
     const filledCriteria = criteria.filter((c) => c.title.trim() || c.description.trim())
     const next: Errors = {
@@ -131,6 +165,8 @@ function AssignmentForm({ options, existing }: { options: Options; existing: Ass
         links.map((l, i) => [`links.${i}.url`, l.trim() && !/^https?:\/\/\S+$/.test(l.trim()) ? 'Paste the full link, starting with https://' : undefined]),
       ),
     }
+    if (uploading) next.files = 'Wait for the files to finish uploading.'
+    else if (files.some((f) => f.error)) next.files = 'Remove the files that didn’t upload.'
     setErrors(next)
     setFailed(null)
     if (Object.values(next).some(Boolean)) return
@@ -139,6 +175,7 @@ function AssignmentForm({ options, existing }: { options: Options; existing: Ass
       title,
       brief,
       links: links.filter((l) => l.trim()).map((url) => ({ url: url.trim() })),
+      files: files.flatMap((f): AssignmentInput['files'] => (f.id ? [{ id: f.id }] : f.path ? [{ path: f.path, name: f.name }] : [])),
       dueDate,
       dueTime,
       submissionTypes: types,
@@ -277,16 +314,54 @@ function AssignmentForm({ options, existing }: { options: Options; existing: Ass
                   </button>
                 </div>
               ))}
-              {links.length < 10 && (
-                <button
-                  type="button"
-                  onClick={() => setLinks((prev) => [...prev, ''])}
-                  className="inline-flex w-fit items-center gap-1.5 text-label-button text-brand-text hover:underline"
-                >
-                  <PlusIcon size={16} />
-                  Add link
-                </button>
-              )}
+              {files.map((f) => (
+                <FileRow
+                  key={f.key}
+                  name={f.name}
+                  size={f.size}
+                  meta={f.uploading ? 'Uploading…' : f.error ? <span className="text-error-fg">{f.error}</span> : undefined}
+                  action={
+                    <button
+                      type="button"
+                      aria-label={`Remove ${f.name}`}
+                      onClick={() => setFiles((prev) => prev.filter((x) => x.key !== f.key))}
+                      className="flex size-9 shrink-0 items-center justify-center rounded-md text-icon hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+                    >
+                      <CloseIcon size={16} />
+                    </button>
+                  }
+                />
+              ))}
+              {errors.files && <p className="text-caption text-error-fg">{errors.files}</p>}
+              <div className="flex flex-wrap items-center gap-4">
+                {files.length < 10 && (
+                  <Button variant="secondary" icon={<FileIcon size={16} />} onClick={() => picker.current?.click()}>
+                    Attach files
+                  </Button>
+                )}
+                <input
+                  ref={picker}
+                  type="file"
+                  multiple
+                  aria-label="Attach files"
+                  tabIndex={-1}
+                  className="sr-only"
+                  onChange={(e) => {
+                    void attach([...(e.target.files ?? [])].slice(0, 10 - files.length))
+                    e.target.value = ''
+                  }}
+                />
+                {links.length < 10 && (
+                  <button
+                    type="button"
+                    onClick={() => setLinks((prev) => [...prev, ''])}
+                    className="inline-flex w-fit items-center gap-1.5 text-label-button text-brand-text hover:underline"
+                  >
+                    <PlusIcon size={16} />
+                    Add link
+                  </button>
+                )}
+              </div>
             </FormSection>
 
             <FormSection title="Due and submissions">

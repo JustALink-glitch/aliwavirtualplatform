@@ -51,6 +51,7 @@ export interface AssignmentDetail extends AssignmentSummary {
   dueTime: string
   criteria: Criterion[]
   links: { name: string; url: string }[]
+  files: { id: string; name: string; size: number }[]
   locked: boolean
 }
 
@@ -78,7 +79,7 @@ export interface SubmissionView {
     text: string | null
     link: string | null
     note: string | null
-    files: { name: string; size: number; type: string | null }[]
+    files: { id: string; name: string; size: number; type: string | null }[]
   } | null
   grade: {
     points: number | null
@@ -104,6 +105,7 @@ export interface AssignmentInput {
   title: string
   brief: string
   links: { url: string }[]
+  files: ({ id: string } | { path: string; name: string })[]
   dueDate: string
   dueTime: string
   submissionTypes: SubmissionType[]
@@ -265,9 +267,3 @@ export const formatDue = (at: string, timeZone?: string) => `${formatDay(at, tim
 /** "on time" / "late" after a submission time (T6.04). */
 export const submittedLine = (s: { submittedAt: string; late: boolean }, timeZone?: string) =>
   `Submitted ${formatDue(s.submittedAt, timeZone)} · ${s.late ? 'late' : 'on time'}`
-
-export function fileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
-}

@@ -8,6 +8,9 @@ import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
 import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
 import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
 import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
+import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
+import { MyAssignmentPage } from '@/pages/participant/MyAssignmentPage'
+import { MyAssignmentsPage } from '@/pages/participant/MyAssignmentsPage'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ParticipantsPage } from '@/pages/admin/people/ParticipantsPage'
@@ -83,6 +86,12 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'grading/:id', element: <AssignmentPage area="trainer" /> },
     { path: 'grading/:id/edit', element: <AssignmentFormPage mode="edit" /> },
     { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
+  ],
+  participant: [
+    { path: 'assignments', element: <MyAssignmentsPage /> },
+    { path: 'assignments/:id', element: <MyAssignmentPage /> },
+    { path: 'grades', element: <GradesPage /> },
+    { path: 'grades/:id', element: <FeedbackPage /> },
   ],
 }
 

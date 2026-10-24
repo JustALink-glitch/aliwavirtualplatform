@@ -5,12 +5,14 @@ import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { RadioGroup } from '@/components/ui/Choice'
-import { ArrowRightIcon, CheckCircleIcon, ChevronLeftIcon, FileIcon } from '@/components/ui/icons'
+import { FileRow } from '@/components/ui/FileRow'
+import { ArrowRightIcon, CheckCircleIcon, ChevronLeftIcon } from '@/components/ui/icons'
 import { PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { TextAreaField, TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
+import { downloadFile } from '@/lib/files'
 import { StatusBadge } from './AssignmentPage'
-import { fileSize, formatDue, LETTERS, scaleHint, submittedLine, useSaveGrade, useSubmission, type GradeInput, type Letter, type SubmissionView } from './data'
+import { formatDue, LETTERS, scaleHint, submittedLine, useSaveGrade, useSubmission, type GradeInput, type Letter, type SubmissionView } from './data'
 import { assignmentBase, type Area } from './paths'
 
 /** T6.04 Grade submission (trainer) and C4.03 Submission (admin, read-only). */
@@ -115,15 +117,7 @@ function SubmissionView({ area, crumbs, data }: { area: Area; crumbs: { label: s
           {s ? (
             <>
               {s.files.map((f) => (
-                <div key={f.name} className="flex items-center gap-3 rounded-md border border-default p-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-surface-hover text-icon">
-                    <FileIcon size={18} />
-                  </span>
-                  <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-body-strong text-primary">{f.name}</span>
-                    <span className="text-caption text-secondary">{fileSize(f.size)}</span>
-                  </span>
-                </div>
+                <FileRow key={f.id} name={f.name} size={f.size} onDownload={() => downloadFile(`/v1/assignments/${a.id}/files/${f.id}`)} />
               ))}
               {s.link && (
                 <a
