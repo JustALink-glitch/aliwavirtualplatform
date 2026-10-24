@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ChevronRightIcon, PlusIcon, UserGroupIcon } from '@/components/ui/icons'
 import { EmptyState, FilterChips, Panel } from '@/components/ui/Page'
+import { Percent } from '@/components/ui/Percent'
 import { SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
 import { plural, relativeDay } from '@/lib/format'
@@ -129,8 +130,8 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
                         <Cell>
                           <ParticipantBadge memberStatus={p.status} invitationExpiresAt={p.invitationExpiresAt} enrolmentStatus={p.enrolment?.status} />
                         </Cell>
-                        <Cell align="right" hideBelow="xl" className="text-muted">
-                          —
+                        <Cell align="right" hideBelow="xl">
+                          <Percent value={p.enrolment?.attendance?.rate} />
                         </Cell>
                         <Cell hideBelow="xl" className="text-muted">
                           —

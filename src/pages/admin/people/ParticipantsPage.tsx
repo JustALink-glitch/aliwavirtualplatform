@@ -7,6 +7,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { ChevronRightIcon, PlusIcon, SearchIcon, UserGroupIcon } from '@/components/ui/icons'
 import { EmptyState, FilterChips, PageHeader, Panel } from '@/components/ui/Page'
+import { Percent } from '@/components/ui/Percent'
 import { FilterSelect, SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
 import { plural, relativeDay } from '@/lib/format'
@@ -207,8 +208,8 @@ export function ParticipantsPage() {
                           </span>
                         </Cell>
                         <Cell>{p.enrolment ? <Stacked primary={p.enrolment.cohort.name} secondary={p.enrolment.programmeName} /> : <span className="text-muted">No cohort</span>}</Cell>
-                        <Cell align="right" hideBelow="xl" className="text-muted">
-                          —
+                        <Cell align="right" hideBelow="xl">
+                          <Percent value={p.enrolment?.attendance?.rate} />
                         </Cell>
                         <Cell hideBelow="xl" className="text-muted">
                           —

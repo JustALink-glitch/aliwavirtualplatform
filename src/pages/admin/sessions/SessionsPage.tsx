@@ -140,7 +140,7 @@ export function SessionsPage() {
                   <ul>
                     {query.data!.attendanceToConfirm.map((s) => (
                       <li key={s.id} className="border-b border-default last:border-b-0">
-                        <Link to={`sessions/${s.id}`} className="flex items-center gap-3 py-3 hover:bg-surface-hover">
+                        <Link to={`sessions/${s.id}/attendance`} className="flex items-center gap-3 py-3 hover:bg-surface-hover">
                           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                             <span className="truncate text-body-strong text-primary">{s.title}</span>
                             <span className="text-caption text-secondary">

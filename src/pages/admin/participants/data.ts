@@ -23,6 +23,7 @@ export interface ParticipantSummary {
     enrolledAt: string
     cohort: { id: string; name: string; status: CohortStatus }
     programmeName: string
+    attendance: { present: number; recorded: number; rate: number } | null
   } | null
 }
 
@@ -37,6 +38,7 @@ export interface Enrolment {
   cohort: { id: string; name: string; status: CohortStatus }
   programme: { id: string; name: string }
   trainers: string[]
+  attendance: { present: number; recorded: number; rate: number } | null
 }
 
 export interface HistoryEntry {

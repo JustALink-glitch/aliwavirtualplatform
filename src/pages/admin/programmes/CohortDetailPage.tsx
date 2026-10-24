@@ -158,7 +158,15 @@ export function CohortOverview() {
             value: cohort.plannedSessions ? `${cohort.heldSessions} of ${cohort.plannedSessions}` : '—',
             context: cohort.plannedSessions ? 'Sessions held so far' : 'No sessions planned yet',
           },
-          { label: 'Attendance, last 4 weeks', icon: <ChartIcon size={18} />, value: '—', context: 'No sessions held yet' },
+          {
+            label: 'Attendance, last 4 weeks',
+            icon: <ChartIcon size={18} />,
+            value: cohort.attendance4w === null ? '—' : `${cohort.attendance4w}%`,
+            context:
+              cohort.attendance4w === null
+                ? cohort.attendanceAll === null ? 'Nothing recorded yet' : `Nothing in 4 weeks · ${cohort.attendanceAll}% overall`
+                : `Present ÷ recorded${cohort.attendanceAll !== null ? ` · ${cohort.attendanceAll}% overall` : ''}`,
+          },
           { label: 'Needs attention', icon: <InfoTriangleIcon size={18} />, value: '—', context: 'Checked once sessions are held' },
         ]}
       />

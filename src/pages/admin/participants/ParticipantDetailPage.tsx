@@ -180,6 +180,10 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
                       },
                       { label: 'Trainers', value: shown.trainers.length ? shown.trainers.join(', ') : <span className="font-normal text-muted">None yet</span> },
                       { label: 'Enrolment', value: enrolmentLabel[shown.status] },
+                      {
+                        label: 'Attendance',
+                        value: shown.attendance ? `${shown.attendance.rate}% · ${shown.attendance.present} of ${shown.attendance.recorded} sessions` : <span className="font-normal text-muted">Nothing recorded yet</span>,
+                      },
                       { label: 'Enrolled', value: formatDayWithYear(shown.enrolledAt, timeZone) },
                     ]
                   : []),
@@ -216,6 +220,7 @@ function EnrolmentRow({ enrolment: e, timeZone }: { enrolment: Enrolment; timeZo
         </Link>
         <span className="text-caption text-secondary">
           {e.programme.name} · {change}
+          {e.attendance && ` · Attendance ${e.attendance.rate}% (${e.attendance.present} of ${e.attendance.recorded})`}
         </span>
         {e.note && <span className="text-caption text-secondary italic">“{e.note}”</span>}
       </span>

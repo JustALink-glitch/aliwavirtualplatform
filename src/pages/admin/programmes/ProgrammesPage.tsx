@@ -7,6 +7,7 @@ import { ChevronRightIcon, GridIcon, PlusIcon, SearchIcon } from '@/components/u
 import { EmptyState, FilterChips, PageHeader, Panel } from '@/components/ui/Page'
 import { SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
+import { Percent } from '@/components/ui/Percent'
 import { plural } from '@/lib/format'
 import { paginate } from '@/lib/paginate'
 import { ProgrammeStatusBadge } from './badges'
@@ -165,8 +166,8 @@ export function ProgrammesPage() {
                         <Cell align="right" className="text-body-strong">
                           {p.cohorts.total ? p.participants : '—'}
                         </Cell>
-                        <Cell align="right" hideBelow="xl" className="text-muted">
-                          —
+                        <Cell align="right" hideBelow="xl">
+                          <Percent value={p.attendance4w} />
                         </Cell>
                         <Cell align="right" hideBelow="xl" className="text-muted">
                           —

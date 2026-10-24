@@ -5,6 +5,7 @@ import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { CalendarIcon, ChevronRightIcon, PlusIcon } from '@/components/ui/icons'
 import { EmptyState, FilterChips, PageHeader, Panel } from '@/components/ui/Page'
+import { Percent } from '@/components/ui/Percent'
 import { SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
 import { formatDateRange, plural } from '@/lib/format'
@@ -143,8 +144,8 @@ export function CohortsPage() {
                         <Cell hideBelow="lg">
                           <DeliveryProgress cohort={cohort} />
                         </Cell>
-                        <Cell align="right" hideBelow="xl" className="text-muted">
-                          —
+                        <Cell align="right" hideBelow="xl">
+                          <Percent value={cohort.attendance4w} />
                         </Cell>
                         <Cell align="right" hideBelow="xl" className="text-muted">
                           —

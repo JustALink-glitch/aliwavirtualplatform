@@ -147,13 +147,26 @@ function SessionView({ session: s }: { session: Session }) {
                   title="Attendance"
                   description={
                     scheduled
-                      ? 'Taken after the session. You or the trainer can record it.'
+                      ? 'Marked from the register once the session starts. You or the trainer can record it.'
                       : s.attendance.recorded
-                        ? `${s.attendance.present} of ${s.expected} present`
+                        ? `${s.attendance.recorded} of ${s.expected} recorded`
                         : 'Not recorded yet.'
                   }
                 />
+                {past && s.attendance.recorded > 0 && (
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-metric-large text-primary">{Math.round((s.attendance.present / s.attendance.recorded) * 100)}%</span>
+                    <span className="text-caption text-secondary">
+                      {s.attendance.present} present ÷ {s.attendance.recorded} recorded
+                    </span>
+                  </div>
+                )}
                 {past && s.attendance.recorded === 0 && <Badge tone="warning">Not recorded</Badge>}
+                {past && (
+                  <Button variant={s.attendance.recorded ? 'secondary' : 'primary'} fullWidth onClick={() => navigate('attendance')}>
+                    {s.attendance.recorded ? 'Open register' : 'Take attendance'}
+                  </Button>
+                )}
               </Panel>
               <Panel aria-labelledby="report-title">
                 <PanelHeader

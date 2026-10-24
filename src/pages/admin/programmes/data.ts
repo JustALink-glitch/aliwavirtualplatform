@@ -16,6 +16,7 @@ export interface Programme {
   courseNames: string[]
   cohorts: { total: number; active: number; upcoming: number; completed: number }
   participants: number
+  attendance4w: number | null
   createdAt: string
   archivedAt: string | null
 }
@@ -33,6 +34,8 @@ export interface CohortSummary {
   participants: number
   plannedSessions: number
   heldSessions: number
+  attendance4w: number | null
+  attendanceAll: number | null
   archivedAt: string | null
 }
 

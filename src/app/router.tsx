@@ -11,6 +11,8 @@ import { CohortCourses, CohortLayout, CohortOverview, CohortParticipants, Cohort
 import { EditCohortPage, NewCohortPage } from '@/pages/admin/programmes/CohortFormPage'
 import { CohortsPage } from '@/pages/admin/programmes/CohortsPage'
 import { CoursesPage } from '@/pages/admin/programmes/CoursesPage'
+import { AttendanceHistoryPage } from '@/pages/admin/sessions/AttendanceHistoryPage'
+import { AttendancePage } from '@/pages/admin/sessions/AttendancePage'
 import { EditSessionPage } from '@/pages/admin/sessions/EditSessionPage'
 import { ScheduleSessionPage } from '@/pages/admin/sessions/ScheduleSessionPage'
 import { SessionDetailPage } from '@/pages/admin/sessions/SessionDetailPage'
@@ -47,6 +49,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'courses/sessions/new', element: <ScheduleSessionPage /> },
     { path: 'courses/sessions/:id', element: <SessionDetailPage /> },
     { path: 'courses/sessions/:id/edit', element: <EditSessionPage /> },
+    { path: 'courses/sessions/:id/attendance', element: <AttendancePage /> },
+    { path: 'courses/sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
     { path: 'courses/new', element: <NewCoursePage /> },
     { path: 'cohorts', element: <CohortsPage /> },
     { path: 'cohorts/new', element: <NewCohortPage /> },

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { DetailList } from '@/components/ui/FormLayout'
 import { BookOpenIcon, CalendarIcon, ChartIcon, ChevronRightIcon, InfoTriangleIcon, PlusIcon, UserGroupIcon } from '@/components/ui/icons'
 import { Metrics } from '@/components/ui/Metrics'
+import { Percent } from '@/components/ui/Percent'
 import { EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { Cell, Row, Stacked, Table, type Column } from '@/components/ui/Table'
 import { ApiError } from '@/lib/api'
@@ -106,7 +107,12 @@ export function ProgrammeDetailPage() {
         items={[
           { label: 'Cohorts', icon: <CalendarIcon size={18} />, value: programme.cohorts.total, context: breakdown || 'None yet' },
           { label: 'Participants', icon: <UserGroupIcon size={18} />, value: programme.participants, context: programme.participants ? 'Across this programme’s cohorts' : 'None enrolled yet' },
-          { label: 'Attendance, last 4 weeks', icon: <ChartIcon size={18} />, value: '—', context: 'No sessions held yet' },
+          {
+            label: 'Attendance, last 4 weeks',
+            icon: <ChartIcon size={18} />,
+            value: programme.attendance4w === null ? '—' : `${programme.attendance4w}%`,
+            context: programme.attendance4w === null ? 'Nothing recorded in the last 4 weeks' : 'Active cohorts · present ÷ recorded',
+          },
           { label: 'Needs attention', icon: <InfoTriangleIcon size={18} />, value: '—', context: 'Checked once sessions are held' },
         ]}
       />
@@ -249,8 +255,8 @@ function CohortRow({ cohort }: { cohort: CohortSummary }) {
       <Cell hideBelow="lg">
         <DeliveryProgress cohort={cohort} />
       </Cell>
-      <Cell align="right" hideBelow="xl" className="text-muted">
-        —
+      <Cell align="right" hideBelow="xl">
+        <Percent value={cohort.attendanceAll} />
       </Cell>
     </Row>
   )
