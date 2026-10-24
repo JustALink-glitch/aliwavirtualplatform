@@ -2,6 +2,12 @@ import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { RequireArea } from '@/auth/RequireArea'
 import { AppShell } from '@/components/shell/AppShell'
 import { StatePanel } from '@/components/StatePanel'
+import { AdminAssignmentsPage } from '@/pages/assignments/AdminAssignmentsPage'
+import { AssignmentFormPage } from '@/pages/assignments/AssignmentFormPage'
+import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
+import { GradeScalesPage } from '@/pages/assignments/GradeScalesPage'
+import { SubmissionPage } from '@/pages/assignments/SubmissionPage'
+import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPage'
 import type { Area } from '@/lib/roles'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { ParticipantsPage } from '@/pages/admin/people/ParticipantsPage'
@@ -52,6 +58,10 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'courses/sessions/:id/attendance', element: <AttendancePage /> },
     { path: 'courses/sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
     { path: 'courses/new', element: <NewCoursePage /> },
+    { path: 'courses/assignments', element: <AdminAssignmentsPage /> },
+    { path: 'courses/assignments/grading-scales', element: <GradeScalesPage /> },
+    { path: 'courses/assignments/:id', element: <AssignmentPage area="admin" /> },
+    { path: 'courses/assignments/:id/submissions/:memberId', element: <SubmissionPage area="admin" /> },
     { path: 'cohorts', element: <CohortsPage /> },
     { path: 'cohorts/new', element: <NewCohortPage /> },
     { path: 'cohorts/:id/edit', element: <EditCohortPage /> },
@@ -66,6 +76,13 @@ const built: Partial<Record<Area, RouteObject[]>> = {
         { path: 'trainers', element: <CohortTrainers /> },
       ],
     },
+  ],
+  trainer: [
+    { path: 'grading', element: <TrainerAssignmentsPage /> },
+    { path: 'grading/new', element: <AssignmentFormPage mode="new" /> },
+    { path: 'grading/:id', element: <AssignmentPage area="trainer" /> },
+    { path: 'grading/:id/edit', element: <AssignmentFormPage mode="edit" /> },
+    { path: 'grading/:id/submissions/:memberId', element: <SubmissionPage area="trainer" /> },
   ],
 }
 
