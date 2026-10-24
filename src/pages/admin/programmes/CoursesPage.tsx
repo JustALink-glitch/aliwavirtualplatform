@@ -5,7 +5,8 @@ import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { BookOpenIcon, PlusIcon } from '@/components/ui/icons'
-import { EmptyState, FilterChips, PageHeader, Panel } from '@/components/ui/Page'
+import { EmptyState, FilterChips, Panel } from '@/components/ui/Page'
+import { CoursesHeader } from '@/pages/admin/sessions/CoursesHeader'
 import { SearchField } from '@/components/ui/SearchField'
 import { Cell, Row, Stacked, Table, TableFooter, type Column } from '@/components/ui/Table'
 import { plural } from '@/lib/format'
@@ -40,7 +41,7 @@ export function CoursesPage() {
   const newButton = (
     <Button
       icon={<PlusIcon size={16} />}
-      onClick={() => navigate(programme !== 'all' ? `new?programme=${programme}` : 'new')}
+      onClick={() => navigate(programme !== 'all' ? `/admin/courses/new?programme=${programme}` : '/admin/courses/new')}
       disabled={liveProgrammes.length === 0}
       title={liveProgrammes.length === 0 ? 'Create a programme first' : undefined}
     >
@@ -50,7 +51,7 @@ export function CoursesPage() {
 
   return (
     <>
-      <PageHeader title="Courses & sessions" description="Courses belong to a programme and run in each of its cohorts." actions={all.length > 0 ? newButton : undefined} />
+      <CoursesHeader tab="courses" actions={all.length > 0 ? newButton : undefined} courseCount={courses.data?.length} />
       {created && (
         <AlertBanner tone="success" title={`${created} was added`}>
           Cohorts you ticked now run it, with its lead trainer.

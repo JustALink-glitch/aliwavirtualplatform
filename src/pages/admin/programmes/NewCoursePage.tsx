@@ -36,7 +36,7 @@ export function NewCoursePage() {
     (c) => c.programme.id === programmeId && (c.status === 'active' || c.status === 'upcoming' || c.status === 'draft'),
   )
   const trainerOptions = (trainers.data ?? []).filter((m) => m.status !== 'deactivated')
-  const backTo = fromProgramme ? `/admin/programmes/${fromProgramme}` : '/admin/courses'
+  const backTo = fromProgramme ? `/admin/programmes/${fromProgramme}` : '/admin/courses/library'
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -58,7 +58,7 @@ export function NewCoursePage() {
         defaultLeadMemberId: leadId || null,
         cohortIds: cohortIds.filter((id) => openCohorts.some((c) => c.id === id)),
       })
-      navigate(fromProgramme ? backTo : '/admin/courses', { state: { created: name.trim() } })
+      navigate(fromProgramme ? backTo : '/admin/courses/library', { state: { created: name.trim() } })
     } catch (error) {
       if (error instanceof ApiError && Array.isArray(error.details)) {
         setErrors(Object.fromEntries((error.details as { field: string; message: string }[]).map((d) => [d.field, d.message])))
@@ -71,7 +71,7 @@ export function NewCoursePage() {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Courses', to: '/admin/courses' }, { label: 'New course' }]}
+        breadcrumb={[{ label: 'Courses & sessions', to: '/admin/courses/library' }, { label: 'New course' }]}
         title="New course"
         description="Courses hold sessions, assignments and resources."
       />

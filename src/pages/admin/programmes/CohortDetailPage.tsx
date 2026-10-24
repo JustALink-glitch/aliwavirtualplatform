@@ -17,6 +17,8 @@ import { ArchiveCohortDialog } from './CohortFormPage'
 import { useCohort, useRestoreCohort, type CohortCourse, type CohortSummary } from './data'
 import { deliveryLabel } from './labels'
 import { CohortParticipantsList } from '@/pages/admin/participants/CohortParticipantsList'
+import { CohortSessionsList } from '@/pages/admin/sessions/CohortSessionsList'
+import { UpcomingSessions } from '@/pages/admin/sessions/UpcomingSessions'
 
 interface CohortContext {
   cohort: CohortSummary
@@ -101,7 +103,12 @@ export function CohortLayout() {
                 Edit cohort
               </Button>
               {cohort.status !== 'completed' && (
-                <Button onClick={() => navigate(`/admin/participants/import?cohort=${cohort.id}`)}>Import participants</Button>
+                <>
+                  <Button variant="secondary" onClick={() => navigate(`/admin/participants/import?cohort=${cohort.id}`)}>
+                    Import participants
+                  </Button>
+                  <Button onClick={() => navigate(`/admin/courses/sessions/new?cohort=${cohort.id}`)}>Schedule session</Button>
+                </>
               )}
             </>
           )
@@ -157,14 +164,7 @@ export function CohortOverview() {
       />
       <div className="flex items-start gap-4 max-lg:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
-          <Panel aria-labelledby="upcoming-title">
-            <PanelHeader id="upcoming-title" title="Upcoming sessions" />
-            <EmptyState
-              icon={<CalendarIcon size={24} />}
-              title="No sessions scheduled yet"
-              body="Sessions you schedule for this cohort’s courses appear here, with who’s teaching and where."
-            />
-          </Panel>
+          <UpcomingSessions cohort={cohort} />
         </div>
         <div className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
           <Panel aria-labelledby="trainers-title">
@@ -235,15 +235,8 @@ export function CohortParticipants() {
 
 /** A3.04 Sessions tab — empty until sessions are scheduled. */
 export function CohortSessions() {
-  return (
-    <Panel className="py-12">
-      <EmptyState
-        icon={<CalendarIcon size={24} />}
-        title="No sessions scheduled yet"
-        body="Each session belongs to one of this cohort’s courses. Trainers take attendance and write a report after each one."
-      />
-    </Panel>
-  )
+  const { cohort } = useOutletContext<CohortContext>()
+  return <CohortSessionsList cohort={cohort} />
 }
 
 const courseColumns: Column[] = [

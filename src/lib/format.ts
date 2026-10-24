@@ -96,3 +96,23 @@ export function relativeDay(value: string | Date, timeZone?: string): string {
   if (day === yesterday.toISOString().slice(0, 10)) return 'Yesterday'
   return formatDay(value, timeZone)
 }
+
+/** "10:00–12:00" in a time zone. */
+export function formatTimeRange(start: string | Date, end: string | Date, timeZone?: string): string {
+  return `${formatTime(start, timeZone)}–${formatTime(end, timeZone)}`
+}
+
+/** The organisation-local date of a moment, as "2026-10-21". */
+export function localDate(value: string | Date, timeZone?: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value))
+}
+
+const WEEKDAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const WEEKDAY_PLURALS = ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays']
+
+/** [1, 3] → "Mon and Wed" (or "Mondays and Wednesdays" with `plural`). */
+export function weekdayList(days: number[], options: { plural?: boolean } = {}): string {
+  const names = [...days].sort().map((d) => (options.plural ? WEEKDAY_PLURALS : WEEKDAY_NAMES)[d - 1]!)
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`
+}

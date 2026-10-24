@@ -11,6 +11,10 @@ import { CohortCourses, CohortLayout, CohortOverview, CohortParticipants, Cohort
 import { EditCohortPage, NewCohortPage } from '@/pages/admin/programmes/CohortFormPage'
 import { CohortsPage } from '@/pages/admin/programmes/CohortsPage'
 import { CoursesPage } from '@/pages/admin/programmes/CoursesPage'
+import { EditSessionPage } from '@/pages/admin/sessions/EditSessionPage'
+import { ScheduleSessionPage } from '@/pages/admin/sessions/ScheduleSessionPage'
+import { SessionDetailPage } from '@/pages/admin/sessions/SessionDetailPage'
+import { SessionsPage } from '@/pages/admin/sessions/SessionsPage'
 import { NewCoursePage } from '@/pages/admin/programmes/NewCoursePage'
 import { ProgrammeDetailPage } from '@/pages/admin/programmes/ProgrammeDetailPage'
 import { EditProgrammePage, NewProgrammePage } from '@/pages/admin/programmes/ProgrammeFormPage'
@@ -38,7 +42,11 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'programmes/new', element: <NewProgrammePage /> },
     { path: 'programmes/:id', element: <ProgrammeDetailPage /> },
     { path: 'programmes/:id/edit', element: <EditProgrammePage /> },
-    { path: 'courses', element: <CoursesPage /> },
+    { path: 'courses', element: <SessionsPage /> },
+    { path: 'courses/library', element: <CoursesPage /> },
+    { path: 'courses/sessions/new', element: <ScheduleSessionPage /> },
+    { path: 'courses/sessions/:id', element: <SessionDetailPage /> },
+    { path: 'courses/sessions/:id/edit', element: <EditSessionPage /> },
     { path: 'courses/new', element: <NewCoursePage /> },
     { path: 'cohorts', element: <CohortsPage /> },
     { path: 'cohorts/new', element: <NewCohortPage /> },
