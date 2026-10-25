@@ -39,6 +39,8 @@ import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
 import { MySessionPage, MySessionsPage } from '@/pages/participant/MySessionsPage'
 import { SettingsPage } from '@/pages/participant/SettingsPage'
+import { NotificationsPage } from '@/pages/shell/Notifications'
+import { SearchPage } from '@/pages/shell/Search'
 import { MyAssignmentPage } from '@/pages/participant/MyAssignmentPage'
 import { MyAssignmentsPage } from '@/pages/participant/MyAssignmentsPage'
 import type { Area } from '@/lib/roles'
@@ -92,6 +94,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
   admin: [
     { index: true, element: <OverviewPage /> },
     { path: 'reports', element: <ReportsPage /> },
+    { path: 'notifications', element: <NotificationsPage area="admin" /> },
+    { path: 'search', element: <SearchPage area="admin" /> },
     { path: 'needs-attention', element: <NeedsAttentionPage /> },
     { path: 'needs-attention/interventions', element: <InterventionsPage /> },
     { path: 'trainers', element: <TrainersPage /> },
@@ -144,6 +148,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
   trainer: [
     { index: true, element: <TodayPage /> },
     { path: 'restricted', element: <AdminOnlyPage /> },
+    { path: 'notifications', element: <NotificationsPage area="trainer" /> },
+    { path: 'search', element: <SearchPage area="trainer" /> },
     { path: 'reports', element: <SessionReportsPage /> },
     { path: 'reports/:sessionId', element: <SessionReportPage /> },
     { path: 'grading', element: <TrainerAssignmentsPage /> },
@@ -179,6 +185,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'sessions', element: <MySessionsPage /> },
     { path: 'sessions/:id', element: <MySessionPage /> },
     { path: 'settings', element: <SettingsPage /> },
+    { path: 'notifications', element: <NotificationsPage area="participant" /> },
+    { path: 'search', element: <SearchPage area="participant" /> },
     { path: 'assignments', element: <MyAssignmentsPage /> },
     { path: 'assignments/:id', element: <MyAssignmentPage /> },
     { path: 'grades', element: <GradesPage /> },

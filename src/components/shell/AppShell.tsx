@@ -8,8 +8,10 @@ import { navFor, type NavItem } from '@/app/navigation'
 import { useAttentionCount } from '@/pages/admin/attention/data'
 import { useAuth, type Me } from '@/auth/useAuth'
 import { Avatar } from '@/components/ui/Avatar'
-import { BellIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SignOutIcon, UserIcon } from '@/components/ui/icons'
+import { ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SignOutIcon, UserIcon } from '@/components/ui/icons'
 import { initials, roleLabel, shortName } from '@/lib/people'
+import { NotificationsBell } from '@/pages/shell/Notifications'
+import { GlobalSearch } from '@/pages/shell/Search'
 import type { Area } from '@/lib/roles'
 
 const WORKSPACE_LABEL: Record<Area, string> = {
@@ -151,62 +153,10 @@ function TopBar({ me, area }: { me: Me; area: Area }) {
     <header className="sticky top-0 z-20 flex h-topbar items-center gap-3 border-b border-default bg-surface px-gutter max-md:hidden">
       <GlobalSearch area={area} />
       <div className="flex-1" />
-      <NotificationsButton />
+      <NotificationsBell area={area} />
       <span aria-hidden="true" className="h-6 w-px bg-default" />
       <AccountMenu me={me} area={area} />
     </header>
-  )
-}
-
-/**
- * Global search (G1.02). Results arrive with cohorts and participants;
- * until then the field is shown but says so rather than pretending to search.
- */
-function GlobalSearch({ area }: { area: Area }) {
-  const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
-        event.preventDefault()
-        ref.current?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
-  const placeholder = area === 'admin' ? 'Search participants, cohorts, courses or trainers' : 'Search your cohorts and courses'
-  return (
-    <label className="flex h-9 w-[400px] min-w-0 items-center gap-2 rounded-md border border-default bg-surface-subtle pr-2 pl-3 focus-within:shadow-[var(--shadow-focus)] max-xl:w-[320px]">
-      <SearchIcon size={16} className="shrink-0 text-icon" />
-      <input
-        ref={ref}
-        type="search"
-        aria-label="Search"
-        aria-describedby="global-search-note"
-        placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent text-body text-primary outline-none placeholder:text-muted"
-      />
-      <span id="global-search-note" className="sr-only">
-        Search becomes available once you have cohorts and participants.
-      </span>
-      <kbd className="rounded-sm border border-default bg-surface px-1.5 py-0.5 font-sans text-[11px] leading-[14px] font-medium text-secondary">⌘K</kbd>
-    </label>
-  )
-}
-
-function NotificationsButton({ size = 36 }: { size?: 36 | 44 }) {
-  return (
-    <button
-      type="button"
-      aria-label="Notifications"
-      className={clsx(
-        'inline-flex shrink-0 items-center justify-center rounded-md text-icon hover:bg-surface-hover',
-        'focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none',
-        size === 36 ? 'size-9 border border-default' : 'size-11',
-      )}
-    >
-      <BellIcon size={size === 36 ? 18 : 22} />
-    </button>
   )
 }
 
@@ -307,7 +257,10 @@ function MobileTopBar({ me, area, onMenu }: { me: Me; area: Area; onMenu: () => 
         <img src={logo} alt="Synqop" width={100} height={30} />
       </Link>
       <div className="flex-1" />
-      <NotificationsButton size={44} />
+      <Link to={`/${area}/search`} aria-label="Search" className="inline-flex size-11 items-center justify-center rounded-md text-icon hover:bg-surface-hover">
+        <SearchIcon size={22} />
+      </Link>
+      <NotificationsBell area={area} size={44} />
       <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
     </header>
   )
