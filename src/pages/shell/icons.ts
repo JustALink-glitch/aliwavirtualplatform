@@ -30,6 +30,7 @@ export const eventIcons: Record<string, NavIcon> = {
   session_starting: CalendarIcon,
   assignment_due: ClipboardIcon,
   new_resource: BookOpenIcon,
+  report_due: ClipboardIcon,
 }
 
 export const kindIcon: Record<SearchKind, NavIcon> = {
