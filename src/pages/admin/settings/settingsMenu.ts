@@ -23,7 +23,7 @@ export const settingsMenu: { group: string; items: Item[] }[] = [
       { label: 'Organisation details', path: 'organisation', icon: HomeIcon, screen: 'F1.01' },
       { label: 'Members & roles', path: 'members', icon: UserGroupIcon, screen: 'F1.02' },
       { label: 'Plan & billing', path: 'billing', icon: FileIcon, screen: 'F1.03' },
-      { label: 'Data & privacy', path: 'privacy', icon: InfoCircleIcon, screen: 'F1.09' },
+      { label: 'Data & privacy', path: 'privacy', icon: InfoCircleIcon, screen: 'F1.10' },
     ],
   },
   {
@@ -39,8 +39,8 @@ export const settingsMenu: { group: string; items: Item[] }[] = [
   {
     group: 'Your account',
     items: [
-      { label: 'Profile & password', path: 'profile', icon: UserIcon, screen: 'F1.10' },
-      { label: 'Notifications', path: 'notifications', icon: BellIcon, screen: 'F1.11' },
+      { label: 'Profile & password', path: 'profile', icon: UserIcon, screen: 'G1.04' },
+      { label: 'Notifications', path: 'notifications', icon: BellIcon, screen: 'F1.09' },
     ],
   },
 ]

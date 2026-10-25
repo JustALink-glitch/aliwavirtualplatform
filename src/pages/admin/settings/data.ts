@@ -65,3 +65,58 @@ export const useReportSettings = () =>
   })
 
 export const useSaveReportSettings = () => useSave<ReportSettings>('/v1/settings/session-reports', 'session-reports', [['reports'], ['sessions']])
+
+export interface OrganisationSettings {
+  name: string
+  type: string | null
+  country: string | null
+  timeZone: string
+  owner: string | null
+  createdAt: string
+}
+
+export const useOrganisationSettings = () =>
+  useQuery({
+    queryKey: [...keys.all, 'organisation'],
+    queryFn: ({ signal }) => api<{ settings: OrganisationSettings }>('/v1/settings/organisation', { signal }),
+  })
+
+export const useSaveOrganisationSettings = () =>
+  useSave<Pick<OrganisationSettings, 'name' | 'type' | 'country' | 'timeZone'>>('/v1/settings/organisation', 'organisation', [['overview'], ['sessions']])
+
+export type GradingScale = 'points' | 'percentage' | 'letter' | 'pass_fail' | 'rubric'
+
+export interface ProgrammeSetup {
+  courseLibrary: 'shared' | 'per_cohort'
+  trainerAssignment: 'course' | 'cohort'
+  assistantsEnabled: boolean
+  assistantCan: { attendance: boolean; resources: boolean; grade: boolean; assignments: boolean; reports: boolean }
+  multiCohort: boolean
+  gradingScales: GradingScale[]
+  feedbackEnabled: boolean
+}
+
+export const useProgrammeSetup = () =>
+  useQuery({
+    queryKey: [...keys.all, 'programme-setup'],
+    queryFn: ({ signal }) => api<{ settings: ProgrammeSetup }>('/v1/settings/programme-setup', { signal }),
+  })
+
+export const useSaveProgrammeSetup = () => useSave<ProgrammeSetup>('/v1/settings/programme-setup', 'programme-setup', [['assignments'], ['sessions']])
+
+export interface AttendanceSettings {
+  zoom: { connected: boolean; email: string | null }
+  joinLinks: 'personal' | 'shared'
+  presentMinPct: number
+  late: { enabled: boolean; minutes: number }
+  recordings: { shared: boolean; days: number }
+  inPersonReminder: { enabled: boolean; hours: number }
+}
+
+export const useAttendanceSettings = () =>
+  useQuery({
+    queryKey: [...keys.all, 'attendance'],
+    queryFn: ({ signal }) => api<{ settings: AttendanceSettings }>('/v1/settings/attendance', { signal }),
+  })
+
+export const useSaveAttendanceSettings = () => useSave<Omit<AttendanceSettings, 'zoom'>>('/v1/settings/attendance', 'attendance', [['sessions']])

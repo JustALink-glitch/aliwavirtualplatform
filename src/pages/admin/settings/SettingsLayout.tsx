@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import type { ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router'
 import { PageHeader, Panel } from '@/components/ui/Page'
 import { settingsMenu } from './settingsMenu'
@@ -52,11 +53,14 @@ export function SettingsComingSoon({ path }: { path: string }) {
   )
 }
 
-export function SettingsTitle({ title, description }: { title: string; description?: string }) {
+export function SettingsTitle({ title, description, action }: { title: string; description?: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h2 className="text-heading-group text-primary">{title}</h2>
-      {description && <p className="text-body text-secondary">{description}</p>}
+    <div className="flex items-start gap-4 max-md:flex-col max-md:gap-3">
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <h2 className="text-heading-group text-primary">{title}</h2>
+        {description && <p className="text-body text-secondary">{description}</p>}
+      </div>
+      {action}
     </div>
   )
 }

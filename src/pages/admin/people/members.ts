@@ -63,8 +63,7 @@ export interface InviteInput {
 export function useInviteMember() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: (input: InviteInput) =>
-      api<{ member: Member; emailSent: boolean }>('/v1/members', { method: 'POST', body: input }),
+    mutationFn: (input: InviteInput) => api<{ member: Member; emailSent: boolean }>('/v1/members', { method: 'POST', body: input }),
     onSuccess: () => client.invalidateQueries({ queryKey: memberKeys.all }),
   })
 }
@@ -93,3 +92,44 @@ export const fullNameOf = (member: Pick<Member, 'firstName' | 'lastName'>) => `$
 /** The live link has passed its 72 hours. */
 export const invitationExpired = (member: Pick<Member, 'status' | 'invitationExpiresAt'>, now = Date.now()) =>
   member.status === 'invited' && (!member.invitationExpiresAt || Date.parse(member.invitationExpiresAt) <= now)
+
+export interface StaffMember extends Member {
+  lastActiveAt: string | null
+}
+
+const STAFF_ROLES: Role[] = ['owner', 'admin', 'trainer', 'assistant_trainer']
+
+/** F1.02 everyone who can sign in as staff, except people who were removed. */
+export function useStaff() {
+  return useQuery({
+    queryKey: [...memberKeys.all, 'staff'],
+    queryFn: ({ signal }) => api<{ members: StaffMember[] }>(`/v1/members?role=${STAFF_ROLES.join(',')}&status=current`, { signal }),
+    select: (data) => data.members,
+  })
+}
+
+export function useChangeRole() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: Role }) => api<{ member: unknown }>(`/v1/members/${id}/role`, { method: 'PATCH', body: { role } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: memberKeys.all }),
+  })
+}
+
+export function useRemoveMember() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api<null>(`/v1/members/${id}`, { method: 'DELETE' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: memberKeys.all }),
+  })
+}
+
+/** Resend or cancel by id, for lists where each row has its own invitation (F1.02). */
+export function useInvitationAction() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'resend' | 'cancel' }) =>
+      api<{ emailSent?: boolean } | null>(`/v1/members/${id}/invitation`, { method: action === 'resend' ? 'POST' : 'DELETE' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: memberKeys.all }),
+  })
+}

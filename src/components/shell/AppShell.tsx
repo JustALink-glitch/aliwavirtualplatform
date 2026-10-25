@@ -6,16 +6,7 @@ import { navFor, type NavItem } from '@/app/navigation'
 import { useAttentionCount } from '@/pages/admin/attention/data'
 import { useAuth, type Me } from '@/auth/useAuth'
 import { Avatar } from '@/components/ui/Avatar'
-import {
-  BellIcon,
-  ChevronDownIcon,
-  CloseIcon,
-  MenuIcon,
-  SearchIcon,
-  SettingsIcon,
-  SignOutIcon,
-  UserIcon,
-} from '@/components/ui/icons'
+import { BellIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SignOutIcon, UserIcon } from '@/components/ui/icons'
 import { initials, roleLabel, shortName } from '@/lib/people'
 import type { Area } from '@/lib/roles'
 
@@ -57,10 +48,14 @@ export function AppShell({ area }: { area: Area }) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <TopBar me={me} area={area} />
-        <MobileTopBar me={me} area={area} onMenu={() => {
-          setDrawerPath(location.pathname)
-          setDrawerOpen(true)
-        }} />
+        <MobileTopBar
+          me={me}
+          area={area}
+          onMenu={() => {
+            setDrawerPath(location.pathname)
+            setDrawerOpen(true)
+          }}
+        />
         <main className="flex flex-1 flex-col gap-4 px-gutter pt-5 pb-12 max-md:pb-6">
           <Outlet />
         </main>
@@ -75,10 +70,7 @@ function OrganisationLabel({ me, area, compact }: { me: Me; area: Area; compact?
   const name = me.organisation?.name ?? ''
   return (
     <div className={clsx('flex h-[52px] items-center gap-3 rounded-md px-2', !compact && 'max-xl:px-0')} title={name}>
-      <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand text-caption-strong text-on-brand"
-      >
+      <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-brand text-caption-strong text-on-brand">
         {initials(name)}
       </span>
       <span className={clsx('flex min-w-0 flex-col', !compact && 'max-xl:sr-only')}>
@@ -140,7 +132,10 @@ function AttentionCount({ hidden }: { hidden: boolean }) {
   const { data } = useAttentionCount(true)
   if (!data?.count) return null
   return (
-    <span className={clsx('ml-auto rounded-full bg-warning-bg px-2 text-caption-strong text-warning-fg tabular-nums', hidden && 'max-xl:hidden')} aria-label={`${data.count} need attention`}>
+    <span
+      className={clsx('ml-auto rounded-full bg-warning-bg px-2 text-caption-strong text-warning-fg tabular-nums', hidden && 'max-xl:hidden')}
+      aria-label={`${data.count} need attention`}
+    >
       {data.count}
     </span>
   )
@@ -174,8 +169,7 @@ function GlobalSearch({ area }: { area: Area }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-  const placeholder =
-    area === 'admin' ? 'Search participants, cohorts, courses or trainers' : 'Search your cohorts and courses'
+  const placeholder = area === 'admin' ? 'Search participants, cohorts, courses or trainers' : 'Search your cohorts and courses'
   return (
     <label className="flex h-9 w-[400px] min-w-0 items-center gap-2 rounded-md border border-default bg-surface-subtle pr-2 pl-3 focus-within:shadow-[var(--shadow-focus)] max-xl:w-[320px]">
       <SearchIcon size={16} className="shrink-0 text-icon" />
@@ -190,9 +184,7 @@ function GlobalSearch({ area }: { area: Area }) {
       <span id="global-search-note" className="sr-only">
         Search becomes available once you have cohorts and participants.
       </span>
-      <kbd className="rounded-sm border border-default bg-surface px-1.5 py-0.5 font-sans text-[11px] leading-[14px] font-medium text-secondary">
-        ⌘K
-      </kbd>
+      <kbd className="rounded-sm border border-default bg-surface px-1.5 py-0.5 font-sans text-[11px] leading-[14px] font-medium text-secondary">⌘K</kbd>
     </label>
   )
 }
@@ -218,7 +210,7 @@ function AccountMenu({ me, area }: { me: Me; area: Area }) {
   const { signOut } = useAuth()
   const [open, setOpen] = useState(false)
   const wrapper = useRef<HTMLDivElement>(null)
-  const name = shortName(me.membership.firstName, me.membership.lastName)
+  const name = me.membership.displayName || shortName(me.membership.firstName, me.membership.lastName)
   const role = roleLabel[me.membership.role]
 
   useEffect(() => {
@@ -363,7 +355,7 @@ function NavigationDrawer({ me, area, items, onClose }: { me: Me; area: Area; it
           <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-body-strong text-primary">
-              {shortName(me.membership.firstName, me.membership.lastName)}
+              {me.membership.displayName || shortName(me.membership.firstName, me.membership.lastName)}
             </span>
             <span className="truncate text-caption text-secondary">{me.user.email}</span>
           </span>

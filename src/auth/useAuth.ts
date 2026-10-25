@@ -4,7 +4,17 @@ import type { Role } from '@/lib/roles'
 
 export interface Me {
   user: { id: string; email: string | null }
-  membership: { id: string; organisationId: string; role: Role; firstName: string; lastName: string; phone?: string | null }
+  membership: {
+    id: string
+    organisationId: string
+    role: Role
+    firstName: string
+    lastName: string
+    phone?: string | null
+    /** G1.04: set by the person; otherwise "First L.". */
+    displayName?: string | null
+    lastSignInAt?: string | null
+  }
   organisation: { id: string; name: string; timeZone: string } | null
 }
 

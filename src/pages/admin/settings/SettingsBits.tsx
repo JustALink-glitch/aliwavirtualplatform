@@ -1,4 +1,5 @@
 import { useId, type ReactNode } from 'react'
+import { StatePanel } from '@/components/StatePanel'
 import { Button } from '@/components/ui/Button'
 import { Panel, PanelHeader } from '@/components/ui/Page'
 import { Switch } from '@/components/ui/Switch'
@@ -106,4 +107,68 @@ export function SaveBar({ changed, saving, onDiscard }: { changed: boolean; savi
       </Button>
     </div>
   )
+}
+
+/** Stacked choices with a line of help under each (F1.04 Where courses live, F1.07 How participants join). */
+export function RadioList<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string
+  options: { value: T; label: string; help?: string }[]
+  value: T
+  onChange: (value: T) => void
+}) {
+  const name = useId()
+  return (
+    <fieldset className="flex flex-col gap-3 border-b border-default py-3.5 last:border-b-0">
+      <legend className="pb-3 text-body-strong text-primary">{label}</legend>
+      {options.map((option) => (
+        <label key={option.value} className="flex cursor-pointer items-start gap-2">
+          <input
+            type="radio"
+            name={name}
+            value={option.value}
+            checked={value === option.value}
+            onChange={() => onChange(option.value)}
+            className="mt-px size-4 shrink-0 cursor-pointer appearance-none rounded-full border border-strong bg-surface checked:border-[5px] checked:border-brand focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-body text-primary">{option.label}</span>
+            {option.help && <span className="text-caption text-secondary">{option.help}</span>}
+          </span>
+        </label>
+      ))}
+    </fieldset>
+  )
+}
+
+/** Loading and error states shared by every settings page. */
+export function SettingsLoader<T>({
+  query,
+  children,
+}: {
+  query: { isPending: boolean; isError: boolean; data?: T; refetch: () => unknown }
+  children: (data: T) => ReactNode
+}) {
+  if (query.isPending)
+    return (
+      <Panel aria-busy="true" aria-label="Loading settings" className="h-[320px]">
+        <span className="sr-only">Loading settings</span>
+      </Panel>
+    )
+  if (query.isError || query.data === undefined)
+    return (
+      <Panel>
+        <StatePanel
+          kind="error"
+          title="Couldn’t load these settings"
+          description="Check your connection and try again."
+          action={{ label: 'Try again', onClick: () => void query.refetch() }}
+        />
+      </Panel>
+    )
+  return <>{children(query.data)}</>
 }

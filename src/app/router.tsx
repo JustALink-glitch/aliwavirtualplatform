@@ -11,8 +11,14 @@ import { TrainerAssignmentsPage } from '@/pages/assignments/TrainerAssignmentsPa
 import { AdminCertificatePage } from '@/pages/admin/completion/CertificatePage'
 import { CertificatesPage } from '@/pages/admin/completion/CertificatesPage'
 import { OutcomesPage } from '@/pages/admin/completion/OutcomesPage'
+import { AttendanceSettingsPage } from '@/pages/admin/settings/AttendanceSettingsPage'
 import { AttentionRulesPage } from '@/pages/admin/settings/AttentionRulesPage'
 import { CompletionSettingsPage } from '@/pages/admin/settings/CompletionSettingsPage'
+import { MembersSettingsPage } from '@/pages/admin/settings/MembersSettingsPage'
+import { NotificationSettingsPage } from '@/pages/admin/settings/NotificationSettingsPage'
+import { OrganisationSettingsPage } from '@/pages/admin/settings/OrganisationSettingsPage'
+import { ProfileSettingsPage } from '@/pages/admin/settings/ProfileSettingsPage'
+import { ProgrammeSetupPage } from '@/pages/admin/settings/ProgrammeSetupPage'
 import { SessionReportSettingsPage } from '@/pages/admin/settings/SessionReportSettingsPage'
 import { SessionReportPage } from '@/pages/reports/SessionReportPage'
 import { SessionReportsPage } from '@/pages/reports/SessionReportsPage'
@@ -65,6 +71,20 @@ import { SignInPage } from '@/pages/SignInPage'
 import { navigation } from './navigation'
 
 /** Screens that are built; everything else in the sidebar shows a placeholder. */
+
+/** Settings pages that are built; the rest of the menu shows "Coming soon". */
+const settingsPages: Record<string, () => React.JSX.Element> = {
+  organisation: OrganisationSettingsPage,
+  members: MembersSettingsPage,
+  'programme-setup': ProgrammeSetupPage,
+  completion: CompletionSettingsPage,
+  'attention-rules': AttentionRulesPage,
+  attendance: AttendanceSettingsPage,
+  'session-reports': SessionReportSettingsPage,
+  profile: ProfileSettingsPage,
+  notifications: NotificationSettingsPage,
+}
+
 const built: Partial<Record<Area, RouteObject[]>> = {
   admin: [
     { index: true, element: <OverviewPage /> },
@@ -116,13 +136,11 @@ const built: Partial<Record<Area, RouteObject[]>> = {
       path: 'settings',
       element: <SettingsLayout />,
       children: [
-        { index: true, element: <Navigate to="completion" replace /> },
-        { path: 'completion', element: <CompletionSettingsPage /> },
-        { path: 'attention-rules', element: <AttentionRulesPage /> },
-        { path: 'session-reports', element: <SessionReportSettingsPage /> },
+        { index: true, element: <Navigate to="organisation" replace /> },
+        ...Object.entries(settingsPages).map(([path, Page]) => ({ path, element: <Page /> })),
         ...settingsMenu
           .flatMap((s) => s.items)
-          .filter((i) => !['completion', 'attention-rules', 'session-reports'].includes(i.path))
+          .filter((i) => !(i.path in settingsPages))
           .map((i) => ({ path: i.path, element: <SettingsComingSoon path={i.path} /> })),
       ],
     },
@@ -196,7 +214,6 @@ function areaRoutes(area: Area): RouteObject {
     ],
   }
 }
-
 export const routes: RouteObject[] = [
   { path: '/', element: <Navigate to="/sign-in" replace /> },
   { path: '/sign-in', element: <SignInPage /> },

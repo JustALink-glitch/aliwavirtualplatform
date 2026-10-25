@@ -75,7 +75,10 @@ export function useMyAssignment(id: string) {
 export function useMyGrades() {
   return useQuery({
     queryKey: [...keys.all, 'grades'],
-    queryFn: ({ signal }) => api<{ timeZone: string; grades: (MyAssignment & { hasFeedback: boolean; feedback: string | null; gradedBy: string | null })[] }>('/v1/my/grades', { signal }),
+    queryFn: ({ signal }) =>
+      api<{ timeZone: string; grades: (MyAssignment & { hasFeedback: boolean; feedback: string | null; gradedBy: string | null })[] }>('/v1/my/grades', {
+        signal,
+      }),
   })
 }
 
@@ -153,7 +156,13 @@ export interface MySession {
   trainer: string | null
   number: number | null
   total: number
-  attendance: { status: MyMark; source: 'zoom' | 'manual' | 'edited' | null; joinedAt: string | null; minutesInMeeting: number | null; note: string | null } | null
+  attendance: {
+    status: MyMark
+    source: 'zoom' | 'manual' | 'edited' | null
+    joinedAt: string | null
+    minutesInMeeting: number | null
+    note: string | null
+  } | null
 }
 
 export interface MyAttendance {
@@ -196,8 +205,7 @@ export interface MyCourse {
 
 const retry404 = (count: number, error: unknown) => (error as { status?: number }).status !== 404 && count < 2
 
-export const useMyOverview = () =>
-  useQuery({ queryKey: [...keys.all, 'overview'], queryFn: ({ signal }) => api<MyOverview>('/v1/my/overview', { signal }) })
+export const useMyOverview = () => useQuery({ queryKey: [...keys.all, 'overview'], queryFn: ({ signal }) => api<MyOverview>('/v1/my/overview', { signal }) })
 
 export const useMySessions = () =>
   useQuery({
@@ -208,7 +216,13 @@ export const useMySessions = () =>
 export const useMySession = (id: string) =>
   useQuery({
     queryKey: [...keys.all, 'session', id],
-    queryFn: ({ signal }) => api<{ timeZone: string; session: MySession; resources: MyResource[]; feedback: { canRate: boolean; mine: { rating: number; comment: string | null } | null } }>(`/v1/my/sessions/${id}`, { signal }),
+    queryFn: ({ signal }) =>
+      api<{
+        timeZone: string
+        session: MySession
+        resources: MyResource[]
+        feedback: { canRate: boolean; mine: { rating: number; comment: string | null } | null }
+      }>(`/v1/my/sessions/${id}`, { signal }),
     retry: retry404,
   })
 
@@ -240,7 +254,7 @@ export interface NotificationPreference {
 export const useNotificationPreferences = () =>
   useQuery({
     queryKey: ['me', 'notification-preferences'],
-    queryFn: ({ signal }) => api<{ preferences: NotificationPreference[] }>('/v1/me/notification-preferences', { signal }),
+    queryFn: ({ signal }) => api<{ preferences: NotificationPreference[]; digestTime?: string }>('/v1/me/notification-preferences', { signal }),
   })
 
 /** "Online, Zoom", "Online", or the room. */
@@ -287,8 +301,7 @@ export interface MyProgress {
   } | null
 }
 
-export const useMyProgress = () =>
-  useQuery({ queryKey: [...keys.all, 'progress'], queryFn: ({ signal }) => api<MyProgress>('/v1/my/progress', { signal }) })
+export const useMyProgress = () => useQuery({ queryKey: [...keys.all, 'progress'], queryFn: ({ signal }) => api<MyProgress>('/v1/my/progress', { signal }) })
 
 export const useMyCertificate = () =>
   useQuery({
