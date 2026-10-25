@@ -21,6 +21,7 @@ import { SettingsComingSoon, SettingsLayout } from '@/pages/admin/settings/Setti
 import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
 import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
 import { OverviewPage } from '@/pages/admin/overview/OverviewPage'
+import { ReportsPage } from '@/pages/admin/reports/ReportsPage'
 import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
 import { MyCohortCourses, MyCohortLayout, MyCohortOverview, MyCohortParticipants, MyCohortSessions, MyCohortsPage } from '@/pages/trainer/MyCohortsPage'
@@ -67,6 +68,7 @@ import { navigation } from './navigation'
 const built: Partial<Record<Area, RouteObject[]>> = {
   admin: [
     { index: true, element: <OverviewPage /> },
+    { path: 'reports', element: <ReportsPage /> },
     { path: 'needs-attention', element: <NeedsAttentionPage /> },
     { path: 'needs-attention/interventions', element: <InterventionsPage /> },
     { path: 'trainers', element: <TrainersPage /> },

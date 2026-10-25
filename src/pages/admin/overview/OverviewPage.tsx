@@ -79,7 +79,7 @@ export function OverviewPage() {
       }
       actions={
         <>
-          <Button variant="secondary" icon={<FileIcon size={16} />} disabled={!data || empty} onClick={() => navigate('/admin/reports')}>
+          <Button variant="secondary" icon={<FileIcon size={16} />} disabled={!data || empty} onClick={() => navigate('/admin/reports?generate=1')}>
             Generate report
           </Button>
           <Button icon={<PlusIcon size={16} />} onClick={() => navigate('/admin/cohorts/new')}>

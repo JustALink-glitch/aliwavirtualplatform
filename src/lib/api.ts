@@ -34,12 +34,28 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
 
   if (!response.ok) {
     const error = (payload as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error
-    throw new ApiError(
-      response.status,
-      error?.code ?? 'unknown_error',
-      error?.message ?? 'Something went wrong. Try again.',
-      error?.details,
-    )
+    throw new ApiError(response.status, error?.code ?? 'unknown_error', error?.message ?? 'Something went wrong. Try again.', error?.details)
   }
   return payload as T
+}
+
+/** Downloads a file the API streams (e.g. a generated report) and saves it as `fileName`. */
+export async function downloadApiFile(path: string, fileName: string): Promise<void> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  const response = await fetch(`${env.apiUrl}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null
+    throw new ApiError(response.status, payload?.error?.code ?? 'unknown_error', payload?.error?.message ?? 'The download didn’t start. Try again.')
+  }
+  const url = URL.createObjectURL(await response.blob())
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  document.body.append(link)
+  link.click()
+  setTimeout(() => {
+    link.remove()
+    URL.revokeObjectURL(url)
+  }, 10_000)
 }
