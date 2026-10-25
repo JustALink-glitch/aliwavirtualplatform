@@ -23,8 +23,9 @@ import { SessionReportSettingsPage } from '@/pages/admin/settings/SessionReportS
 import { SessionReportPage } from '@/pages/reports/SessionReportPage'
 import { SessionReportsPage } from '@/pages/reports/SessionReportsPage'
 import { AdminOnlyPage, TodayPage } from '@/pages/trainer/TodayPage'
-import { SettingsComingSoon, SettingsLayout } from '@/pages/admin/settings/SettingsLayout'
-import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
+import { SettingsIndex, SettingsLayout } from '@/pages/admin/settings/SettingsLayout'
+import { BillingPage } from '@/pages/admin/settings/BillingPage'
+import { PrivacyPage } from '@/pages/admin/settings/PrivacyPage'
 import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
 import { OverviewPage } from '@/pages/admin/overview/OverviewPage'
 import { ReportsPage } from '@/pages/admin/reports/ReportsPage'
@@ -72,10 +73,12 @@ import { navigation } from './navigation'
 
 /** Screens that are built; everything else in the sidebar shows a placeholder. */
 
-/** Settings pages that are built; the rest of the menu shows "Coming soon". */
+/** F1 Settings pages, by path (the menu is in settingsMenu.ts). */
 const settingsPages: Record<string, () => React.JSX.Element> = {
   organisation: OrganisationSettingsPage,
   members: MembersSettingsPage,
+  billing: BillingPage,
+  privacy: PrivacyPage,
   'programme-setup': ProgrammeSetupPage,
   completion: CompletionSettingsPage,
   'attention-rules': AttentionRulesPage,
@@ -135,14 +138,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     {
       path: 'settings',
       element: <SettingsLayout />,
-      children: [
-        { index: true, element: <Navigate to="organisation" replace /> },
-        ...Object.entries(settingsPages).map(([path, Page]) => ({ path, element: <Page /> })),
-        ...settingsMenu
-          .flatMap((s) => s.items)
-          .filter((i) => !(i.path in settingsPages))
-          .map((i) => ({ path: i.path, element: <SettingsComingSoon path={i.path} /> })),
-      ],
+      children: [{ index: true, element: <SettingsIndex /> }, ...Object.entries(settingsPages).map(([path, Page]) => ({ path, element: <Page /> }))],
     },
   ],
   trainer: [

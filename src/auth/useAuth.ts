@@ -15,7 +15,7 @@ export interface Me {
     displayName?: string | null
     lastSignInAt?: string | null
   }
-  organisation: { id: string; name: string; timeZone: string } | null
+  organisation: { id: string; name: string; timeZone: string; deletionScheduledFor?: string | null } | null
 }
 
 /** Why a signed-in account can't use the app (API error codes from /v1/me). */

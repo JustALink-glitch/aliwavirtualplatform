@@ -120,3 +120,57 @@ export const useAttendanceSettings = () =>
   })
 
 export const useSaveAttendanceSettings = () => useSave<Omit<AttendanceSettings, 'zoom'>>('/v1/settings/attendance', 'attendance', [['sessions']])
+
+export type ExportPart = 'people' | 'attendance' | 'assignments' | 'files' | 'reports' | 'interventions'
+
+export interface DataExport {
+  id: string
+  status: 'queued' | 'running' | 'ready' | 'failed' | 'expired'
+  parts: ExportPart[]
+  includes: string
+  requestedAt: string
+  requestedBy: string | null
+  completedAt: string | null
+  expiresAt: string | null
+  sizeBytes: number | null
+  fileName: string | null
+}
+
+export interface PrivacyView {
+  organisation: string
+  timeZone: string
+  canManage: boolean
+  exports: DataExport[]
+  deletion: { scheduledFor: string; requestedAt: string; requestedBy: string | null } | null
+}
+
+const privacyKey = [...keys.all, 'privacy']
+
+export const usePrivacy = () =>
+  useQuery({
+    queryKey: privacyKey,
+    queryFn: ({ signal }) => api<PrivacyView>('/v1/privacy', { signal }),
+    // While an export is being prepared, check every few seconds.
+    refetchInterval: (query) => (query.state.data?.exports.some((e) => e.status === 'queued' || e.status === 'running') ? 3000 : false),
+  })
+
+export function useRequestExport() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (parts: ExportPart[]) => api<{ export: { id: string } }>('/v1/privacy/exports', { method: 'POST', body: { parts } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: privacyKey }),
+  })
+}
+
+/** Schedules or cancels deletion; the answer is the new view. Everything else reloads (read-only banner). */
+export function useDeletion() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { confirmName: string } | null) =>
+      api<Omit<PrivacyView, 'canManage'>>(
+        '/v1/privacy/deletion',
+        input ? { method: 'POST', body: { exported: true, confirmName: input.confirmName } } : { method: 'DELETE' },
+      ),
+    onSuccess: (data) => client.setQueryData<PrivacyView>(privacyKey, (old) => (old ? { ...old, ...data } : old)),
+  })
+}

@@ -423,3 +423,12 @@ export const PencilIcon = (props: IconProps) => (
     />
   </Icon>
 )
+
+/** Icon / lock (Data & privacy, F1.10) */
+export const LockIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" stroke="currentColor" strokeWidth="2" />
+    <path d="M8 10.5V7.5C8 5.29 9.79 3.5 12 3.5C14.21 3.5 16 5.29 16 7.5V10.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <circle cx="12" cy="15.5" r="1.5" fill="currentColor" />
+  </Icon>
+)

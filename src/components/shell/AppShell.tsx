@@ -1,3 +1,5 @@
+import { AlertBanner } from '@/components/ui/AlertBanner'
+import { formatDayWithYear } from '@/lib/format'
 import clsx from 'clsx'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
@@ -57,6 +59,9 @@ export function AppShell({ area }: { area: Area }) {
           }}
         />
         <main className="flex flex-1 flex-col gap-4 px-gutter pt-5 pb-12 max-md:pb-6">
+          {me.organisation?.deletionScheduledFor && !location.pathname.endsWith('/settings/privacy') && (
+            <ClosingBanner name={me.organisation.name} on={me.organisation.deletionScheduledFor} timeZone={me.organisation.timeZone} staff={area === 'admin'} />
+          )}
           <Outlet />
         </main>
       </div>
@@ -370,5 +375,24 @@ function NavigationDrawer({ me, area, items, onClose }: { me: Me; area: Area; it
         </div>
       </div>
     </div>
+  )
+}
+
+/** F1.11b: everyone sees the workspace is read-only until it's deleted. */
+function ClosingBanner({ name, on, timeZone, staff }: { name: string; on: string; timeZone: string; staff: boolean }) {
+  return (
+    <AlertBanner tone="error" title={`${name} will be deleted on ${formatDayWithYear(on, timeZone)}`}>
+      {staff ? (
+        <>
+          The workspace is read-only until then. An owner can export data or cancel the deletion in{' '}
+          <Link to="/admin/settings/privacy" className="underline">
+            Data &amp; privacy
+          </Link>
+          .
+        </>
+      ) : (
+        'Until then you can sign in to read and download your own records, but nothing can be changed.'
+      )}
+    </AlertBanner>
   )
 }
