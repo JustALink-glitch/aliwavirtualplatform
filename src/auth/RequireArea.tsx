@@ -37,6 +37,8 @@ export function RequireArea({ area, children }: { area: Area; children: ReactNod
     )
   }
   const role = state.me.membership.role
+  // O1.01r: trainers who open an admin link get an explanation instead of a silent redirect.
+  if (area === 'admin' && areaForRole(role) === 'trainer') return <Navigate to="/trainer/restricted" replace />
   if (areaForRole(role) !== area) return <Navigate to={homePath(role)} replace />
   return children
 }

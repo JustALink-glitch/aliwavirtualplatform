@@ -16,10 +16,11 @@ import { CompletionSettingsPage } from '@/pages/admin/settings/CompletionSetting
 import { SessionReportSettingsPage } from '@/pages/admin/settings/SessionReportSettingsPage'
 import { SessionReportPage } from '@/pages/reports/SessionReportPage'
 import { SessionReportsPage } from '@/pages/reports/SessionReportsPage'
-import { TodayPage } from '@/pages/trainer/TodayPage'
+import { AdminOnlyPage, TodayPage } from '@/pages/trainer/TodayPage'
 import { SettingsComingSoon, SettingsLayout } from '@/pages/admin/settings/SettingsLayout'
 import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
 import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
+import { OverviewPage } from '@/pages/admin/overview/OverviewPage'
 import { InterventionsPage, NeedsAttentionPage } from '@/pages/admin/attention/NeedsAttentionPage'
 import { SessionFeedbackPage } from '@/pages/feedback/SessionFeedbackPage'
 import { MyCohortCourses, MyCohortLayout, MyCohortOverview, MyCohortParticipants, MyCohortSessions, MyCohortsPage } from '@/pages/trainer/MyCohortsPage'
@@ -65,6 +66,7 @@ import { navigation } from './navigation'
 /** Screens that are built; everything else in the sidebar shows a placeholder. */
 const built: Partial<Record<Area, RouteObject[]>> = {
   admin: [
+    { index: true, element: <OverviewPage /> },
     { path: 'needs-attention', element: <NeedsAttentionPage /> },
     { path: 'needs-attention/interventions', element: <InterventionsPage /> },
     { path: 'trainers', element: <TrainersPage /> },
@@ -125,6 +127,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
   ],
   trainer: [
     { index: true, element: <TodayPage /> },
+    { path: 'restricted', element: <AdminOnlyPage /> },
     { path: 'reports', element: <SessionReportsPage /> },
     { path: 'reports/:sessionId', element: <SessionReportPage /> },
     { path: 'grading', element: <TrainerAssignmentsPage /> },

@@ -520,3 +520,21 @@ function CohortsPanel({ data: d }: { data: Today }) {
     </Panel>
   )
 }
+
+/** /trainer/restricted — O1.01r: an admin page opened by a trainer. */
+export function AdminOnlyPage() {
+  const navigate = useNavigate()
+  return (
+    <>
+      <PageHeader title="Programme overview" />
+      <Panel className="mx-auto w-full max-w-[420px]">
+        <StatePanel
+          kind="restricted"
+          title="Programme overview is for admins"
+          description="You’re signed in as a trainer. Organisation-wide figures, other trainers’ cohorts and reports aren’t available to this role. Your sessions, grading and participants are on your dashboard."
+          action={{ label: 'Go to my dashboard', onClick: () => navigate('/trainer') }}
+        />
+      </Panel>
+    </>
+  )
+}
