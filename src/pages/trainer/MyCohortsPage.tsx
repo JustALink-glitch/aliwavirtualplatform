@@ -141,9 +141,23 @@ export function MyCohortLayout() {
     const missing = (query.error as { status?: number }).status === 404
     return (
       <>
-        <PageHeader title={missing ? 'Cohort not found' : 'Couldn’t load this cohort'} breadcrumb={[{ label: 'My cohorts', to: '/trainer/cohorts' }]} />
-        <Panel>
-          <StatePanel kind={missing ? 'no-results' : 'error'} title={missing ? 'You don’t teach in this cohort' : 'Something went wrong'} />
+        <PageHeader title={missing ? 'Not your cohort' : 'Couldn’t load this cohort'} breadcrumb={[{ label: 'My cohorts', to: '/trainer/cohorts' }]} />
+        <Panel className="mx-auto w-full max-w-[400px]">
+          {missing ? (
+            <StatePanel
+              kind="restricted"
+              title="You’re not assigned to this cohort"
+              description="It’s taught by another trainer, so its participants and grades aren’t visible to you. Ask a programme admin if you should have access."
+              action={{ label: 'Back to my cohorts', onClick: () => navigate('/trainer/cohorts') }}
+            />
+          ) : (
+            <StatePanel
+              kind="error"
+              title="Something went wrong"
+              description="Check your connection and try again."
+              action={{ label: 'Try again', onClick: () => void query.refetch() }}
+            />
+          )}
         </Panel>
       </>
     )

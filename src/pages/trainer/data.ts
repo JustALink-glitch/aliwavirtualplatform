@@ -65,3 +65,17 @@ export function reportState(s: Session): 'submitted' | 'due' | 'overdue' | null 
   if (s.report.submittedAt) return 'submitted'
   return hasPassed(s.report.dueAt) ? 'overdue' : 'due'
 }
+
+/** Whole minutes until a moment (negative once it has passed). */
+export const minutesUntil = (value: string) => Math.round((Date.parse(value) - Date.now()) / 60000)
+
+export { todayIn }
+
+/** "Closed", "Past due", "Today", "Tomorrow", "In 3 days" — the second line under a due date (T2.01). */
+export function dueLine(dueAt: string, closed: boolean): string {
+  if (closed) return 'Closed'
+  const ms = Date.parse(dueAt) - Date.now()
+  if (ms < 0) return 'Past due'
+  const days = Math.floor(ms / 86400000)
+  return days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`
+}

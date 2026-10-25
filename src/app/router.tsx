@@ -13,6 +13,10 @@ import { CertificatesPage } from '@/pages/admin/completion/CertificatesPage'
 import { OutcomesPage } from '@/pages/admin/completion/OutcomesPage'
 import { AttentionRulesPage } from '@/pages/admin/settings/AttentionRulesPage'
 import { CompletionSettingsPage } from '@/pages/admin/settings/CompletionSettingsPage'
+import { SessionReportSettingsPage } from '@/pages/admin/settings/SessionReportSettingsPage'
+import { SessionReportPage } from '@/pages/reports/SessionReportPage'
+import { SessionReportsPage } from '@/pages/reports/SessionReportsPage'
+import { TodayPage } from '@/pages/trainer/TodayPage'
 import { SettingsComingSoon, SettingsLayout } from '@/pages/admin/settings/SettingsLayout'
 import { settingsMenu } from '@/pages/admin/settings/settingsMenu'
 import { MyCertificatePage, ProgressPage } from '@/pages/participant/ProgressPage'
@@ -85,6 +89,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'courses/sessions/:id/feedback', element: <SessionFeedbackPage area="admin" /> },
     { path: 'courses/new', element: <NewCoursePage /> },
     { path: 'courses/assignments', element: <AdminAssignmentsPage /> },
+    { path: 'courses/reports', element: <SessionReportsPage /> },
+    { path: 'courses/reports/:sessionId', element: <SessionReportPage /> },
     { path: 'courses/assignments/grading-scales', element: <GradeScalesPage /> },
     { path: 'courses/assignments/:id', element: <AssignmentPage area="admin" /> },
     { path: 'courses/assignments/:id/submissions/:memberId', element: <SubmissionPage area="admin" /> },
@@ -109,14 +115,18 @@ const built: Partial<Record<Area, RouteObject[]>> = {
         { index: true, element: <Navigate to="completion" replace /> },
         { path: 'completion', element: <CompletionSettingsPage /> },
         { path: 'attention-rules', element: <AttentionRulesPage /> },
+        { path: 'session-reports', element: <SessionReportSettingsPage /> },
         ...settingsMenu
           .flatMap((s) => s.items)
-          .filter((i) => i.path !== 'completion' && i.path !== 'attention-rules')
+          .filter((i) => !['completion', 'attention-rules', 'session-reports'].includes(i.path))
           .map((i) => ({ path: i.path, element: <SettingsComingSoon path={i.path} /> })),
       ],
     },
   ],
   trainer: [
+    { index: true, element: <TodayPage /> },
+    { path: 'reports', element: <SessionReportsPage /> },
+    { path: 'reports/:sessionId', element: <SessionReportPage /> },
     { path: 'grading', element: <TrainerAssignmentsPage /> },
     { path: 'grading/new', element: <AssignmentFormPage mode="new" /> },
     { path: 'grading/:id', element: <AssignmentPage area="trainer" /> },

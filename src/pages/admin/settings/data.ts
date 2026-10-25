@@ -43,3 +43,25 @@ function useSave<T>(path: string, key: string, related: string[][]) {
 
 export const useSaveCompletionSettings = () => useSave<CompletionSettings>('/v1/settings/completion', 'completion', [['completion'], ['programmes'], ['my']])
 export const useSaveAttentionRules = () => useSave<AttentionRuleSettings>('/v1/settings/attention-rules', 'attention-rules', [['attention']])
+
+export interface ReportSettingsQuestion {
+  id: string | null
+  prompt: string
+  multiple: boolean
+  options: string[]
+}
+
+export interface ReportSettings {
+  dueHours: number
+  remind: boolean
+  overdueOnOverview: boolean
+  questions: ReportSettingsQuestion[]
+}
+
+export const useReportSettings = () =>
+  useQuery({
+    queryKey: [...keys.all, 'session-reports'],
+    queryFn: ({ signal }) => api<{ settings: ReportSettings }>('/v1/settings/session-reports', { signal }),
+  })
+
+export const useSaveReportSettings = () => useSave<ReportSettings>('/v1/settings/session-reports', 'session-reports', [['reports'], ['sessions']])

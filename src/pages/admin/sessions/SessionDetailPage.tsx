@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Choice'
 import { Dialog } from '@/components/ui/Dialog'
 import { DetailList } from '@/components/ui/FormLayout'
+import { ChevronRightIcon } from '@/components/ui/icons'
 import { Badge, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
@@ -78,6 +79,11 @@ function SessionView({ data }: { data: SessionDetail }) {
       {trainerArea && s.status === 'held' && can.attendance && s.attendance.recorded > 0 && (
         <Button variant="secondary" onClick={() => navigate('attendance')}>
           Edit attendance
+        </Button>
+      )}
+      {trainerArea && s.status === 'held' && can.report && (
+        <Button variant={s.report.submittedAt ? 'secondary' : 'primary'} onClick={() => navigate(`/trainer/reports/${s.id}`)}>
+          {s.report.submittedAt ? 'View report' : 'Write report'}
         </Button>
       )}
       {trainerArea && canJoin && (
@@ -240,6 +246,15 @@ function SessionView({ data }: { data: SessionDetail }) {
                 <div>{reportOverdue ? <Badge tone="error">Overdue</Badge> : <Badge tone="success">Submitted</Badge>}</div>
               )}
               {trainerArea && !s.report.submittedAt && !can.report && <p className="text-caption text-secondary">Written by the course’s lead trainer.</p>}
+              {s.status === 'held' && (trainerArea ? can.report || s.report.submittedAt : true) && (
+                <Link
+                  to={trainerArea ? `/trainer/reports/${s.id}` : `/admin/courses/reports/${s.id}`}
+                  className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline"
+                >
+                  {trainerArea && can.report && !s.report.submittedAt ? 'Write report' : 'View report'}
+                  <ChevronRightIcon size={14} />
+                </Link>
+              )}
             </Panel>
           )}
           {trainerArea && (
