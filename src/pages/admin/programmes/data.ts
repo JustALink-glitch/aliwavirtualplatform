@@ -134,13 +134,65 @@ export function useCohort(id: string) {
   })
 }
 
-export function useCourses(programmeId?: string) {
+export function useCourses(programmeId?: string, archived = false) {
   return useQuery({
-    queryKey: keys.courses(programmeId),
-    queryFn: ({ signal }) => api<{ courses: Course[] }>(`/v1/courses${programmeId ? `?programmeId=${programmeId}` : ''}`, { signal }),
+    queryKey: [...keys.courses(programmeId), archived ? 'archived' : 'live'],
+    queryFn: ({ signal }) => {
+      const params = new URLSearchParams({ ...(programmeId && { programmeId }), ...(archived && { archived: '1' }) }).toString()
+      return api<{ courses: Course[] }>(`/v1/courses${params ? `?${params}` : ''}`, { signal })
+    },
     select: (data) => data.courses,
   })
 }
+
+export interface CourseResource {
+  id: string
+  kind: 'file' | 'link'
+  name: string
+  url: string | null
+  size: number | null
+  type: string | null
+  /** Null: every cohort that runs the course. */
+  cohort: string | null
+  sessionStartsAt: string | null
+  visible: boolean
+  addedBy: string | null
+  addedAt: string
+}
+
+export interface CourseDetail {
+  course: Course & { archivedAt: string | null; libraryMode: 'shared' | 'per_cohort' }
+  cohorts: { id: string; cohortCourseId: string; name: string; status: string; held: number; planned: number; trainers: { name: string; lead: boolean }[] }[]
+  resources: CourseResource[]
+  assignments: { id: string; title: string; scale: string; maxPoints: number | null; dueAt: string; cohort: string; published: boolean; setBy: string | null }[]
+  sessions: { id: string; startsAt: string; endsAt: string; status: string; cohort: string; mode: string }[]
+}
+
+/** A2.02 Course detail. */
+export function useCourseDetail(id: string) {
+  return useQuery({
+    queryKey: ['courses', 'detail', id],
+    queryFn: ({ signal }) => api<CourseDetail>(`/v1/courses/${id}`, { signal }),
+    retry: notFoundRetry,
+  })
+}
+
+export interface CourseEdit {
+  name: string
+  description: string
+  plannedSessions: number | null
+  defaultLeadMemberId: string | null
+}
+
+export const useUpdateCourse = (id: string) => useStructureMutation((input: CourseEdit) => api(`/v1/courses/${id}`, { method: 'PATCH', body: input }))
+export const useArchiveCourse = (id: string) => useStructureMutation(() => api(`/v1/courses/${id}/archive`, { method: 'POST' }))
+export const useRestoreCourse = (id: string) => useStructureMutation(() => api(`/v1/courses/${id}/restore`, { method: 'POST' }))
+export const useAddCourseResource = (id: string) =>
+  useStructureMutation((input: { kind: 'file' | 'link'; name: string; url?: string; path?: string; sessionId: string | null; visible: boolean }) =>
+    api<{ resource: { id: string } }>(`/v1/courses/${id}/resources`, { method: 'POST', body: input }),
+  )
+export const useRemoveCourseResource = (id: string) =>
+  useStructureMutation((resourceId: string) => api(`/v1/courses/${id}/resources/${resourceId}`, { method: 'DELETE' }))
 
 // ─── Mutations. Anything that changes the structure refreshes every list. ───
 
@@ -149,9 +201,7 @@ function useStructureMutation<TInput, TResult>(fn: (input: TInput) => Promise<TR
   return useMutation({
     mutationFn: fn,
     onSuccess: async () => {
-      await Promise.all(
-        [keys.programmes, keys.cohorts, ['courses'], ['members']].map((queryKey) => client.invalidateQueries({ queryKey })),
-      )
+      await Promise.all([keys.programmes, keys.cohorts, ['courses'], ['members']].map((queryKey) => client.invalidateQueries({ queryKey })))
     },
   })
 }
@@ -162,11 +212,9 @@ export const useCreateProgramme = () =>
 export const useUpdateProgramme = (id: string) =>
   useStructureMutation((input: ProgrammeInput) => api<{ programme: Programme }>(`/v1/programmes/${id}`, { method: 'PATCH', body: input }))
 
-export const useArchiveProgramme = (id: string) =>
-  useStructureMutation(() => api<{ programme: Programme }>(`/v1/programmes/${id}/archive`, { method: 'POST' }))
+export const useArchiveProgramme = (id: string) => useStructureMutation(() => api<{ programme: Programme }>(`/v1/programmes/${id}/archive`, { method: 'POST' }))
 
-export const useRestoreProgramme = (id: string) =>
-  useStructureMutation(() => api<{ programme: Programme }>(`/v1/programmes/${id}/restore`, { method: 'POST' }))
+export const useRestoreProgramme = (id: string) => useStructureMutation(() => api<{ programme: Programme }>(`/v1/programmes/${id}/restore`, { method: 'POST' }))
 
 export const useCreateCohort = () =>
   useStructureMutation((input: CohortInput & { programmeId: string }) => api<{ cohort: CohortSummary }>('/v1/cohorts', { method: 'POST', body: input }))
@@ -174,11 +222,9 @@ export const useCreateCohort = () =>
 export const useUpdateCohort = (id: string) =>
   useStructureMutation((input: CohortInput) => api<{ cohort: CohortSummary }>(`/v1/cohorts/${id}`, { method: 'PATCH', body: input }))
 
-export const useArchiveCohort = (id: string) =>
-  useStructureMutation(() => api<{ cohort: CohortSummary }>(`/v1/cohorts/${id}/archive`, { method: 'POST' }))
+export const useArchiveCohort = (id: string) => useStructureMutation(() => api<{ cohort: CohortSummary }>(`/v1/cohorts/${id}/archive`, { method: 'POST' }))
 
-export const useRestoreCohort = (id: string) =>
-  useStructureMutation(() => api<{ cohort: CohortSummary }>(`/v1/cohorts/${id}/restore`, { method: 'POST' }))
+export const useRestoreCohort = (id: string) => useStructureMutation(() => api<{ cohort: CohortSummary }>(`/v1/cohorts/${id}/restore`, { method: 'POST' }))
 
 export const useCreateCourse = () =>
   useStructureMutation((input: CourseInput) => api<{ course: { id: string } }>('/v1/courses', { method: 'POST', body: input }))

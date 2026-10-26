@@ -23,11 +23,13 @@ const columns: Column[] = [
 
 /** /admin/courses — A2.01 Courses, A2.01e empty. */
 export function CoursesPage() {
-  const courses = useCourses()
+  const [showArchived, setShowArchived] = useState(false)
+  const courses = useCourses(undefined, showArchived)
   const programmes = useProgrammes()
   const navigate = useNavigate()
   const location = useLocation()
   const created = (location.state as { created?: string } | null)?.created
+  const archivedName = (location.state as { archived?: string } | null)?.archived
   const [programme, setProgramme] = useState('all')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -58,15 +60,26 @@ export function CoursesPage() {
         </AlertBanner>
       )}
 
+      {archivedName && (
+        <AlertBanner tone="success" title={`${archivedName} was archived`}>
+          Cohorts that run it keep everything. Find it under Archived to restore it.
+        </AlertBanner>
+      )}
+
       {courses.isPending || programmes.isPending ? (
         <Panel aria-busy="true" aria-label="Loading courses" className="h-[240px]">
           <span className="sr-only">Loading courses</span>
         </Panel>
       ) : courses.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load courses" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void courses.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load courses"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void courses.refetch() }}
+          />
         </Panel>
-      ) : all.length === 0 ? (
+      ) : all.length === 0 && !showArchived ? (
         <Panel className="py-16">
           <EmptyState
             icon={<BookOpenIcon size={24} />}
@@ -82,7 +95,12 @@ export function CoursesPage() {
                   New programme
                 </Button>
               ) : (
-                newButton
+                <>
+                  {newButton}
+                  <Button variant="secondary" onClick={() => setShowArchived(true)}>
+                    Archived courses
+                  </Button>
+                </>
               )
             }
           />
@@ -104,19 +122,42 @@ export function CoursesPage() {
                   .map((p) => ({ value: p.id, label: p.name, count: all.filter((c) => c.programme.id === p.id).length })),
               ]}
             />
+            <button
+              type="button"
+              aria-pressed={showArchived}
+              onClick={() => {
+                setShowArchived((v) => !v)
+                setProgramme('all')
+                setPage(1)
+              }}
+              className={`h-8 shrink-0 rounded-full border px-3 text-caption-strong ${showArchived ? 'border-transparent bg-surface-selected text-brand-text' : 'border-default bg-surface text-secondary hover:text-primary'}`}
+            >
+              Archived
+            </button>
             <div className="flex-1" />
-            <SearchField aria-label="Search courses" placeholder="Search courses" value={search} onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }} />
+            <SearchField
+              aria-label="Search courses"
+              placeholder="Search courses"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
           </div>
           <Panel className="gap-0 max-md:py-2">
             {visible.length === 0 ? (
-              <StatePanel kind="no-results" title="No courses match" description="Try another name, or choose All programmes." />
+              <StatePanel
+                kind="no-results"
+                title={showArchived && all.length === 0 ? 'No archived courses' : 'No courses match'}
+                description={
+                  showArchived && all.length === 0 ? 'Courses you archive show here, ready to restore.' : 'Try another name, or choose All programmes.'
+                }
+              />
             ) : (
               <Table columns={columns}>
                 {paged.rows.map((course) => (
-                  <Row key={course.id} to={`/admin/programmes/${course.programme.id}`}>
+                  <Row key={course.id} to={`/admin/courses/library/${course.id}`}>
                     <Cell>
                       <Stacked primary={course.name} secondary={course.programme.name} />
                     </Cell>

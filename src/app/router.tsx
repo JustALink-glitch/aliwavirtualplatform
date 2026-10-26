@@ -40,6 +40,8 @@ import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
 import { MySessionPage, MySessionsPage } from '@/pages/participant/MySessionsPage'
 import { SettingsPage } from '@/pages/participant/SettingsPage'
 import { ZoomMatchPage } from '@/pages/admin/sessions/ZoomMatchPage'
+import { CourseDetailPage } from '@/pages/admin/programmes/CourseDetailPage'
+import { EditCoursePage } from '@/pages/admin/programmes/EditCoursePage'
 import { NotificationsPage } from '@/pages/shell/Notifications'
 import { SearchPage } from '@/pages/shell/Search'
 import { MyAssignmentPage } from '@/pages/participant/MyAssignmentPage'
@@ -113,6 +115,8 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'programmes/:id/edit', element: <EditProgrammePage /> },
     { path: 'courses', element: <SessionsPage /> },
     { path: 'courses/library', element: <CoursesPage /> },
+    { path: 'courses/library/:id', element: <CourseDetailPage /> },
+    { path: 'courses/library/:id/edit', element: <EditCoursePage /> },
     { path: 'courses/sessions/new', element: <ScheduleSessionPage /> },
     { path: 'courses/sessions/:id', element: <SessionDetailPage /> },
     { path: 'courses/sessions/:id/edit', element: <EditSessionPage /> },
