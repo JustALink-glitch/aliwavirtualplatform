@@ -16,7 +16,7 @@ export function RequireArea({ area, children }: { area: Area; children: ReactNod
     return <div aria-busy="true" aria-label="Loading" className="min-h-dvh bg-canvas" />
   }
   if (state.status === 'signed-out') {
-    return <Navigate to="/sign-in" replace state={{ from: location.pathname }} />
+    return <Navigate to={state.expired ? '/signed-out' : '/sign-in'} replace state={{ from: location.pathname + location.search }} />
   }
   if (state.status === 'no-access' && state.reason === 'no_organisation') {
     // Signed up but never finished set-up: resume at the organisation step (R1.03a).

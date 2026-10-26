@@ -98,8 +98,10 @@ function SetPassword({ token, invitation }: { token: string; invitation: Invitat
       })
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (!error) await refresh()
-      // Signed in: /sign-in forwards to the role's home. If sign-in failed, they can sign in there.
-      navigate('/sign-in', { replace: true })
+      // Trainers and participants add their profile next (T1.03 / P1.02). Otherwise /sign-in forwards to
+      // the role's home; if sign-in failed, they can sign in there.
+      const profileNext = !error && ['trainer', 'assistant_trainer', 'participant'].includes(invitation.role)
+      navigate(profileNext ? '/welcome/profile' : '/sign-in', { replace: true })
     } catch (error) {
       setFailed(error instanceof ApiError && error.status < 500 ? error.message : 'Your password wasn’t saved. Try again.')
       setSaving(false)
@@ -197,9 +199,7 @@ function ExpiredLink({ token, invitation, onSent }: { token: string; invitation:
           ? `A newer invitation from ${invitation.organisationName} was sent to you. Use the link in the latest email, or ask for a new one.`
           : `Your invitation from ${invitation.organisationName} was sent on ${formatDay(invitation.sentAt)} and expired on ${formatDay(invitation.expiresAt)} at ${formatTime(invitation.expiresAt)}.`}
       </p>
-      <AlertBanner title="Your admin is told">
-        {invitation.invitedBy ?? 'Your admin'} will see that you asked for a new link.
-      </AlertBanner>
+      <AlertBanner title="Your admin is told">{invitation.invitedBy ?? 'Your admin'} will see that you asked for a new link.</AlertBanner>
       {failed && (
         <AlertBanner tone="error" title="Couldn’t send a new link">
           {failed}
@@ -260,10 +260,7 @@ function UnusableLink({ code }: { code: string }) {
         : { title: 'This link isn’t valid', body: 'Check you opened the whole link from your email, or ask your administrator to send a new invitation.' }
 
   return (
-    <OnboardingLayout
-      panelTitle="Invitation links last 72 hours"
-      panelBody="For your security, each invitation link works once."
-    >
+    <OnboardingLayout panelTitle="Invitation links last 72 hours" panelBody="For your security, each invitation link works once.">
       <OnboardingHeader title={content.title} />
       <p className="text-body text-secondary">{content.body}</p>
       <Prompt text={code === 'invitation_used' ? 'Ready?' : 'Already set a password?'} to="/sign-in" label="Sign in" />

@@ -154,6 +154,7 @@ export interface MySession {
   joinUrl: string | null
   cancellationReason: string | null
   trainer: string | null
+  trainerBio?: string | null
   number: number | null
   total: number
   attendance: {

@@ -34,7 +34,9 @@ function SessionLink({ s, timeZone, past }: { s: MySession; timeZone: string; pa
           <span className="truncate text-body-strong text-primary">
             {past ? formatDay(s.startsAt, timeZone) : when(s, timeZone)} · {s.course.name}
           </span>
-          <span className="truncate text-caption text-secondary">{past ? pastLine(s) : [s.number ? `Session ${s.number}` : null, sessionWhere(s)].filter(Boolean).join(' · ')}</span>
+          <span className="truncate text-caption text-secondary">
+            {past ? pastLine(s) : [s.number ? `Session ${s.number}` : null, sessionWhere(s)].filter(Boolean).join(' · ')}
+          </span>
         </span>
         {(past || s.status !== 'scheduled') && <SessionBadge session={s} />}
         <ChevronRightIcon size={16} className="shrink-0 text-icon-muted" />
@@ -52,25 +54,40 @@ export function MySessionsPage() {
       <>
         <PageHeader title="Sessions" />
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load your sessions" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load your sessions"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       </>
     )
   }
   const { sessions, attendance: a, timeZone } = query.data
   const upcoming = sessions.filter((s) => s.status === 'scheduled' || s.status === 'in_progress')
-  const past = sessions.filter((s) => s.status === 'held' || (s.status === 'cancelled' && Date.parse(s.startsAt) <= Date.parse(upcoming[0]?.startsAt ?? s.startsAt))).reverse()
+  const past = sessions
+    .filter((s) => s.status === 'held' || (s.status === 'cancelled' && Date.parse(s.startsAt) <= Date.parse(upcoming[0]?.startsAt ?? s.startsAt)))
+    .reverse()
   const cancelledAhead = sessions.filter((s) => s.status === 'cancelled' && !past.includes(s))
 
   return (
     <>
       <PageHeader
         title="Sessions"
-        description={a.recorded ? `Your attendance: ${a.present} of ${plural(a.recorded, 'session')} · ${a.rate}%. Excused counts as not attended.` : 'Your attendance shows here after your first session.'}
+        description={
+          a.recorded
+            ? `Your attendance: ${a.present} of ${plural(a.recorded, 'session')} · ${a.rate}%. Excused counts as not attended.`
+            : 'Your attendance shows here after your first session.'
+        }
       />
       {sessions.length === 0 ? (
         <Panel className="py-12">
-          <EmptyState icon={<CalendarIcon size={24} />} title="No sessions yet" body="When your trainers schedule sessions for your courses, they appear here." />
+          <EmptyState
+            icon={<CalendarIcon size={24} />}
+            title="No sessions yet"
+            body="When your trainers schedule sessions for your courses, they appear here."
+          />
         </Panel>
       ) : (
         <div className="grid grid-cols-2 items-start gap-4 max-lg:grid-cols-1">
@@ -80,9 +97,11 @@ export function MySessionsPage() {
               <p className="py-3 text-body text-secondary">Nothing else scheduled.</p>
             ) : (
               <ul>
-                {[...upcoming, ...cancelledAhead].sort((x, y) => Date.parse(x.startsAt) - Date.parse(y.startsAt)).map((s) => (
-                  <SessionLink key={s.id} s={s} timeZone={timeZone} />
-                ))}
+                {[...upcoming, ...cancelledAhead]
+                  .sort((x, y) => Date.parse(x.startsAt) - Date.parse(y.startsAt))
+                  .map((s) => (
+                    <SessionLink key={s.id} s={s} timeZone={timeZone} />
+                  ))}
               </ul>
             )}
           </Panel>
@@ -115,7 +134,11 @@ export function MySessionPage() {
       <>
         <PageHeader title={notFound ? 'Session not found' : 'Couldn’t load the session'} breadcrumb={[{ label: 'Sessions', to: BASE }]} />
         <Panel>
-          <StatePanel kind={notFound ? 'no-results' : 'error'} title={notFound ? 'It isn’t one of your sessions.' : 'Something went wrong'} description="Go back to your sessions." />
+          <StatePanel
+            kind={notFound ? 'no-results' : 'error'}
+            title={notFound ? 'It isn’t one of your sessions.' : 'Something went wrong'}
+            description="Go back to your sessions."
+          />
         </Panel>
       </>
     )
@@ -132,23 +155,47 @@ export function MySessionPage() {
         breadcrumb={[{ label: 'Sessions', to: BASE }, { label: `${s.course.name} · ${dayLabel}` }]}
         title={s.course.name}
         badge={
-          <span className={s.status === 'in_progress' ? 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-info-bg px-2 text-caption-strong text-info-fg' : 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-neutral-bg px-2 text-caption-strong text-neutral-fg'}>
+          <span
+            className={
+              s.status === 'in_progress'
+                ? 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-info-bg px-2 text-caption-strong text-info-fg'
+                : 'inline-flex h-[22px] items-center gap-1.5 rounded-full bg-neutral-bg px-2 text-caption-strong text-neutral-fg'
+            }
+          >
             <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
             {statusText}
           </span>
         }
-        description={[s.number ? `Session ${s.number} of ${s.total}` : null, `${dayLabel}, ${formatTimeRange(s.startsAt, s.endsAt, timeZone)}`, sessionWhere(s), s.trainer].filter(Boolean).join(' · ')}
+        description={[
+          s.number ? `Session ${s.number} of ${s.total}` : null,
+          `${dayLabel}, ${formatTimeRange(s.startsAt, s.endsAt, timeZone)}`,
+          sessionWhere(s),
+          s.trainer,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         actions={
           s.joinUrl ? (
-            <a href={s.joinUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover">
+            <a
+              href={s.joinUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover"
+            >
               {s.joinUrl.includes('zoom.us') ? 'Join Zoom' : 'Join session'}
             </a>
           ) : undefined
         }
       />
-      {s.status === 'cancelled' && <AlertBanner tone="warning" title="This session was cancelled">{s.cancellationReason ?? 'Your trainer will let you know about any catch-up.'}</AlertBanner>}
+      {s.status === 'cancelled' && (
+        <AlertBanner tone="warning" title="This session was cancelled">
+          {s.cancellationReason ?? 'Your trainer will let you know about any catch-up.'}
+        </AlertBanner>
+      )}
       {s.joinUrl && (
-        <AlertBanner title="Join with the email you use on Synqop">Your attendance counts automatically when Zoom is connected. Please don’t share this link.</AlertBanner>
+        <AlertBanner title="Join with the email you use on Synqop">
+          Your attendance counts automatically when Zoom is connected. Please don’t share this link.
+        </AlertBanner>
       )}
       {s.mode === 'online' && !s.joinUrl && s.status === 'scheduled' && (
         <AlertBanner title="The joining link appears here the day before">Check back on {formatDay(s.startsAt, timeZone)}.</AlertBanner>
@@ -168,7 +215,15 @@ export function MySessionPage() {
               <PanelHeader
                 id="attendance-title"
                 title="Your attendance"
-                description={a ? (a.source === 'zoom' ? 'Recorded from Zoom.' : a.source === 'edited' ? 'Updated by your trainer.' : 'Marked by your trainer.') : 'Not recorded yet.'}
+                description={
+                  a
+                    ? a.source === 'zoom'
+                      ? 'Recorded from Zoom.'
+                      : a.source === 'edited'
+                        ? 'Updated by your trainer.'
+                        : 'Marked by your trainer.'
+                    : 'Not recorded yet.'
+                }
               />
               {a ? (
                 <DetailList
@@ -202,8 +257,29 @@ export function MySessionPage() {
               items={[
                 { label: 'When', value: `${dayLabel}, ${formatTimeRange(s.startsAt, s.endsAt, timeZone)}` },
                 { label: 'Where', value: s.mode === 'online' ? sessionWhere(s).replace(', ', ' · ') : (s.location ?? 'In person') },
-                ...(s.trainer ? [{ label: 'Trainer', value: s.trainer }] : []),
-                { label: 'Course', value: <Link to={`/participant/courses/${s.course.cohortCourseId}`} className="hover:underline">{s.course.name}</Link> },
+                ...(s.trainer
+                  ? [
+                      {
+                        label: 'Trainer',
+                        value: s.trainerBio ? (
+                          <span className="flex flex-col gap-0.5">
+                            <span>{s.trainer}</span>
+                            <span className="text-caption text-secondary">{s.trainerBio}</span>
+                          </span>
+                        ) : (
+                          s.trainer
+                        ),
+                      },
+                    ]
+                  : []),
+                {
+                  label: 'Course',
+                  value: (
+                    <Link to={`/participant/courses/${s.course.cohortCourseId}`} className="hover:underline">
+                      {s.course.name}
+                    </Link>
+                  ),
+                },
               ]}
             />
           </Panel>

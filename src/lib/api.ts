@@ -7,6 +7,8 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly details?: unknown,
+    /** Server errors (500) carry the request id the API logged it under. */
+    readonly requestId?: string,
   ) {
     super(message)
     this.name = 'ApiError'
@@ -14,6 +16,21 @@ export class ApiError extends Error {
 }
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+/** X1.02 A short reference people can quote: the first 8 characters of the request id, e.g. "7F3K-2Q9X". */
+export function errorReference(requestId: string): string {
+  const s = requestId
+    .replace(/[^a-z0-9]/gi, '')
+    .slice(0, 8)
+    .toUpperCase()
+  return s.length > 4 ? `${s.slice(0, 4)}-${s.slice(4)}` : s
+}
+
+let sessionExpired: (() => void) | null = null
+/** X1.03 Called when the API turns down a token the browser still holds: the session has ended. */
+export function onSessionExpired(handler: (() => void) | null) {
+  sessionExpired = handler
+}
 
 /** Calls the Synqop API with the current user's access token. */
 export async function api<T>(path: string, options: { method?: Method; body?: unknown; signal?: AbortSignal } = {}): Promise<T> {
@@ -33,8 +50,9 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   const payload: unknown = response.status === 204 ? null : await response.json().catch(() => null)
 
   if (!response.ok) {
-    const error = (payload as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error
-    throw new ApiError(response.status, error?.code ?? 'unknown_error', error?.message ?? 'Something went wrong. Try again.', error?.details)
+    if (response.status === 401 && token) sessionExpired?.()
+    const error = (payload as { error?: { code?: string; message?: string; details?: unknown; requestId?: string } } | null)?.error
+    throw new ApiError(response.status, error?.code ?? 'unknown_error', error?.message ?? 'Something went wrong. Try again.', error?.details, error?.requestId)
   }
   return payload as T
 }

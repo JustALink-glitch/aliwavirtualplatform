@@ -14,6 +14,10 @@ export interface Me {
     /** G1.04: set by the person; otherwise "First L.". */
     displayName?: string | null
     lastSignInAt?: string | null
+    /** T9.01 Shown to participants on sessions. */
+    bio?: string | null
+    /** Short-lived link to their profile photo. */
+    photoUrl?: string | null
   }
   organisation: { id: string; name: string; timeZone: string; deletionScheduledFor?: string | null } | null
 }
@@ -23,7 +27,8 @@ export type NoAccessReason = 'no_organisation' | 'access_ended' | 'unknown'
 
 export type AuthState =
   | { status: 'loading' }
-  | { status: 'signed-out' }
+  /** `expired`: the session ended without the person signing out (X1.03). */
+  | { status: 'signed-out'; expired?: boolean }
   /**
    * Signed in to Supabase, but no active membership: `no_organisation` → resume organisation set-up (R1.03a);
    * `access_ended` → deactivated (P1.04w).

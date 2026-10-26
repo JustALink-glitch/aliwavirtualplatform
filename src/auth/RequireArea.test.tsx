@@ -27,8 +27,22 @@ function renderAt(path: string) {
     [
       { path: '/sign-in', element: <p>Sign-in page</p> },
       { path: '/signup/organisation', element: <p>Organisation step</p> },
-      { path: '/admin', element: <RequireArea area="admin"><p>Admin area</p></RequireArea> },
-      { path: '/participant', element: <RequireArea area="participant"><p>Participant area</p></RequireArea> },
+      {
+        path: '/admin',
+        element: (
+          <RequireArea area="admin">
+            <p>Admin area</p>
+          </RequireArea>
+        ),
+      },
+      {
+        path: '/participant',
+        element: (
+          <RequireArea area="participant">
+            <p>Participant area</p>
+          </RequireArea>
+        ),
+      },
     ],
     { initialEntries: [path] },
   )

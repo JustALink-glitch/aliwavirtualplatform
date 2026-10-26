@@ -15,14 +15,29 @@ function toneFor(seed: string): string {
   return tones[Math.abs(hash) % tones.length]!
 }
 
-/** Avatar (Figma 13:70). 24px in table rows, 32px in the top bar and lists. */
-export function Avatar({ initials, seed, size = 24, className }: { initials: string; seed?: string; size?: 24 | 32; className?: string }) {
+const sizes = { 24: 'size-6 text-[11px] leading-[14px]', 32: 'size-8 text-caption-strong', 40: 'size-10 text-body-strong' } as const
+
+/** Avatar (Figma 13:70). 24px in table rows, 32px in the top bar and lists, 40px on profile forms. Shows the photo when there is one. */
+export function Avatar({
+  initials,
+  seed,
+  size = 24,
+  src,
+  className,
+}: {
+  initials: string
+  seed?: string
+  size?: 24 | 32 | 40
+  src?: string | null
+  className?: string
+}) {
+  if (src) return <img src={src} alt="" aria-hidden="true" className={clsx('shrink-0 rounded-full object-cover', sizes[size], className)} />
   return (
     <span
       aria-hidden="true"
       className={clsx(
         'inline-flex shrink-0 items-center justify-center rounded-full font-medium select-none',
-        size === 24 ? 'size-6 text-[11px] leading-[14px]' : 'size-8 text-caption-strong',
+        sizes[size],
         seed ? toneFor(seed) : tones[0],
         className,
       )}

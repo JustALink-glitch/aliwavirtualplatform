@@ -8,6 +8,7 @@ import { navFor, type NavItem } from '@/app/navigation'
 import { useAttentionCount } from '@/pages/admin/attention/data'
 import { useAuth, type Me } from '@/auth/useAuth'
 import { Avatar } from '@/components/ui/Avatar'
+import { OfflineBanner } from '@/components/SystemPages'
 import { ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SignOutIcon, UserIcon } from '@/components/ui/icons'
 import { initials, roleLabel, shortName } from '@/lib/people'
 import { NotificationsBell } from '@/pages/shell/Notifications'
@@ -64,6 +65,7 @@ export function AppShell({ area }: { area: Area }) {
           {me.organisation?.deletionScheduledFor && !location.pathname.endsWith('/settings/privacy') && (
             <ClosingBanner name={me.organisation.name} on={me.organisation.deletionScheduledFor} timeZone={me.organisation.timeZone} staff={area === 'admin'} />
           )}
+          <OfflineBanner timeZone={me.organisation?.timeZone} />
           <Outlet />
         </main>
       </div>
@@ -193,7 +195,7 @@ function AccountMenu({ me, area }: { me: Me; area: Area }) {
         onClick={() => setOpen((value) => !value)}
         className="flex items-center gap-3 rounded-md py-0.5 pr-1 pl-0.5 hover:bg-surface-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
       >
-        <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+        <Avatar size={32} src={me.membership.photoUrl} initials={initials(me.membership.firstName, me.membership.lastName)} />
         <span className="flex flex-col items-start text-left">
           <span className="text-body-strong text-primary">{name}</span>
           <span className="text-caption text-secondary">{role}</span>
@@ -261,7 +263,7 @@ function MobileTopBar({ me, area, onMenu }: { me: Me; area: Area; onMenu: () => 
         <SearchIcon size={22} />
       </Link>
       <NotificationsBell area={area} size={44} />
-      <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+      <Avatar size={32} src={me.membership.photoUrl} initials={initials(me.membership.firstName, me.membership.lastName)} />
     </header>
   )
 }
@@ -310,7 +312,7 @@ function NavigationDrawer({ me, area, items, onClose }: { me: Me; area: Area; it
         <OrganisationLabel me={me} area={area} compact />
         <SidebarNav area={area} items={items} inDrawer />
         <div className="flex items-center gap-3 border-t border-default pt-3">
-          <Avatar size={32} initials={initials(me.membership.firstName, me.membership.lastName)} />
+          <Avatar size={32} src={me.membership.photoUrl} initials={initials(me.membership.firstName, me.membership.lastName)} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-body-strong text-primary">
               {me.membership.displayName || shortName(me.membership.firstName, me.membership.lastName)}

@@ -7,7 +7,8 @@ import { AuthProvider } from '@/auth/AuthProvider'
 import '@/styles/index.css'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 } },
+  // Offline (X1.04), saves fail straight away with a connection message instead of waiting silently.
+  defaultOptions: { queries: { refetchOnWindowFocus: false, retry: 1 }, mutations: { networkMode: 'always' } },
 })
 
 createRoot(document.getElementById('root')!).render(

@@ -1,7 +1,6 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { RequireArea } from '@/auth/RequireArea'
 import { AppShell } from '@/components/shell/AppShell'
-import { StatePanel } from '@/components/StatePanel'
 import { AdminAssignmentsPage } from '@/pages/assignments/AdminAssignmentsPage'
 import { AssignmentFormPage } from '@/pages/assignments/AssignmentFormPage'
 import { AssignmentPage } from '@/pages/assignments/AssignmentPage'
@@ -39,6 +38,9 @@ import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
 import { MySessionPage, MySessionsPage } from '@/pages/participant/MySessionsPage'
 import { SettingsPage } from '@/pages/participant/SettingsPage'
+import { AccountSettingsPage } from '@/pages/shell/AccountSettingsPage'
+import { WelcomePage, WelcomeProfilePage } from '@/pages/onboarding/WelcomePages'
+import { NotFoundPage, RootNotFound, ServerErrorPage, SignedOutPage } from '@/components/SystemPages'
 import { ZoomMatchPage } from '@/pages/admin/sessions/ZoomMatchPage'
 import { CourseDetailPage } from '@/pages/admin/programmes/CourseDetailPage'
 import { EditCoursePage } from '@/pages/admin/programmes/EditCoursePage'
@@ -154,6 +156,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
   trainer: [
     { index: true, element: <TodayPage /> },
     { path: 'restricted', element: <AdminOnlyPage /> },
+    { path: 'settings', element: <AccountSettingsPage area="trainer" /> },
     { path: 'notifications', element: <NotificationsPage area="trainer" /> },
     { path: 'search', element: <SearchPage area="trainer" /> },
     { path: 'reports', element: <SessionReportsPage /> },
@@ -215,13 +218,21 @@ function areaRoutes(area: Area): RouteObject {
       </RequireArea>
     ),
     children: [
-      ...ready,
-      ...navigation[area]
-        .filter((item) => !ready.some((route) => route.path === item.path || (item.path === '' && route.index)))
-        .map((item) => ({
-          ...(item.path ? { path: item.path } : { index: true }),
-          element: <PlaceholderPage title={item.label} screen={item.screen} />,
-        })),
+      {
+        // X1.02: a page that crashes shows the error inside the shell, so the navigation still works.
+        errorElement: <ServerErrorPage area={area} />,
+        children: [
+          ...ready,
+          ...navigation[area]
+            .filter((item) => !ready.some((route) => route.path === item.path || (item.path === '' && route.index)))
+            .map((item) => ({
+              ...(item.path ? { path: item.path } : { index: true }),
+              element: <PlaceholderPage title={item.label} screen={item.screen} />,
+            })),
+          // X1.01
+          { path: '*', element: <NotFoundPage area={area} /> },
+        ],
+      },
     ],
   }
 }
@@ -237,10 +248,14 @@ export const routes: RouteObject[] = [
   { path: '/reset-password', element: <ResetPasswordPage /> },
   // Staff and participant invitations (T1 / P1)
   { path: '/invite/:token', element: <InvitationPage /> },
+  { path: '/welcome/profile', element: <WelcomeProfilePage /> },
+  { path: '/welcome', element: <WelcomePage /> },
   areaRoutes('admin'),
   areaRoutes('trainer'),
   areaRoutes('participant'),
-  { path: '*', element: <StatePanel kind="no-results" title="Page not found" description="Check the address, or go back." /> },
+  // X1.03 Session ended
+  { path: '/signed-out', element: <SignedOutPage /> },
+  { path: '*', element: <RootNotFound /> },
 ]
 
 export const router = createBrowserRouter(routes)
