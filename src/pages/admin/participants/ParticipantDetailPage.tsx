@@ -117,12 +117,16 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
         leading={<Avatar size={40} initials={initials(name)} seed={person.id} />}
         title={name}
         badge={
-          <ParticipantBadge
-            memberStatus={person.status}
-            invitationExpiresAt={person.invitationExpiresAt}
-            enrolmentStatus={shown?.status}
-            flags={flags.length}
-          />
+          <>
+            <ParticipantBadge
+              memberStatus={person.status}
+              invitationExpiresAt={person.invitationExpiresAt}
+              enrolmentStatus={shown?.status}
+              flags={flags.length}
+            />
+            {/* Invited people can be flagged too; the status badge shows the invitation, so say so separately. */}
+            {invited && flags.length > 0 && <Badge tone="warning">Needs attention</Badge>}
+          </>
         }
         description={['Participant', shown?.cohort.name, shown?.programme.name].filter(Boolean).join(' · ')}
         actions={
@@ -149,8 +153,8 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
                   : []),
               ]}
             />
-            {attention.data && !invited && (
-              <Button variant={flags.length ? 'primary' : 'secondary'} icon={<PencilIcon size={16} />} onClick={() => setOpen('intervention')}>
+            {attention.data && (
+              <Button variant={flags.length && !invited ? 'primary' : 'secondary'} icon={<PencilIcon size={16} />} onClick={() => setOpen('intervention')}>
                 Record intervention
               </Button>
             )}
