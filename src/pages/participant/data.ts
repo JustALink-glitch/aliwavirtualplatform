@@ -236,7 +236,7 @@ export const useMyCourse = (id: string) =>
     queryFn: ({ signal }) =>
       api<{
         timeZone: string
-        course: { id: string; name: string; cohort: { id: string; name: string }; trainer: { id: string; name: string } | null }
+        course: { id: string; name: string; cohort: { id: string; name: string }; trainer: { id: string; name: string; bio?: string | null } | null }
         attendance: MyAttendance
         sessions: MySession[]
         resources: MyResource[]

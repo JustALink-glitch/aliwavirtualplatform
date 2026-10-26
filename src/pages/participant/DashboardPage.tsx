@@ -1,3 +1,4 @@
+import { MapPin, Video } from 'lucide-react'
 import { Link } from 'react-router'
 import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
@@ -32,7 +33,12 @@ export function DashboardPage() {
       <>
         <PageHeader title="Your learning" />
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load your dashboard" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void overview.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load your dashboard"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void overview.refetch() }}
+          />
         </Panel>
       </>
     )
@@ -49,7 +55,13 @@ function Dashboard({ data }: { data: MyOverview }) {
       description={e ? `${e.cohort.name} · ${e.programme}` : undefined}
       actions={
         data.nextSession?.status === 'in_progress' && data.nextSession.joinUrl ? (
-          <a href={data.nextSession.joinUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover">
+          <a
+            href={data.nextSession.joinUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-brand pr-4 pl-3 text-label-button text-on-brand hover:bg-brand-hover"
+          >
+            <Video aria-hidden className="size-4" />
             Join session
           </a>
         ) : undefined
@@ -63,14 +75,24 @@ function Dashboard({ data }: { data: MyOverview }) {
         {header}
         {deferred ? (
           <>
-            <AlertBanner title={`Your place in ${deferred.cohort} is deferred`}>Your attendance and grades so far are saved. Your programme team will tell you when you rejoin a cohort.</AlertBanner>
+            <AlertBanner title={`Your place in ${deferred.cohort} is deferred`}>
+              Your attendance and grades so far are saved. Your programme team will tell you when you rejoin a cohort.
+            </AlertBanner>
             <Panel className="py-12">
-              <EmptyState icon={<CalendarIcon size={24} />} title="Nothing scheduled for you right now" body="Courses, sessions and assignments appear here again when you’re back in a cohort." />
+              <EmptyState
+                icon={<CalendarIcon size={24} />}
+                title="Nothing scheduled for you right now"
+                body="Courses, sessions and assignments appear here again when you’re back in a cohort."
+              />
             </Panel>
           </>
         ) : (
           <Panel className="py-12">
-            <EmptyState icon={<CalendarIcon size={24} />} title="You’re not in a cohort yet" body="When your programme team adds you to a cohort, your courses, sessions and assignments appear here." />
+            <EmptyState
+              icon={<CalendarIcon size={24} />}
+              title="You’re not in a cohort yet"
+              body="When your programme team adds you to a cohort, your courses, sessions and assignments appear here."
+            />
           </Panel>
         )}
       </>
@@ -140,7 +162,11 @@ function DashboardMetrics({ data }: { data: MyOverview }) {
           label: 'Assignments due',
           icon: <ClipboardIcon size={18} />,
           value: assignments.isPending ? '…' : due.length,
-          context: nextDue ? `Next: ${nextDue.title} · ${formatDay(nextDue.dueAt, timeZone)}` : assignments.isError ? 'Couldn’t load assignments' : 'Nothing to hand in',
+          context: nextDue
+            ? `Next: ${nextDue.title} · ${formatDay(nextDue.dueAt, timeZone)}`
+            : assignments.isError
+              ? 'Couldn’t load assignments'
+              : 'Nothing to hand in',
         },
         {
           label: 'Programme progress',
@@ -186,7 +212,10 @@ function AssignmentsPanel({ timeZone }: { timeZone: string }) {
                     <Stacked primary={a.title} secondary={a.course.name} />
                   </Cell>
                   <Cell>
-                    <Stacked primary={formatDue(a.dueAt, timeZone)} secondary={todo(a) && a.status !== 'overdue' ? dueIn(a.dueAt, timeZone) : a.status === 'overdue' ? 'Late work accepted' : 'Closed'} />
+                    <Stacked
+                      primary={formatDue(a.dueAt, timeZone)}
+                      secondary={todo(a) && a.status !== 'overdue' ? dueIn(a.dueAt, timeZone) : a.status === 'overdue' ? 'Late work accepted' : 'Closed'}
+                    />
                   </Cell>
                   <Cell>
                     <MyStatusBadge status={a.status} />
@@ -297,9 +326,13 @@ function UpcomingPanel({ sessions, timeZone }: { sessions: MySession[]; timeZone
                   <span className="text-body-strong text-primary">{formatTime(s.startsAt, timeZone)}</span>
                   <span className="text-caption text-secondary">{formatTime(s.endsAt, timeZone)}</span>
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col border-l-2 border-brand pl-3">
+                <span className={`flex min-w-0 flex-1 flex-col gap-0.5 border-l-[3px] pl-3 ${s.mode === 'online' ? 'border-brand' : 'border-success'}`}>
                   <span className="truncate text-body-strong text-primary">{s.course.name}</span>
-                  <span className="truncate text-caption text-secondary">{[s.trainer, sessionWhere(s)].filter(Boolean).join(' · ')}</span>
+                  {s.trainer && <span className="truncate text-caption text-secondary">{s.trainer}</span>}
+                  <span className="flex min-w-0 items-center gap-1 text-caption text-secondary">
+                    {s.mode === 'online' ? <Video aria-hidden className="size-3.5 shrink-0" /> : <MapPin aria-hidden className="size-3.5 shrink-0" />}
+                    <span className="truncate">{sessionWhere(s)}</span>
+                  </span>
                 </span>
                 {s.status === 'in_progress' && <SessionBadge session={s} />}
               </Link>
@@ -318,7 +351,11 @@ function AttendancePanel({ data }: { data: MyOverview }) {
       <PanelHeader
         id="dash-attendance"
         title="My attendance"
-        description={a.recorded ? `${a.present} of ${plural(a.recorded, 'session')} attended. Excused absences count as not attended.` : 'Your attendance shows here after your first session.'}
+        description={
+          a.recorded
+            ? `${a.present} of ${plural(a.recorded, 'session')} attended. Excused absences count as not attended.`
+            : 'Your attendance shows here after your first session.'
+        }
       />
       {recent.length > 0 && (
         <ul>
@@ -335,7 +372,11 @@ function AttendancePanel({ data }: { data: MyOverview }) {
           ))}
         </ul>
       )}
-      {a.recorded > recent.length && <p className="text-caption text-secondary">Showing the last {recent.length} of {plural(a.recorded, 'session')}.</p>}
+      {a.recorded > recent.length && (
+        <p className="text-caption text-secondary">
+          Showing the last {recent.length} of {plural(a.recorded, 'session')}.
+        </p>
+      )}
     </Panel>
   )
 }

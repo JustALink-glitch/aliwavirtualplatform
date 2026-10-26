@@ -1,3 +1,4 @@
+import { Video } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { StatePanel } from '@/components/StatePanel'
@@ -180,8 +181,9 @@ export function MySessionPage() {
               href={s.joinUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-brand pr-4 pl-3 text-label-button text-on-brand hover:bg-brand-hover"
             >
+              <Video aria-hidden className="size-4" />
               {s.joinUrl.includes('zoom.us') ? 'Join Zoom' : 'Join session'}
             </a>
           ) : undefined
@@ -192,17 +194,16 @@ export function MySessionPage() {
           {s.cancellationReason ?? 'Your trainer will let you know about any catch-up.'}
         </AlertBanner>
       )}
-      {s.joinUrl && (
-        <AlertBanner title="Join with the email you use on Synqop">
-          Your attendance counts automatically when Zoom is connected. Please don’t share this link.
-        </AlertBanner>
-      )}
-      {s.mode === 'online' && !s.joinUrl && s.status === 'scheduled' && (
-        <AlertBanner title="The joining link appears here the day before">Check back on {formatDay(s.startsAt, timeZone)}.</AlertBanner>
-      )}
-
       <div className="flex items-start gap-4 max-lg:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
+          {s.joinUrl && (
+            <AlertBanner title="Join with the email you use on Synqop">
+              Your attendance counts automatically when Zoom is connected. Please don’t share this link.
+            </AlertBanner>
+          )}
+          {s.mode === 'online' && !s.joinUrl && s.status === 'scheduled' && (
+            <AlertBanner title="The joining link appears here the day before">Check back on {formatDay(s.startsAt, timeZone)}.</AlertBanner>
+          )}
           {s.mode === 'in_person' && s.status !== 'held' && s.status !== 'cancelled' && (
             <Panel aria-labelledby="where-title" className="gap-1">
               <PanelHeader id="where-title" title="Where to go" />
@@ -239,14 +240,18 @@ export function MySessionPage() {
             </Panel>
           )}
           {feedback.canRate && <RatePanel sessionId={s.id} mine={feedback.mine} />}
-          {resources.length > 0 && (
+          {s.status !== 'cancelled' && (
             <Panel aria-labelledby="resources-title" className="gap-1">
               <PanelHeader id="resources-title" title="Resources for this session" />
-              <div>
-                {resources.map((r) => (
-                  <ResourceRow key={r.id} resource={r} />
-                ))}
-              </div>
+              {resources.length > 0 ? (
+                <div>
+                  {resources.map((r) => (
+                    <ResourceRow key={r.id} resource={r} />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-2 text-body text-secondary">Nothing shared yet. Slides, notes and links from your trainer show here.</p>
+              )}
             </Panel>
           )}
         </div>

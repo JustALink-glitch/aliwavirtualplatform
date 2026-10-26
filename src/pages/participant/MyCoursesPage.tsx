@@ -38,11 +38,20 @@ export function MyCoursesPage() {
         </Panel>
       ) : query.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load your courses" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load your courses"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       ) : courses.length === 0 ? (
         <Panel className="py-12">
-          <EmptyState icon={<BookOpenIcon size={24} />} title="No courses yet" body="When you’re in a cohort, its courses appear here with your attendance and work." />
+          <EmptyState
+            icon={<BookOpenIcon size={24} />}
+            title="No courses yet"
+            body="When you’re in a cohort, its courses appear here with your attendance and work."
+          />
         </Panel>
       ) : (
         <Panel className="gap-0 max-md:py-2">
@@ -59,7 +68,11 @@ export function MyCoursesPage() {
                   </Cell>
                   <Cell>{nextLabel(c.nextSession, timeZone) ?? <span className="text-muted">None scheduled</span>}</Cell>
                   <Cell align="right">
-                    <Link to={c.id} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline">
+                    <Link
+                      to={c.id}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline"
+                    >
                       Open
                       <ChevronRightIcon size={14} />
                     </Link>
@@ -75,7 +88,10 @@ export function MyCoursesPage() {
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-body-strong text-primary">{c.name}</span>
                     <span className="truncate text-caption text-secondary">
-                      {[attended(c.attendance) && `Attended ${attended(c.attendance)}`, nextLabel(c.nextSession, timeZone) && `Next ${nextLabel(c.nextSession, timeZone)}`]
+                      {[
+                        attended(c.attendance) && `Attended ${attended(c.attendance)}`,
+                        nextLabel(c.nextSession, timeZone) && `Next ${nextLabel(c.nextSession, timeZone)}`,
+                      ]
                         .filter(Boolean)
                         .join(' · ') || c.trainer}
                     </span>
@@ -103,7 +119,11 @@ export function CoursePage() {
       <>
         <PageHeader title={notFound ? 'Course not found' : 'Couldn’t load the course'} breadcrumb={[{ label: 'My courses', to: BASE }]} />
         <Panel>
-          <StatePanel kind={notFound ? 'no-results' : 'error'} title={notFound ? 'It isn’t one of your courses.' : 'Something went wrong'} description="Go back to My courses." />
+          <StatePanel
+            kind={notFound ? 'no-results' : 'error'}
+            title={notFound ? 'It isn’t one of your courses.' : 'Something went wrong'}
+            description="Go back to My courses."
+          />
         </Panel>
       </>
     )
@@ -135,7 +155,9 @@ export function CoursePage() {
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="text-body-strong text-primary">{s.number ? `Session ${s.number}` : 'Cancelled session'}</span>
                         <span className="text-caption text-secondary">
-                          {s.status === 'in_progress' || relativeDay(s.startsAt, timeZone) === 'Today' ? `Today, ${formatTime(s.startsAt, timeZone)}` : formatDay(s.startsAt, timeZone)}
+                          {s.status === 'in_progress' || relativeDay(s.startsAt, timeZone) === 'Today'
+                            ? `Today, ${formatTime(s.startsAt, timeZone)}`
+                            : formatDay(s.startsAt, timeZone)}
                         </span>
                       </span>
                       <SessionBadge session={s} />
@@ -177,9 +199,12 @@ export function CoursePage() {
           {course.trainer && (
             <Panel aria-labelledby="course-trainer" className="gap-3">
               <PanelHeader id="course-trainer" title="Your trainer" />
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <Avatar initials={initials(course.trainer.name)} seed={course.trainer.id} size={32} />
-                <span className="text-body-strong text-primary">{course.trainer.name}</span>
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-body-strong text-primary">{course.trainer.name}</span>
+                  {course.trainer.bio && <span className="line-clamp-2 text-caption text-secondary">{course.trainer.bio}</span>}
+                </span>
               </div>
             </Panel>
           )}
