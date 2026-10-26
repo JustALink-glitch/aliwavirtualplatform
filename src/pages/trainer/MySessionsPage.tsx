@@ -91,7 +91,7 @@ export function MySessionsPage() {
               { value: 'past', label: 'Past', count: past.length },
             ]}
           />
-          <div className="grid grid-cols-[minmax(0,1fr)_296px] items-start gap-4 max-lg:grid-cols-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_356px] items-start gap-4 max-lg:grid-cols-1">
             <div className="flex min-w-0 flex-col gap-4">
               {tab === 'past' ? (
                 <PastPanel sessions={past} timeZone={timeZone} title="Past sessions" description="Attendance and your session report for each." />

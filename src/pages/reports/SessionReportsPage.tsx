@@ -128,7 +128,13 @@ function ReportsBody({
         <Metrics
           items={[
             { label: 'Due now', icon: <CalendarIcon size={18} />, value: counts.due, context: `Within ${plural(data.dueHours, 'hour')} of the session` },
-            { label: 'Overdue', icon: <InfoTriangleIcon size={18} />, value: counts.overdue, context: `Past the ${data.dueHours}-hour window` },
+            {
+              label: 'Overdue',
+              icon: <InfoTriangleIcon size={18} />,
+              value: counts.overdue,
+              tone: counts.overdue ? 'warning' : undefined,
+              context: `Past the ${data.dueHours}-hour window`,
+            },
             {
               label: 'Submitted this month',
               icon: <CheckCircleIcon size={18} />,

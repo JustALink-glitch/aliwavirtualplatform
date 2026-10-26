@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/Button'
 import { Checkbox } from '@/components/ui/Choice'
 import { Dialog } from '@/components/ui/Dialog'
 import { DetailList } from '@/components/ui/FormLayout'
-import { ChevronRightIcon } from '@/components/ui/icons'
+import { Video } from 'lucide-react'
+import { ChartIcon, ChevronRightIcon, ClipboardIcon, CloseIcon, InfoTriangleIcon, PencilIcon, UserGroupIcon } from '@/components/ui/icons'
+import { Metrics } from '@/components/ui/Metrics'
+import { useRemind } from '@/pages/reports/data'
 import { Badge, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { TextField } from '@/components/ui/TextField'
 import { ApiError } from '@/lib/api'
@@ -68,11 +71,18 @@ function SessionView({ data }: { data: SessionDetail }) {
     <>
       {scheduled && can.schedule && (
         <>
-          <Button variant="secondary" onClick={() => setCancelling(true)}>
+          <Button variant="secondary" icon={<CloseIcon size={16} />} onClick={() => setCancelling(true)}>
             Cancel session
           </Button>
-          <Button variant={trainerArea && canJoin ? 'secondary' : 'primary'} onClick={() => navigate('edit')}>
+          <Button variant={trainerArea && canJoin ? 'secondary' : 'primary'} icon={<PencilIcon size={16} />} onClick={() => navigate('edit')}>
             Edit session
+          </Button>
+        </>
+      )}
+      {!trainerArea && past && !s.cancelled && can.attendance && (
+        <>
+          <Button variant={s.attendance.recorded ? 'secondary' : 'primary'} icon={<ClipboardIcon size={16} />} onClick={() => navigate('attendance')}>
+            {s.attendance.recorded ? 'Open register' : 'Take attendance'}
           </Button>
         </>
       )}
@@ -91,8 +101,9 @@ function SessionView({ data }: { data: SessionDetail }) {
           href={s.joinUrl!}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex h-9 items-center justify-center rounded-md bg-brand px-4 text-label-button text-on-brand hover:bg-brand-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-brand pr-4 pl-3 text-label-button text-on-brand hover:bg-brand-hover focus-visible:shadow-[var(--shadow-focus)] focus-visible:outline-none"
         >
+          <Video aria-hidden className="size-4" />
           {whereLabel(s) === 'Online · Zoom' ? 'Join Zoom' : 'Join meeting'}
         </a>
       )}
@@ -182,7 +193,41 @@ function SessionView({ data }: { data: SessionDetail }) {
               )}
             </Panel>
           )}
-          {!trainerArea && (
+          {!trainerArea && past && !s.cancelled && (
+            <Metrics
+              items={[
+                {
+                  label: 'Present',
+                  icon: <UserGroupIcon size={18} />,
+                  value: s.attendance.recorded ? s.attendance.present : '—',
+                  context: `of ${plural(s.expected, 'participant')} expected`,
+                },
+                {
+                  label: 'Attendance',
+                  icon: <ChartIcon size={18} />,
+                  value: rate === null ? '—' : `${rate}%`,
+                  context: s.attendance.recorded ? `${s.attendance.present} ÷ ${s.attendance.recorded} · present ÷ recorded` : 'Not recorded yet',
+                },
+                s.zoom
+                  ? {
+                      label: 'To review',
+                      icon: <InfoTriangleIcon size={18} />,
+                      value: s.zoom.unmatched,
+                      tone: s.zoom.unmatched ? ('warning' as const) : undefined,
+                      context: 'Zoom attendees not matched',
+                    }
+                  : {
+                      label: 'Not marked',
+                      icon: <InfoTriangleIcon size={18} />,
+                      value: Math.max(0, s.expected - s.attendance.recorded),
+                      tone: s.expected - s.attendance.recorded > 0 ? ('warning' as const) : undefined,
+                      context: 'Participants without a mark',
+                    },
+              ]}
+            />
+          )}
+          {!trainerArea && past && !s.cancelled && <AdminReportPanel data={data} timeZone={timeZone} />}
+          {!trainerArea && !(past && !s.cancelled) && (
             <Panel aria-labelledby="details-title">
               <PanelHeader id="details-title" title="Details" />
               <DetailList items={details(data, when, paths, true)} />
@@ -204,7 +249,31 @@ function SessionView({ data }: { data: SessionDetail }) {
         </div>
 
         <div className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
-          {!s.cancelled && !trainerArea && (
+          {!trainerArea && past && !s.cancelled && (
+            <>
+              <Panel aria-labelledby="details-title" className="gap-0">
+                <PanelHeader id="details-title" title="Details" />
+                <DetailList items={details(data, when, paths, false)} />
+              </Panel>
+              <Panel aria-labelledby="more-title" className="gap-0">
+                <PanelHeader id="more-title" title="More about this session" />
+                <Link
+                  to="attendance/history"
+                  className="flex items-center justify-between border-b border-default py-3 text-body text-primary last:border-b-0 hover:text-brand-text"
+                >
+                  Attendance changes
+                  <ChevronRightIcon size={16} className="text-icon-muted" />
+                </Link>
+                {s.status === 'held' && (
+                  <Link to="feedback" className="flex items-center justify-between py-3 text-body text-primary hover:text-brand-text">
+                    Participant feedback
+                    <ChevronRightIcon size={16} className="text-icon-muted" />
+                  </Link>
+                )}
+              </Panel>
+            </>
+          )}
+          {!s.cancelled && !trainerArea && !past && (
             <Panel aria-labelledby="attendance-title">
               <PanelHeader
                 id="attendance-title"
@@ -242,7 +311,7 @@ function SessionView({ data }: { data: SessionDetail }) {
               )}
             </Panel>
           )}
-          {!s.cancelled && (
+          {!s.cancelled && (trainerArea || !past) && (
             <Panel aria-labelledby="report-title">
               <PanelHeader
                 id="report-title"
@@ -276,9 +345,9 @@ function SessionView({ data }: { data: SessionDetail }) {
               <DetailList items={details(data, when, paths, false)} />
             </Panel>
           )}
-          {s.joinUrl && !s.cancelled && !trainerArea && (
-            <Button variant="secondary" fullWidth onClick={copy}>
-              {copied ? 'Link copied' : 'Copy meeting link'}
+          {s.joinUrl && !s.cancelled && !trainerArea && !past && (
+            <Button variant="secondary" fullWidth icon={<Video aria-hidden className="size-4" />} onClick={copy}>
+              {copied ? 'Link copied' : whereLabel(s) === 'Online · Zoom' ? 'Copy Zoom link' : 'Copy meeting link'}
             </Button>
           )}
         </div>
@@ -286,6 +355,59 @@ function SessionView({ data }: { data: SessionDetail }) {
 
       {scheduled && can.schedule && <CancelSessionDialog open={cancelling} onClose={() => setCancelling(false)} data={data} timeZone={timeZone} />}
     </>
+  )
+}
+
+/** C1.03b Session report: submitted, or overdue with a reminder to the trainer. */
+function AdminReportPanel({ data, timeZone }: { data: SessionDetail; timeZone: string | undefined }) {
+  const s = data.session
+  const remind = useRemind(s.id)
+  const [sentTo, setSentTo] = useState<string | null>(null)
+  const overdue = s.status === 'held' && !s.report.submittedAt && isPast(s.report.dueAt)
+  const due = `${formatDay(s.report.dueAt, timeZone)}, ${formatTime(s.report.dueAt, timeZone)}`
+  const who = s.trainer?.name ?? 'The trainer'
+  return (
+    <Panel aria-labelledby="report-title">
+      <PanelHeader id="report-title" title="Session report" description={`Due ${due}.`} />
+      <div className="flex flex-wrap items-center gap-3">
+        {s.report.submittedAt ? (
+          <>
+            <Badge tone="success">Submitted</Badge>
+            <span className="text-body text-secondary">
+              {who} submitted it on {formatDay(s.report.submittedAt, timeZone)}.
+            </span>
+          </>
+        ) : overdue ? (
+          <>
+            <Badge tone="error">Overdue</Badge>
+            <span className="text-body text-secondary">
+              {who} hasn’t submitted it. It was due {due}.
+            </span>
+          </>
+        ) : (
+          <span className="text-body text-secondary">{s.status === 'in_progress' ? 'The session is still running.' : `${who} hasn’t submitted it yet.`}</span>
+        )}
+      </div>
+      {s.report.submittedAt ? (
+        <Link to={`/admin/courses/reports/${s.id}`} className="inline-flex items-center gap-1 self-start text-caption-strong text-brand-text hover:underline">
+          View report
+          <ChevronRightIcon size={14} />
+        </Link>
+      ) : (
+        s.status === 'held' &&
+        s.trainer && (
+          <button
+            type="button"
+            disabled={remind.isPending || Boolean(sentTo)}
+            onClick={() => remind.mutate(undefined, { onSuccess: (r) => setSentTo(r.to) })}
+            className="inline-flex items-center gap-1 self-start text-caption-strong text-brand-text hover:underline disabled:text-secondary disabled:no-underline"
+          >
+            {sentTo ? `Reminder sent to ${sentTo}` : remind.isPending ? 'Sending…' : `Remind ${s.trainer.name.split(' ')[0]}`}
+            {!sentTo && <ChevronRightIcon size={14} />}
+          </button>
+        )
+      )}
+    </Panel>
   )
 }
 

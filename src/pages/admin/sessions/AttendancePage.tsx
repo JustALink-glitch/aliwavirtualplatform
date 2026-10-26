@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { RadioGroup } from '@/components/ui/Choice'
 import { Dialog } from '@/components/ui/Dialog'
-import { ChartIcon, CheckCircleIcon, DownloadIcon, InfoTriangleIcon, UserGroupIcon } from '@/components/ui/icons'
+import { CalendarIcon, CheckCircleIcon, ChevronRightIcon, CloseIcon, DownloadIcon, InfoCircleIcon } from '@/components/ui/icons'
 import { Metrics } from '@/components/ui/Metrics'
 import { Badge, FilterChips, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { TextAreaField } from '@/components/ui/TextField'
@@ -20,7 +20,8 @@ import { useSession, whereLabel, type Session } from './data'
 import { useSessionPaths } from './paths'
 
 type Filter = 'all' | Mark | 'none'
-const tone: Record<Mark, 'success' | 'error' | 'warning'> = { present: 'success', absent: 'error', excused: 'warning' }
+const tone: Record<Mark, 'success' | 'info' | 'warning'> = { present: 'success', absent: 'warning', excused: 'info' }
+const sourceTone = { zoom: 'info', manual: 'neutral', edited: 'warning' } as const
 
 export function MarkBadge({ status }: { status: Mark | null }) {
   return status ? <Badge tone={tone[status]}>{markLabel[status]}</Badge> : <Badge tone="neutral">Not recorded</Badge>
@@ -178,16 +179,16 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
             value: data.counts.present,
             context: `of ${plural(data.expected, 'person', 'people')} expected`,
           },
-          { label: 'Excused', icon: <InfoTriangleIcon size={18} />, value: data.counts.excused, context: 'Counts as not present' },
+          { label: 'Excused', icon: <InfoCircleIcon size={18} />, value: data.counts.excused, context: 'Counts as not present' },
           {
             label: 'Absent',
-            icon: <UserGroupIcon size={18} />,
+            icon: <CloseIcon size={18} />,
             value: data.counts.absent,
             context: data.counts.notRecorded ? `${data.counts.notRecorded} not recorded yet` : 'No check-in or excuse',
           },
           {
             label: 'Attendance',
-            icon: <ChartIcon size={18} />,
+            icon: <CalendarIcon size={18} />,
             value: data.rate === null ? '—' : `${data.rate}%`,
             context: data.rate === null ? 'Nothing recorded yet' : `${data.counts.present} ÷ ${recorded} · present ÷ recorded`,
           },
@@ -259,55 +260,154 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
         {data.register.length === 0 ? (
           <StatePanel kind="empty" title="No one is enrolled in this cohort" description="Add participants to the cohort to take attendance." />
         ) : (
-          <ul aria-label="Register">
-            {visible.map((r) => (
-              <li key={r.memberId} className="flex items-center gap-3 border-b border-default py-2.5 last:border-b-0 max-md:flex-wrap">
-                <Avatar initials={initials(r.name)} seed={r.memberId} size={32} />
-                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate text-body-strong text-primary">
-                    {r.name}
-                    {!r.stillEnrolled && <span className="font-normal text-muted"> · no longer in the cohort</span>}
-                  </span>
-                  <span className="truncate text-caption text-secondary">
-                    {[
-                      r.source && sourceLabel[r.source],
-                      showZoomColumns && r.joinedAt && `Joined ${formatTime(r.joinedAt, timeZone)}`,
-                      r.minutesInMeeting !== null && `${Math.floor(r.minutesInMeeting / 60)}h ${String(r.minutesInMeeting % 60).padStart(2, '0')}m in meeting`,
-                      r.late && 'Late',
-                      r.note,
-                    ]
-                      .filter(Boolean)
-                      .join(' · ') || (r.status ? '' : 'Not marked')}
-                  </span>
-                </span>
-                {r.status ? (
-                  <>
-                    <MarkBadge status={r.status} />
-                    {open && (
-                      <button type="button" onClick={() => setEditing(r)} className="text-caption-strong text-brand-text hover:underline">
-                        Edit
-                      </button>
+          <>
+            <table className="w-full table-fixed border-separate border-spacing-0 max-md:hidden" aria-label="Register">
+              <thead>
+                <tr className="text-left text-caption text-secondary [&>th]:bg-surface-subtle [&>th]:px-3 [&>th]:py-2 [&>th]:font-normal">
+                  <th scope="col" className="rounded-l-sm">
+                    Participant
+                  </th>
+                  <th scope="col" className="w-[150px]">
+                    Attendance
+                  </th>
+                  <th scope="col" className="w-[100px]">
+                    Source
+                  </th>
+                  {showZoomColumns && (
+                    <th scope="col" className="w-[84px] max-lg:hidden">
+                      Joined
+                    </th>
+                  )}
+                  {showZoomColumns && (
+                    <th scope="col" className="w-[96px] text-right max-lg:hidden">
+                      In meeting
+                    </th>
+                  )}
+                  <th scope="col" className="max-lg:hidden">
+                    Note
+                  </th>
+                  <th scope="col" className="w-[72px] rounded-r-sm">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((r) => (
+                  <tr key={r.memberId} className="[&>td]:border-b [&>td]:border-default [&>td]:px-3 [&>td]:py-2.5">
+                    <td>
+                      <span className="flex min-w-0 items-center gap-3">
+                        <Avatar initials={initials(r.name)} seed={r.memberId} />
+                        <span className="truncate text-body text-primary">
+                          {r.name}
+                          {!r.stillEnrolled && <span className="text-muted"> · left the cohort</span>}
+                        </span>
+                      </span>
+                    </td>
+                    <td>
+                      {r.status ? (
+                        <MarkBadge status={r.status} />
+                      ) : open ? (
+                        <MarkPicker
+                          name={r.name}
+                          value={pending[r.memberId] ?? null}
+                          onChange={(mark) =>
+                            setPending((prev) => {
+                              const next = { ...prev }
+                              if (mark) next[r.memberId] = mark
+                              else delete next[r.memberId]
+                              return next
+                            })
+                          }
+                        />
+                      ) : (
+                        <MarkBadge status={null} />
+                      )}
+                    </td>
+                    <td>{r.source ? <Badge tone={sourceTone[r.source]}>{sourceLabel[r.source]}</Badge> : <span className="text-muted">—</span>}</td>
+                    {showZoomColumns && (
+                      <td className="text-body text-primary tabular-nums max-lg:hidden">
+                        {r.joinedAt ? formatTime(r.joinedAt, timeZone) : <span className="text-muted">—</span>}
+                      </td>
                     )}
-                  </>
-                ) : open ? (
-                  <MarkPicker
-                    name={r.name}
-                    value={pending[r.memberId] ?? null}
-                    onChange={(mark) =>
-                      setPending((prev) => {
-                        const next = { ...prev }
-                        if (mark) next[r.memberId] = mark
-                        else delete next[r.memberId]
-                        return next
-                      })
-                    }
-                  />
-                ) : (
-                  <MarkBadge status={null} />
-                )}
-              </li>
-            ))}
-          </ul>
+                    {showZoomColumns && (
+                      <td className="text-right text-body text-primary tabular-nums max-lg:hidden">
+                        {r.minutesInMeeting !== null ? (
+                          `${Math.floor(r.minutesInMeeting / 60)}h ${String(r.minutesInMeeting % 60).padStart(2, '0')}m`
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                    )}
+                    <td className="truncate text-body text-primary max-lg:hidden">
+                      {[r.late && 'Late', r.note].filter(Boolean).join(' · ') || <span className="text-muted">—</span>}
+                    </td>
+                    <td className="text-right">
+                      {r.status && open && (
+                        <button
+                          type="button"
+                          onClick={() => setEditing(r)}
+                          className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline"
+                        >
+                          Edit
+                          <ChevronRightIcon size={14} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <ul aria-label="Register" className="md:hidden">
+              {visible.map((r) => (
+                <li key={r.memberId} className="flex items-center gap-3 border-b border-default py-2.5 last:border-b-0 max-md:flex-wrap">
+                  <Avatar initials={initials(r.name)} seed={r.memberId} size={32} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="truncate text-body-strong text-primary">
+                      {r.name}
+                      {!r.stillEnrolled && <span className="font-normal text-muted"> · no longer in the cohort</span>}
+                    </span>
+                    <span className="truncate text-caption text-secondary">
+                      {[
+                        r.source && sourceLabel[r.source],
+                        showZoomColumns && r.joinedAt && `Joined ${formatTime(r.joinedAt, timeZone)}`,
+                        r.minutesInMeeting !== null &&
+                          `${Math.floor(r.minutesInMeeting / 60)}h ${String(r.minutesInMeeting % 60).padStart(2, '0')}m in meeting`,
+                        r.late && 'Late',
+                        r.note,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || (r.status ? '' : 'Not marked')}
+                    </span>
+                  </span>
+                  {r.status ? (
+                    <>
+                      <MarkBadge status={r.status} />
+                      {open && (
+                        <button type="button" onClick={() => setEditing(r)} className="text-caption-strong text-brand-text hover:underline">
+                          Edit
+                        </button>
+                      )}
+                    </>
+                  ) : open ? (
+                    <MarkPicker
+                      name={r.name}
+                      value={pending[r.memberId] ?? null}
+                      onChange={(mark) =>
+                        setPending((prev) => {
+                          const next = { ...prev }
+                          if (mark) next[r.memberId] = mark
+                          else delete next[r.memberId]
+                          return next
+                        })
+                      }
+                    />
+                  ) : (
+                    <MarkBadge status={null} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
         )}
         {open && unmarked.length > 0 && (
           <div className="sticky bottom-0 -mx-panel flex items-center gap-3 border-t border-default bg-surface px-panel pt-3 pb-1 max-md:flex-col max-md:items-stretch">

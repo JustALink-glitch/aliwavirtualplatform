@@ -46,7 +46,12 @@ export function TrainerAssignmentsPage() {
   // Oldest deadline first for grading; newest first otherwise.
   const visible = all
     .filter((a) => (filter === 'grade' ? a.counts.toGrade > 0 : filter === 'open' ? a.status === 'open' : filter === 'drafts' ? a.status === 'draft' : true))
-    .sort((x, y) => (filter === 'grade' ? 1 : -1) * (new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime()))
+    // Work waiting for a grade first (T6.01), then newest deadline first; the grade filter is oldest deadline first.
+    .sort((x, y) =>
+      filter === 'grade'
+        ? new Date(x.dueAt).getTime() - new Date(y.dueAt).getTime()
+        : Number(y.counts.toGrade > 0) - Number(x.counts.toGrade > 0) || new Date(y.dueAt).getTime() - new Date(x.dueAt).getTime(),
+    )
   const paged = paginate(visible, page)
   const canCreate = query.data?.canCreate ?? false
 

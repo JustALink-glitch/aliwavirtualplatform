@@ -36,12 +36,12 @@ export function CoursesHeader({
             to: '/admin/courses/library',
             ...(courseCount !== undefined && { count: courseCount }),
           },
+          { label: 'Session reports', to: '/admin/courses/reports', ...(overdueReports ? { count: overdueReports } : {}) },
           {
             label: 'Assignments',
             to: '/admin/courses/assignments',
             ...(assignmentCount !== undefined && { count: assignmentCount }),
           },
-          { label: 'Session reports', to: '/admin/courses/reports', ...(overdueReports ? { count: overdueReports } : {}) },
         ]}
       />
     </>

@@ -233,6 +233,7 @@ export function MyCohortOverview() {
             label: 'Needs attention',
             icon: <InfoTriangleIcon size={18} />,
             value: flagged ?? '—',
+            tone: flagged ? ('warning' as const) : undefined,
             context: flagged === null ? 'Only admins see flags' : 'Participants in this cohort',
           },
         ]}

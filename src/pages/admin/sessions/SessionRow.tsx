@@ -8,8 +8,8 @@ import { whereLabel, type Session, type SessionStatus } from './data'
 import { useSessionPaths } from './paths'
 
 export function SessionStatusBadge({ status }: { status: SessionStatus }) {
-  if (status === 'scheduled') return <Badge tone="info">Scheduled</Badge>
-  if (status === 'in_progress') return <Badge tone="warning">In progress</Badge>
+  if (status === 'scheduled') return <Badge tone="neutral">Scheduled</Badge>
+  if (status === 'in_progress') return <Badge tone="info">In progress</Badge>
   if (status === 'held') return <Badge tone="success">Held</Badge>
   return <Badge tone="neutral">Cancelled</Badge>
 }

@@ -6,7 +6,7 @@ import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { DetailList } from '@/components/ui/FormLayout'
-import { ChevronRightIcon, MailIcon, UserGroupIcon } from '@/components/ui/icons'
+import { ChevronRightIcon, MailIcon, PencilIcon, UserGroupIcon } from '@/components/ui/icons'
 import { Badge, EmptyState, FilterChips, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { Percent } from '@/components/ui/Percent'
 import { Cell, Row, Table, TableFooter, type Column } from '@/components/ui/Table'
@@ -16,7 +16,8 @@ import { paginate } from '@/lib/paginate'
 import { initials } from '@/lib/people'
 import { FlagStatusPanel, InterventionsPanel, RecordInterventionDialog, WhyFlaggedPanel } from '@/pages/admin/attention/AttentionPanels'
 import { ruleLabel, useParticipantAttention, type Rule } from '@/pages/admin/attention/data'
-import { formatDue, statusLabel, statusTone, type ParticipantStatus } from '@/pages/assignments/data'
+import { type ParticipantStatus } from '@/pages/assignments/data'
+import { AssignmentsTable } from '@/pages/admin/participants/AssignmentsTable'
 
 interface Row_ {
   id: string
@@ -193,6 +194,7 @@ export function TrainerParticipantPage() {
     <>
       <PageHeader
         breadcrumb={[{ label: 'My participants', to: '/trainer/participants' }, { label: d.participant.name }]}
+        leading={<Avatar size={40} initials={initials(d.participant.name)} seed={d.participant.id} />}
         title={d.participant.name}
         badge={flags.length ? <Badge tone="warning">Needs attention</Badge> : undefined}
         description={`Participant · ${d.cohort.name}${d.courses.length ? ` · in your course${d.courses.length > 1 ? 's' : ''}, ${d.courses.join(', ')}` : ''}`}
@@ -205,7 +207,11 @@ export function TrainerParticipantPage() {
               <MailIcon size={16} />
               Email
             </a>
-            {attention.data && <Button onClick={() => setRecording(true)}>Record intervention</Button>}
+            {attention.data && (
+              <Button icon={<PencilIcon size={16} />} onClick={() => setRecording(true)}>
+                Record intervention
+              </Button>
+            )}
           </>
         }
       />
@@ -245,36 +251,22 @@ export function TrainerParticipantPage() {
               }
             />
             {d.assignments.length > 0 && (
-              <ul>
-                {d.assignments.map((a) => (
-                  <li key={a.id} className="border-b border-default last:border-b-0">
-                    <Link
-                      to={a.submittedAt ? `/trainer/grading/${a.id}/submissions/${d.participant.id}` : `/trainer/grading/${a.id}`}
-                      className="flex items-center gap-3 py-2.5 hover:bg-surface-hover"
-                    >
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate text-body-strong text-primary">{a.title}</span>
-                        <span className="truncate text-caption text-secondary">
-                          Due {formatDue(a.dueAt, tz)}
-                          {a.submittedAt ? ` · submitted ${formatDay(a.submittedAt, tz)}` : ''}
-                        </span>
-                      </span>
-                      {a.grade && <span className="text-body-strong text-primary tabular-nums">{a.grade}</span>}
-                      <Badge tone={statusTone[a.status]}>{statusLabel[a.status]}</Badge>
-                      <ChevronRightIcon size={16} className="shrink-0 text-icon-muted" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <AssignmentsTable
+                rows={d.assignments}
+                loading={false}
+                timeZone={tz}
+                linkFor={(a) => (a.submittedAt ? `/trainer/grading/${a.id}/submissions/${d.participant.id}` : `/trainer/grading/${a.id}`)}
+              />
             )}
           </Panel>
         </div>
         <aside className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
-          {attention.data && <InterventionsPanel data={attention.data} onRecord={() => setRecording(true)} />}
+          {attention.data && <InterventionsPanel data={attention.data} onRecord={() => setRecording(true)} limit={3} />}
           {attention.data && flags.length > 0 && <FlagStatusPanel data={attention.data} onResolve={() => undefined} />}
           <Panel aria-labelledby="t-details">
             <PanelHeader id="t-details" title="Details" />
             <DetailList
+              compact
               items={[
                 { label: 'Email', value: d.participant.email },
                 { label: 'Cohort', value: d.cohort.name },

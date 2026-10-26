@@ -1,3 +1,4 @@
+import { CircleAlert, MapPin, Video } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router'
 import { StatePanel } from '@/components/StatePanel'
@@ -110,7 +111,7 @@ export function TodayPage() {
         {header}
         <div aria-busy="true" aria-label="Loading today’s teaching" className="flex flex-col gap-4">
           <div className="h-[104px] animate-pulse rounded-lg bg-skeleton" />
-          <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-4 max-lg:grid-cols-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_356px] gap-4 max-lg:grid-cols-1">
             <div className="h-[260px] animate-pulse rounded-lg bg-skeleton" />
             <div className="h-[260px] animate-pulse rounded-lg bg-skeleton" />
           </div>
@@ -220,12 +221,13 @@ export function TodayPage() {
                   label: 'Needs attention',
                   icon: <InfoTriangleIcon size={18} />,
                   value: d.flagged ?? '—',
+                  tone: d.flagged ? ('warning' as const) : undefined,
                   context: d.flagged === null ? 'Only admins see flags' : 'Participants in your cohorts',
                 },
               ]
         }
       />
-      <div className="grid grid-cols-[minmax(0,1fr)_320px] items-start gap-4 max-lg:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_356px] items-start gap-4 max-lg:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
           <TodayPanel data={d} nextLine={nextLine} />
           {d.toGrade && <GradingQueue data={d} />}
@@ -295,14 +297,22 @@ function TodayPanel({ data: d, nextLine }: { data: Today; nextLine: string | nul
                     <span className="text-body-strong text-primary">{formatTime(s.startsAt, timeZone)}</span>
                     <span className="text-secondary">{formatTime(s.endsAt, timeZone)}</span>
                   </span>
-                  <span className="w-0.5 shrink-0 rounded-full bg-brand" aria-hidden="true" />
+                  <span className={`w-[3px] shrink-0 rounded-full ${s.mode === 'online' ? 'bg-brand' : 'bg-success'}`} aria-hidden="true" />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-body-strong text-primary">{s.course}</span>
                     <span className="truncate text-caption text-secondary">
                       {s.cohort} · Session {s.number} of {s.total}
                     </span>
-                    <span className="text-caption text-secondary">{where(s)}</span>
-                    {line && <span className={`text-caption ${s.recorded ? 'text-secondary' : 'text-warning-fg'}`}>{line}</span>}
+                    <span className="flex items-center gap-1 text-caption text-secondary">
+                      {s.mode === 'online' ? <Video aria-hidden className="size-3.5 shrink-0" /> : <MapPin aria-hidden className="size-3.5 shrink-0" />}
+                      {where(s)}
+                    </span>
+                    {line && (
+                      <span className={`flex items-center gap-1 text-caption ${s.recorded ? 'text-secondary' : 'text-warning-fg'}`}>
+                        {!s.recorded && <CircleAlert aria-hidden className="size-3.5 shrink-0" />}
+                        {line}
+                      </span>
+                    )}
                   </span>
                   <span className="flex shrink-0 items-start gap-1 text-caption text-secondary">
                     <UserGroupIcon size={14} />

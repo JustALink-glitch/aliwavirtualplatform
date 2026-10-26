@@ -6,11 +6,10 @@ import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { DetailList } from '@/components/ui/FormLayout'
 import { Avatar } from '@/components/ui/Avatar'
-import { ChevronRightIcon, MailIcon, PencilIcon } from '@/components/ui/icons'
+import { MailIcon, PencilIcon } from '@/components/ui/icons'
 import { TabButtons } from '@/components/ui/Tabs'
-import { Cell, Row, Stacked, Table, type Column } from '@/components/ui/Table'
+import { Cell, Row, Table, type Column } from '@/components/ui/Table'
 import { initials } from '@/lib/people'
-import { statusLabel, statusTone } from '@/pages/assignments/data'
 import { Menu } from '@/components/ui/Menu'
 import { Badge, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { ApiError } from '@/lib/api'
@@ -23,11 +22,11 @@ import {
   useResendParticipantInvitation,
   type Enrolment,
   type HistoryEntry,
-  type LearningAssignment,
   type ParticipantDetail,
 } from './data'
 import { FlagStatusPanel, InterventionsPanel, RecordInterventionDialog, ResolveFlagDialog, WhyFlaggedPanel } from '@/pages/admin/attention/AttentionPanels'
 import { useParticipantAttention } from '@/pages/admin/attention/data'
+import { AssignmentsTable } from './AssignmentsTable'
 import { ParticipantBadge } from './ParticipantBadge'
 import { DeferDialog, EditParticipantDialog, TransferDialog, WithdrawDialog } from './ParticipantDialogs'
 
@@ -35,58 +34,9 @@ type Open = 'edit' | 'defer' | 'withdraw' | 'transfer' | 'intervention' | 'resol
 type Tab = 'overview' | 'attendance' | 'assignments' | 'interventions' | 'history'
 
 const attendanceColumns: Column[] = [{ label: 'Session', width: 160 }, { label: 'Course' }, { label: 'Attendance', width: 140 }]
-const workColumns: Column[] = [
-  { label: 'Assignment' },
-  { label: 'Due', width: 150, hideBelow: 'lg' },
-  { label: 'Status', width: 130 },
-  { label: 'Grade', width: 90, align: 'right', hideBelow: 'lg' },
-  { label: '', width: 60 },
-]
 const markLabel: Record<string, string> = { present: 'Present', absent: 'Absent', excused: 'Excused' }
 const markTone: Record<string, 'success' | 'warning' | 'neutral'> = { present: 'success', absent: 'warning', excused: 'neutral' }
 
-function AssignmentsTable({ rows, loading, timeZone }: { rows: LearningAssignment[]; loading: boolean; timeZone: string | undefined }) {
-  if (loading) return <div className="h-24" aria-busy="true" />
-  if (rows.length === 0) return <p className="py-3 text-body text-secondary">No assignments published yet.</p>
-  return (
-    <div className="mt-2">
-      <Table columns={workColumns}>
-        {rows.map((a) => (
-          <Row key={a.id} to={`/admin/courses/assignments/${a.id}`}>
-            <Cell>
-              <Stacked primary={a.title} secondary={a.course} />
-            </Cell>
-            <Cell hideBelow="lg">
-              <Stacked
-                primary={`${formatDay(a.dueAt, timeZone)}, ${formatTime(a.dueAt, timeZone)}`}
-                secondary={
-                  a.submittedAt ? `Submitted ${formatDay(a.submittedAt, timeZone)}` : a.status === 'overdue' ? `${daysSince(a.dueAt)} overdue` : undefined
-                }
-              />
-            </Cell>
-            <Cell>
-              <Badge tone={statusTone[a.status]}>{statusLabel[a.status]}</Badge>
-            </Cell>
-            <Cell align="right" hideBelow="lg" className={a.grade ? 'text-body-strong' : 'text-muted'}>
-              {a.grade ?? '—'}
-            </Cell>
-            <Cell>
-              <span className="inline-flex items-center gap-1 text-caption-strong text-brand-text">
-                View
-                <ChevronRightIcon size={14} />
-              </span>
-            </Cell>
-          </Row>
-        ))}
-      </Table>
-    </div>
-  )
-}
-
-const daysSince = (iso: string) => {
-  const days = Math.max(1, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000))
-  return days === 1 ? '1 day' : `${days} days`
-}
 type Notice = { tone: 'success' | 'warning' | 'error'; title: string; body?: string }
 
 /** /admin/participants/:id — B1.04 Participant detail, B1.04i invitation expired. */
@@ -256,7 +206,12 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
             {shown && (
               <Panel aria-labelledby="work-title" className="gap-0">
                 <PanelHeader id="work-title" title="Assignments" description={`${shown.cohort.name} · ${submitted} of ${assignments.length} submitted`} />
-                <AssignmentsTable rows={assignments.slice(0, 5)} loading={learning.isPending} timeZone={timeZone} />
+                <AssignmentsTable
+                  rows={assignments.slice(0, 5)}
+                  loading={learning.isPending}
+                  timeZone={timeZone}
+                  linkFor={(a) => `/admin/courses/assignments/${a.id}`}
+                />
                 {assignments.length > 5 && (
                   <button type="button" onClick={() => setTab('assignments')} className="self-start pt-3 text-caption-strong text-brand-text hover:underline">
                     All {assignments.length} assignments
@@ -352,7 +307,7 @@ function ParticipantView({ data }: { data: ParticipantDetail }) {
       {tab === 'assignments' && shown && (
         <Panel aria-labelledby="all-work-title" className="gap-0">
           <PanelHeader id="all-work-title" title="Assignments" description={`${shown.cohort.name} · ${submitted} of ${assignments.length} submitted`} />
-          <AssignmentsTable rows={assignments} loading={learning.isPending} timeZone={timeZone} />
+          <AssignmentsTable rows={assignments} loading={learning.isPending} timeZone={timeZone} linkFor={(a) => `/admin/courses/assignments/${a.id}`} />
         </Panel>
       )}
 

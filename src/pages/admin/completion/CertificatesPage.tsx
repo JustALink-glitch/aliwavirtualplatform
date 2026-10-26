@@ -144,6 +144,7 @@ function CertificatesBody({
             label: 'Eligible, not issued',
             icon: <InfoTriangleIcon size={18} />,
             value: counts.eligible,
+            tone: counts.eligible ? 'warning' : undefined,
             context: counts.eligible ? 'Waiting for an admin' : 'No one waiting',
           },
           { label: 'Issued', icon: <CheckCircleIcon size={18} />, value: counts.issuedThisYear, context: 'All cohorts, this year' },
