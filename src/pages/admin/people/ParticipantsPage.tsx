@@ -5,7 +5,7 @@ import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { ChevronRightIcon, PlusIcon, SearchIcon, UserGroupIcon } from '@/components/ui/icons'
+import { ChevronRightIcon, DownloadIcon, PlusIcon, SearchIcon, UserGroupIcon } from '@/components/ui/icons'
 import { EmptyState, FilterChips, Panel } from '@/components/ui/Page'
 import { Percent } from '@/components/ui/Percent'
 import { FilterSelect, SearchField } from '@/components/ui/SearchField'
@@ -16,10 +16,10 @@ import { initials } from '@/lib/people'
 import { ParticipantsHeader } from '@/pages/admin/completion/ParticipantsHeader'
 import { AddParticipantDialog } from '@/pages/admin/participants/AddParticipantDialog'
 import { useParticipants, type ParticipantSummary } from '@/pages/admin/participants/data'
-import { ParticipantBadge } from '@/pages/admin/participants/ParticipantBadge'
+import { AssignmentsSummary, ParticipantBadge } from '@/pages/admin/participants/ParticipantBadge'
 import { useCohorts } from '@/pages/admin/programmes/data'
 
-type Filter = 'all' | 'active' | 'invited' | 'deferred' | 'withdrawn'
+type Filter = 'all' | 'on_track' | 'attention' | 'invited' | 'deferred' | 'withdrawn' | 'other'
 
 const columns: Column[] = [
   { label: 'Participant' },
@@ -36,7 +36,8 @@ function bucket(p: ParticipantSummary): Filter {
   if (e === 'withdrawn' || e === 'transferred') return 'withdrawn'
   if (e === 'deferred') return 'deferred'
   if (p.status === 'invited') return 'invited'
-  return 'active'
+  if (e !== 'active') return 'other'
+  return p.enrolment?.flags ? 'attention' : 'on_track'
 }
 
 type Notice = { tone: 'success' | 'warning'; title: string; body: string }
@@ -60,9 +61,7 @@ export function ParticipantsPage() {
   const term = search.trim().toLowerCase()
   const inCohort = all.filter((p) => !cohortFilter || p.enrolment?.cohort.id === cohortFilter)
   const visible = inCohort.filter(
-    (p) =>
-      (filter === 'all' || bucket(p) === filter) &&
-      (!term || `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) || p.email.includes(term)),
+    (p) => (filter === 'all' || bucket(p) === filter) && (!term || `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) || p.email.includes(term)),
   )
   const paged = paginate(visible, page)
   const count = (f: Filter) => inCohort.filter((p) => bucket(p) === f).length
@@ -70,7 +69,13 @@ export function ParticipantsPage() {
 
   const actions = (
     <>
-      <Button variant="secondary" onClick={() => navigate('import')} disabled={noCohorts} title={noCohorts ? 'Create a cohort first' : undefined}>
+      <Button
+        variant="secondary"
+        icon={<DownloadIcon size={16} />}
+        onClick={() => navigate('import')}
+        disabled={noCohorts}
+        title={noCohorts ? 'Create a cohort first' : undefined}
+      >
         Import participants
       </Button>
       <Button icon={<PlusIcon size={16} />} onClick={() => setAdding(true)} disabled={noCohorts} title={noCohorts ? 'Create a cohort first' : undefined}>
@@ -94,7 +99,12 @@ export function ParticipantsPage() {
         </Panel>
       ) : query.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load participants" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load participants"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       ) : all.length === 0 ? (
         <Panel className="py-16">
@@ -131,7 +141,8 @@ export function ParticipantsPage() {
               }}
               options={[
                 { value: 'all', label: 'All', count: inCohort.length },
-                { value: 'active', label: 'Active', count: count('active') },
+                { value: 'on_track', label: 'On track', count: count('on_track') },
+                { value: 'attention', label: 'Needs attention', count: count('attention') },
                 { value: 'invited', label: 'Invited', count: count('invited') },
                 ...(count('deferred') ? [{ value: 'deferred' as const, label: 'Deferred', count: count('deferred') }] : []),
                 ...(count('withdrawn') ? [{ value: 'withdrawn' as const, label: 'Withdrawn', count: count('withdrawn') }] : []),
@@ -139,26 +150,32 @@ export function ParticipantsPage() {
             />
             <div className="flex-1" />
             <FilterSelect
-                aria-label="Cohort"
-                value={cohortFilter}
-                onChange={(e) => {
-                  setCohortFilter(e.target.value)
-                  setPage(1)
-                }}
-              >
-                <option value="">All cohorts</option>
-                {(cohorts.data ?? [])
-                  .filter((c) => c.status !== 'archived')
-                  .map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
+              aria-label="Cohort"
+              value={cohortFilter}
+              onChange={(e) => {
+                setCohortFilter(e.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">All cohorts</option>
+              {(cohorts.data ?? [])
+                .filter((c) => c.status !== 'archived')
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
             </FilterSelect>
-            <SearchField aria-label="Search participants" placeholder="Search by name or email" width={260} value={search} onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }} />
+            <SearchField
+              aria-label="Search participants"
+              placeholder="Search by name or email"
+              width={260}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
           </div>
 
           <Panel className="gap-0 max-md:py-2">
@@ -191,23 +208,37 @@ export function ParticipantsPage() {
                             <Avatar initials={initials(p.firstName, p.lastName)} seed={p.id} />
                             <Stacked
                               primary={
-                                <Link to={p.id} onClick={(e) => e.stopPropagation()} className="hover:underline focus-visible:underline focus-visible:outline-none">
+                                <Link
+                                  to={p.id}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="hover:underline focus-visible:underline focus-visible:outline-none"
+                                >
                                   {p.firstName} {p.lastName}
                                 </Link>
                               }
-                              secondary={p.email}
                             />
                           </span>
                         </Cell>
-                        <Cell>{p.enrolment ? <Stacked primary={p.enrolment.cohort.name} secondary={p.enrolment.programmeName} /> : <span className="text-muted">No cohort</span>}</Cell>
+                        <Cell>
+                          {p.enrolment ? (
+                            <Stacked primary={p.enrolment.cohort.name} secondary={p.enrolment.programmeName} />
+                          ) : (
+                            <span className="text-muted">No cohort</span>
+                          )}
+                        </Cell>
                         <Cell align="right" hideBelow="xl">
                           <Percent value={p.enrolment?.attendance?.rate} />
                         </Cell>
-                        <Cell hideBelow="xl" className="text-muted">
-                          —
+                        <Cell hideBelow="xl">
+                          <AssignmentsSummary value={p.enrolment?.assignments} />
                         </Cell>
                         <Cell>
-                          <ParticipantBadge memberStatus={p.status} invitationExpiresAt={p.invitationExpiresAt} enrolmentStatus={p.enrolment?.status} />
+                          <ParticipantBadge
+                            memberStatus={p.status}
+                            invitationExpiresAt={p.invitationExpiresAt}
+                            enrolmentStatus={p.enrolment?.status}
+                            flags={p.enrolment?.flags}
+                          />
                         </Cell>
                         <Cell hideBelow="lg" className={p.lastSignInAt ? undefined : 'text-muted'}>
                           {p.lastSignInAt ? relativeDay(p.lastSignInAt, timeZone) : 'Not signed in'}
@@ -227,7 +258,12 @@ export function ParticipantsPage() {
                           </span>
                           <span className="truncate text-caption text-secondary">{p.enrolment?.cohort.name ?? p.email}</span>
                         </span>
-                        <ParticipantBadge memberStatus={p.status} invitationExpiresAt={p.invitationExpiresAt} enrolmentStatus={p.enrolment?.status} />
+                        <ParticipantBadge
+                          memberStatus={p.status}
+                          invitationExpiresAt={p.invitationExpiresAt}
+                          enrolmentStatus={p.enrolment?.status}
+                          flags={p.enrolment?.flags}
+                        />
                         <ChevronRightIcon size={16} className="shrink-0 text-icon-muted" />
                       </Link>
                     </li>
@@ -236,7 +272,11 @@ export function ParticipantsPage() {
               </>
             )}
             <TableFooter
-              summary={visible.length > paged.rows.length ? `Showing ${(paged.page - 1) * 25 + 1}–${(paged.page - 1) * 25 + paged.rows.length} of ${plural(visible.length, 'participant')}` : plural(visible.length, 'participant')}
+              summary={
+                visible.length > paged.rows.length
+                  ? `Showing ${(paged.page - 1) * 25 + 1}–${(paged.page - 1) * 25 + paged.rows.length} of ${plural(visible.length, 'participant')}`
+                  : plural(visible.length, 'participant')
+              }
               page={paged.page}
               pageCount={paged.pageCount}
               onPage={setPage}
@@ -254,10 +294,18 @@ export function ParticipantsPage() {
           setAdding(false)
           setNotice(
             !result.invited
-              ? { tone: 'success', title: `${result.name} was added to ${result.cohortName}`, body: 'They already have a Synqop account, so no new invitation was needed.' }
+              ? {
+                  tone: 'success',
+                  title: `${result.name} was added to ${result.cohortName}`,
+                  body: 'They already have a Synqop account, so no new invitation was needed.',
+                }
               : result.emailSent === false
                 ? { tone: 'warning', title: `${result.name} was added, but the email didn’t send`, body: 'Open their profile and choose Resend invitation.' }
-                : { tone: 'success', title: 'Invitation sent', body: `${result.name} has 72 hours to set a password from the link we emailed to ${result.email}.` },
+                : {
+                    tone: 'success',
+                    title: 'Invitation sent',
+                    body: `${result.name} has 72 hours to set a password from the link we emailed to ${result.email}.`,
+                  },
           )
         }}
       />

@@ -11,8 +11,11 @@ export function PageHeader({
   breadcrumb,
   eyebrow,
   actions,
+  leading,
 }: {
   title: string
+  /** Shown left of the title block, e.g. the person's avatar (B1.04). */
+  leading?: ReactNode
   /** A small line above the title, e.g. today's date on P2.01. */
   eyebrow?: ReactNode
   badge?: ReactNode
@@ -44,11 +47,16 @@ export function PageHeader({
           </nav>
         )}
         {eyebrow && <p className="text-body text-secondary">{eyebrow}</p>}
-        <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-          <h1 className="text-page-title break-words text-primary">{title}</h1>
-          {badge}
+        <div className={clsx('flex min-w-0 items-center gap-4', leading ? 'pt-2' : 'contents')}>
+          {leading}
+          <div className={clsx('flex min-w-0 flex-col gap-1', leading ? 'flex-1' : 'contents')}>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-page-title break-words text-primary">{title}</h1>
+              {badge}
+            </div>
+            {description && <p className="text-body text-secondary max-md:text-body-large">{description}</p>}
+          </div>
         </div>
-        {description && <p className="text-body text-secondary max-md:text-body-large">{description}</p>}
       </div>
       {actions && <div className="flex shrink-0 gap-2 max-md:flex-wrap max-md:[&>*]:h-11 max-md:[&>*]:flex-1 max-md:[&>*]:basis-[40%]">{actions}</div>}
     </header>
@@ -71,9 +79,9 @@ export function Panel({ className, children, ...props }: { className?: string; c
   )
 }
 
-export function PanelHeader({ title, description, id }: { title: string; description?: string; id?: string }) {
+export function PanelHeader({ title, description, id, className }: { title: string; description?: string; id?: string; className?: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className={clsx('flex flex-col gap-0.5', className)}>
       <h2 id={id} className="text-heading-section text-primary">
         {title}
       </h2>
@@ -83,17 +91,7 @@ export function PanelHeader({ title, description, id }: { title: string; descrip
 }
 
 /** State panel · Empty (§09): icon tile, title, body, actions. */
-export function EmptyState({
-  icon,
-  title,
-  body,
-  actions,
-}: {
-  icon: ReactNode
-  title: string
-  body: ReactNode
-  actions?: ReactNode
-}) {
+export function EmptyState({ icon, title, body, actions }: { icon: ReactNode; title: string; body: ReactNode; actions?: ReactNode }) {
   return (
     <div role="status" className="flex flex-col items-center gap-3 p-8 text-center max-md:px-2">
       <span className="flex size-12 items-center justify-center rounded-lg bg-brand-subtle text-icon-brand">{icon}</span>
@@ -128,14 +126,17 @@ export function FilterChips<T extends string>({
   options,
   value,
   onChange,
+  nowrap,
 }: {
   label: string
+  /** Keep the chips on one line beside a title (they still wrap on small screens). */
+  nowrap?: boolean
   options: { value: T; label: string; count?: number }[]
   value: T
   onChange: (value: T) => void
 }) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
+    <div role="radiogroup" aria-label={label} className={clsx('flex flex-wrap gap-1.5', nowrap && 'shrink-0 md:flex-nowrap')}>
       {options.map((option) => {
         const selected = option.value === value
         return (

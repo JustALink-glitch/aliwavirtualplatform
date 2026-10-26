@@ -4,7 +4,7 @@ import { useAuth } from '@/auth/useAuth'
 import { StatePanel } from '@/components/StatePanel'
 import { Button } from '@/components/ui/Button'
 import { DetailList } from '@/components/ui/FormLayout'
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@/components/ui/icons'
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/ui/icons'
 import { Badge, EmptyState, Panel, PanelHeader } from '@/components/ui/Page'
 import { FilterSelect } from '@/components/ui/SearchField'
 import { formatDate, formatDay, localDate, plural, todayIn } from '@/lib/format'
@@ -49,7 +49,7 @@ export function SessionsPage() {
 
   const scheduleButton = (
     <Button
-      icon={<PlusIcon size={16} />}
+      icon={<CalendarIcon size={16} />}
       onClick={() => navigate(`sessions/new${cohortId ? `?cohort=${cohortId}` : ''}`)}
       disabled={!cohorts.isPending && openCohorts.length === 0}
       title={openCohorts.length === 0 ? 'Create a cohort first' : undefined}
@@ -132,7 +132,7 @@ export function SessionsPage() {
               ) : (
                 [...byDay.entries()].map(([date, items]) => (
                   <section key={date} aria-label={formatDate(date)}>
-                    <h3 className={date === today ? 'text-caption-strong text-brand-text' : 'text-caption-strong text-secondary'}>
+                    <h3 className="text-caption text-secondary">
                       {date === today ? 'Today · ' : ''}
                       {formatDate(date)} · {plural(items.filter((s) => !s.cancelled).length, 'session')}
                     </h3>

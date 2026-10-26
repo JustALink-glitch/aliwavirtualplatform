@@ -17,6 +17,7 @@ export interface Programme {
   cohorts: { total: number; active: number; upcoming: number; completed: number }
   participants: number
   attendance4w: number | null
+  needsAttention?: number
   createdAt: string
   archivedAt: string | null
 }
@@ -36,6 +37,8 @@ export interface CohortSummary {
   heldSessions: number
   attendance4w: number | null
   attendanceAll: number | null
+  needsAttention?: number
+  nextSession?: { startsAt: string; mode: 'online' | 'in_person'; location: string | null } | null
   archivedAt: string | null
 }
 
@@ -58,6 +61,7 @@ export interface CohortCourse {
   name: string
   plannedSessions: number | null
   heldSessions: number
+  assignments?: number
   firstSessionAt: string | null
   trainers: { id: string; firstName: string; lastName: string; isLead: boolean; status: string }[]
 }
@@ -129,7 +133,12 @@ export function useCohort(id: string) {
     enabled: Boolean(id),
     queryKey: keys.cohort(id),
     queryFn: ({ signal }) =>
-      api<{ cohort: CohortSummary; courses: CohortCourse[]; programmeCourses: { id: string; name: string }[] }>(`/v1/cohorts/${id}`, { signal }),
+      api<{
+        cohort: CohortSummary
+        courses: CohortCourse[]
+        programmeCourses: { id: string; name: string }[]
+        trainerStats?: Record<string, { held: number; reports: number }>
+      }>(`/v1/cohorts/${id}`, { signal }),
     retry: notFoundRetry,
   })
 }

@@ -40,11 +40,7 @@ export function TrainersPage() {
   }
   const visible = useMemo(() => {
     const query = search.trim().toLowerCase()
-    return all.filter(
-      (m) =>
-        (filter === 'all' || m.status === filter) &&
-        (!query || fullNameOf(m).toLowerCase().includes(query) || m.email.includes(query)),
-    )
+    return all.filter((m) => (filter === 'all' || m.status === filter) && (!query || fullNameOf(m).toLowerCase().includes(query) || m.email.includes(query)))
   }, [all, filter, search])
   const pageCount = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -89,7 +85,12 @@ export function TrainersPage() {
         </Panel>
       ) : members.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load trainers" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void members.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load trainers"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void members.refetch() }}
+          />
         </Panel>
       ) : all.length === 0 ? (
         <Panel className="py-16">
@@ -183,11 +184,21 @@ function TrainerTable({ rows }: { rows: Member[] }) {
     <table className="w-full table-fixed border-separate border-spacing-0 max-md:hidden">
       <thead>
         <tr className="bg-surface-subtle">
-          <th scope="col" className={`${th} rounded-l-sm`}>Trainer</th>
-          <th scope="col" className={`${th} w-[200px] max-xl:w-[160px]`}>Cohorts</th>
-          <th scope="col" className={`${th} w-[230px] max-xl:hidden`}>Courses</th>
-          <th scope="col" className={`${th} w-[140px] text-right whitespace-nowrap max-lg:hidden`}>Sessions this week</th>
-          <th scope="col" className={`${th} w-[120px] rounded-r-sm`}>Status</th>
+          <th scope="col" className={`${th} rounded-l-sm`}>
+            Trainer
+          </th>
+          <th scope="col" className={`${th} w-[200px] max-xl:w-[160px]`}>
+            Cohorts
+          </th>
+          <th scope="col" className={`${th} w-[230px] max-xl:hidden`}>
+            Courses
+          </th>
+          <th scope="col" className={`${th} w-[140px] text-right whitespace-nowrap max-lg:hidden`}>
+            Sessions this week
+          </th>
+          <th scope="col" className={`${th} w-[120px] rounded-r-sm`}>
+            Status
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -208,7 +219,6 @@ function TrainerTable({ rows }: { rows: Member[] }) {
                   >
                     {fullNameOf(member)}
                   </Link>
-                  <span className="truncate text-caption text-secondary">{member.email}</span>
                 </div>
               </div>
             </td>
@@ -218,7 +228,11 @@ function TrainerTable({ rows }: { rows: Member[] }) {
             <td className="max-xl:hidden">
               <TeachingCell items={member.teaching.courses} one="course" empty="—" />
             </td>
-            <td className="text-right text-body text-muted tabular-nums max-lg:hidden">—</td>
+            <td
+              className={`text-right text-body tabular-nums max-lg:hidden ${member.status === 'active' && member.sessionsThisWeek ? 'text-primary' : 'text-muted'}`}
+            >
+              {member.status === 'active' ? (member.sessionsThisWeek ?? 0) : '—'}
+            </td>
             <td>
               <StatusBadge member={member} />
             </td>

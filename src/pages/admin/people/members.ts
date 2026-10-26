@@ -17,6 +17,8 @@ export interface Member {
   invitationExpiresAt: string | null
   /** Live cohorts and courses this person teaches (trainers). */
   teaching: { cohorts: { id: string; name: string }[]; courses: { id: string; name: string }[] }
+  /** B2.01 Sessions they lead this week. */
+  sessionsThisWeek?: number
 }
 
 export interface MemberDetail extends Member {

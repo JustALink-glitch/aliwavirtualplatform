@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { CircleAlert, MapPin, Video } from 'lucide-react'
 import { Link } from 'react-router'
 import { UserGroupIcon } from '@/components/ui/icons'
 import { Badge } from '@/components/ui/Page'
@@ -42,20 +43,20 @@ export function SessionRow({ session: s, timeZone, showCohort = true }: { sessio
           className={clsx('w-[3px] shrink-0 rounded-full', s.cancelled ? 'bg-default' : s.mode === 'online' ? 'bg-brand' : 'bg-success')}
         />
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className={clsx('truncate text-body-strong', s.cancelled ? 'text-muted' : 'text-primary')}>
-            {s.title}
-            {s.number ? (
-              <span className="font-normal text-secondary">
-                {' '}
-                · Session {s.number} of {s.total}
-              </span>
-            ) : null}
-          </span>
+          <span className={clsx('truncate text-body-strong', s.cancelled ? 'text-muted' : 'text-primary')}>{s.title}</span>
           <span className="truncate text-caption text-secondary">
             {[showCohort && s.cohort.name, s.trainer?.name ?? 'No trainer yet'].filter(Boolean).join(' · ')}
           </span>
-          <span className="truncate text-caption text-secondary">{whereLabel(s)}</span>
-          {line && <span className={clsx('truncate text-caption-strong', line.tone === 'warning' ? 'text-warning-fg' : 'text-muted')}>{line.text}</span>}
+          <span className="flex min-w-0 items-center gap-1 text-caption text-secondary">
+            {s.mode === 'online' ? <Video aria-hidden className="size-3.5 shrink-0" /> : <MapPin aria-hidden className="size-3.5 shrink-0" />}
+            <span className="truncate">{whereLabel(s)}</span>
+          </span>
+          {line && (
+            <span className={clsx('flex min-w-0 items-center gap-1 text-caption', line.tone === 'warning' ? 'text-warning-fg' : 'text-muted')}>
+              {line.tone === 'warning' && <CircleAlert aria-hidden className="size-3.5 shrink-0" />}
+              <span className="truncate">{line.text}</span>
+            </span>
+          )}
         </span>
         <span className="flex shrink-0 items-start gap-1 pt-0.5 text-caption text-secondary" title="Participants expected">
           <UserGroupIcon size={14} />

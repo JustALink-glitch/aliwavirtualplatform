@@ -56,9 +56,7 @@ export function ProgrammesPage() {
     archived: all.filter((p) => p.status === 'archived').length,
   }
   const term = search.trim().toLowerCase()
-  const visible = all.filter(
-    (p) => (filter === 'all' ? p.status !== 'archived' : p.status === filter) && (!term || p.name.toLowerCase().includes(term)),
-  )
+  const visible = all.filter((p) => (filter === 'all' ? p.status !== 'archived' : p.status === filter) && (!term || p.name.toLowerCase().includes(term)))
   const paged = paginate(visible, page)
 
   const newButton = (
@@ -82,7 +80,12 @@ export function ProgrammesPage() {
         </Panel>
       ) : query.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t load programmes" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t load programmes"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       ) : all.length === 0 ? (
         <Panel className="py-16">
@@ -131,9 +134,7 @@ export function ProgrammesPage() {
                     <SearchIcon size={24} />
                   </span>
                   <h2 className="text-heading-section text-primary">No programmes match “{search.trim()}”</h2>
-                  <p className="text-body text-secondary">
-                    Check the spelling, or clear the search to see all {plural(counts.all, 'programme')}.
-                  </p>
+                  <p className="text-body text-secondary">Check the spelling, or clear the search to see all {plural(counts.all, 'programme')}.</p>
                   <Button variant="secondary" onClick={() => setSearch('')}>
                     Clear search
                   </Button>
@@ -150,7 +151,11 @@ export function ProgrammesPage() {
                         <Cell>
                           <Stacked
                             primary={
-                              <Link to={p.id} onClick={(e) => e.stopPropagation()} className="hover:underline focus-visible:underline focus-visible:outline-none">
+                              <Link
+                                to={p.id}
+                                onClick={(e) => e.stopPropagation()}
+                                className="hover:underline focus-visible:underline focus-visible:outline-none"
+                              >
                                 {p.name}
                               </Link>
                             }
@@ -169,8 +174,8 @@ export function ProgrammesPage() {
                         <Cell align="right" hideBelow="xl">
                           <Percent value={p.attendance4w} />
                         </Cell>
-                        <Cell align="right" hideBelow="xl" className="text-muted">
-                          —
+                        <Cell align="right" hideBelow="xl" className={p.needsAttention ? 'text-body-strong' : 'text-muted'}>
+                          {p.needsAttention || '—'}
                         </Cell>
                         <Cell>
                           <span className="inline-flex items-center gap-1 text-caption-strong text-brand-text">

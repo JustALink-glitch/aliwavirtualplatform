@@ -1,3 +1,4 @@
+import { CircleDot, Mail, MapPin, MessageSquare, Phone } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
@@ -23,24 +24,65 @@ import {
   type ParticipantAttention,
 } from './data'
 
-/** D1.02 "Why Amara is flagged": each matched rule with its evidence. */
-export function WhyFlaggedPanel({ firstName, data }: { firstName: string; data: ParticipantAttention }) {
+const markChip: Record<string, { label: string; tone: 'success' | 'warning' | 'neutral' }> = {
+  present: { label: 'Present', tone: 'success' },
+  absent: { label: 'Absent', tone: 'warning' },
+  excused: { label: 'Excused', tone: 'neutral' },
+}
+
+/**
+ * D1.02 / B1.04 "Why Amara is flagged": each matched rule with its evidence. With `recent`, attendance
+ * rules also show the last six recorded sessions.
+ */
+export function WhyFlaggedPanel({
+  firstName,
+  data,
+  recent,
+}: {
+  firstName: string
+  data: ParticipantAttention
+  recent?: { id: string; startsAt: string; mark: string | null }[]
+}) {
+  const lastSix = (recent ?? []).filter((s) => s.mark).slice(-6)
   return (
     <Panel aria-labelledby="why-title" className="gap-3">
-      <PanelHeader id="why-title" title={`Why ${firstName} is flagged`} description={`${plural(data.flags.length, 'rule')} matched. Rechecked whenever Needs attention is opened; rules are provisional.`} />
-      <ul className="flex flex-col">
-        {data.flags.map((f) => {
+      <PanelHeader
+        id="why-title"
+        title={`Why ${firstName} is flagged`}
+        description={`${plural(data.flags.length, 'rule')} matched. Rechecked whenever Needs attention is opened; rules are provisional.`}
+      />
+      <ul className="flex flex-col border-t border-default">
+        {data.flags.map((f, index) => {
           const what = describeFlag(f, data.timeZone)
+          // The session strip goes under the first attendance rule only.
+          const attendance =
+            (f.rule === 'low_attendance' || f.rule === 'missed_in_row') &&
+            data.flags.findIndex((x) => x.rule === 'low_attendance' || x.rule === 'missed_in_row') === index
           return (
             <li key={f.id} className="flex items-start gap-4 border-b border-default py-3 last:border-b-0 max-md:flex-col max-md:gap-1.5">
               <span className="w-28 shrink-0">
                 <Badge tone={f.rule === 'inactive' ? 'neutral' : 'warning'}>{ruleLabel[f.rule]}</Badge>
               </span>
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="text-body-strong text-primary">{what.title}</span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-start justify-between gap-3">
+                  <span className="text-body-strong text-primary">{what.title}</span>
+                  <span className="shrink-0 text-caption text-secondary max-md:hidden">Since {formatDay(f.raisedAt, data.timeZone)}</span>
+                </span>
                 <span className="text-caption text-secondary">{what.detail}</span>
+                {attendance && lastSix.length > 0 && (
+                  <ol className="mt-2 grid grid-cols-6 gap-2 max-lg:grid-cols-3" aria-label="Last sessions">
+                    {lastSix.map((s) => {
+                      const chip = markChip[s.mark!] ?? markChip.excused!
+                      return (
+                        <li key={s.id} className="flex flex-col gap-1.5 rounded-md border border-default px-2.5 py-2">
+                          <span className="text-caption text-primary">{formatDay(s.startsAt, data.timeZone)}</span>
+                          <Badge tone={chip.tone}>{chip.label}</Badge>
+                        </li>
+                      )
+                    })}
+                  </ol>
+                )}
               </span>
-              <span className="shrink-0 text-caption text-secondary">Since {formatDay(f.raisedAt, data.timeZone)}</span>
             </li>
           )
         })}
@@ -50,7 +92,17 @@ export function WhyFlaggedPanel({ firstName, data }: { firstName: string; data: 
 }
 
 /** D1.02 Interventions panel: who contacted them, how, and what happened. */
-export function InterventionsPanel({ data, onRecord }: { data: ParticipantAttention; onRecord: () => void }) {
+const methodIcon: Record<Method, typeof Phone> = { call: Phone, email: Mail, message: MessageSquare, visit: MapPin, other: CircleDot }
+
+export function InterventionsPanel({
+  data,
+  onRecord,
+  limit,
+}: {
+  data: ParticipantAttention
+  onRecord: () => void
+  /** Show only the latest few (B1.04 overview). */ limit?: number
+}) {
   return (
     <Panel aria-labelledby="interventions-title" className="gap-2">
       <div className="flex items-start gap-3">
@@ -65,19 +117,28 @@ export function InterventionsPanel({ data, onRecord }: { data: ParticipantAttent
         <p className="py-1 text-body text-secondary">No contact recorded yet.</p>
       ) : (
         <ul>
-          {data.interventions.map((i) => (
-            <li key={i.id} className="flex flex-col gap-0.5 border-b border-default py-2.5 last:border-b-0">
-              <span className="flex items-center justify-between gap-2">
-                <span className="text-body-strong text-primary">{methodLabel[i.method]}</span>
-                <Badge tone={outcomeTone[i.outcome]}>{outcomeLabel[i.outcome]}</Badge>
-              </span>
-              <span className="text-caption text-secondary">
-                {i.by ? `${i.by.name}${i.by.trainer ? ' (trainer)' : ''}` : 'Someone who has left'} · {formatDay(i.at, data.timeZone)}, {formatTime(i.at, data.timeZone)}
-              </span>
-              {i.notes && <span className="line-clamp-3 text-body text-primary">{i.notes}</span>}
-              {i.reviewOn && <span className="text-caption text-secondary">Review again on {formatDate(i.reviewOn, { year: true })}</span>}
-            </li>
-          ))}
+          {data.interventions.slice(0, limit).map((i) => {
+            const Icon = methodIcon[i.method] ?? CircleDot
+            return (
+              <li key={i.id} className="flex items-start gap-3 border-b border-default py-3 last:border-b-0">
+                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md border border-default text-icon">
+                  <Icon aria-hidden className="size-4" />
+                </span>
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="text-body-strong text-primary">{methodLabel[i.method]}</span>
+                    <Badge tone={outcomeTone[i.outcome]}>{outcomeLabel[i.outcome]}</Badge>
+                  </span>
+                  <span className="text-caption text-secondary">
+                    {i.by ? `${i.by.name}${i.by.trainer ? ' (trainer)' : ''}` : 'Someone who has left'} · {formatDay(i.at, data.timeZone)},{' '}
+                    {formatTime(i.at, data.timeZone)}
+                  </span>
+                  {i.notes && <span className="line-clamp-3 text-body text-secondary">{i.notes}</span>}
+                  {i.reviewOn && <span className="text-caption text-secondary">Review again on {formatDate(i.reviewOn, { year: true })}</span>}
+                </span>
+              </li>
+            )
+          })}
         </ul>
       )}
     </Panel>
@@ -91,10 +152,17 @@ export function FlagStatusPanel({ data, onResolve }: { data: ParticipantAttentio
     <Panel aria-labelledby="flag-status-title" className="gap-2">
       <PanelHeader id="flag-status-title" title="Flag status" />
       <DetailList
+        compact
         items={[
           ...(opened ? [{ label: 'Opened', value: formatDay(opened, data.timeZone) }] : []),
-          { label: 'Next review', value: data.nextReview ? formatDate(data.nextReview, { year: true }) : <span className="font-normal text-muted">Not set</span> },
-          { label: 'Resolution', value: <span className="font-normal">Clears automatically when the rules stop matching, or an admin resolves it with a note.</span> },
+          {
+            label: 'Next review',
+            value: data.nextReview ? formatDate(data.nextReview, { year: true }) : <span className="font-normal text-muted">Not set</span>,
+          },
+          {
+            label: 'Resolution',
+            value: <span className="font-normal">Clears automatically when the rules stop matching, or an admin resolves it with a note.</span>,
+          },
         ]}
       />
       {data.canResolve ? (
@@ -152,7 +220,8 @@ export function RecordInterventionDialog({
       await record.mutateAsync({ method, date, time, notes, outcome, reviewOn: reviewOn || null })
       onSaved()
     } catch (error) {
-      if (error instanceof ApiError && Array.isArray(error.details)) setErrors(Object.fromEntries((error.details as { field: string; message: string }[]).map((d) => [d.field, d.message])))
+      if (error instanceof ApiError && Array.isArray(error.details))
+        setErrors(Object.fromEntries((error.details as { field: string; message: string }[]).map((d) => [d.field, d.message])))
       else setFailed(error instanceof ApiError && error.status < 500 ? error.message : 'It wasn’t saved. Try again.')
     }
   }
@@ -208,7 +277,16 @@ export function RecordInterventionDialog({
               </option>
             ))}
           </SelectField>
-          <TextField label="Review again on" optional type="date" min={initial.date} value={reviewOn} onChange={(e) => setReviewOn(e.target.value)} error={errors.reviewOn} helper="A reminder; the flag stays open." />
+          <TextField
+            label="Review again on"
+            optional
+            type="date"
+            min={initial.date}
+            value={reviewOn}
+            onChange={(e) => setReviewOn(e.target.value)}
+            error={errors.reviewOn}
+            helper="A reminder; the flag stays open."
+          />
         </div>
       </form>
     </Dialog>
@@ -216,7 +294,19 @@ export function RecordInterventionDialog({
 }
 
 /** D1.02 Resolve flag: admins close the open flags with a note. */
-export function ResolveFlagDialog({ memberId, firstName, data, onClose, onDone }: { memberId: string; firstName: string; data: ParticipantAttention; onClose: () => void; onDone: () => void }) {
+export function ResolveFlagDialog({
+  memberId,
+  firstName,
+  data,
+  onClose,
+  onDone,
+}: {
+  memberId: string
+  firstName: string
+  data: ParticipantAttention
+  onClose: () => void
+  onDone: () => void
+}) {
   const resolve = useResolveFlags(memberId)
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -273,7 +363,9 @@ export function ResolveFlagDialog({ memberId, firstName, data, onClose, onDone }
           error={error}
           helper={`Required. Visible to admins and ${firstName}’s trainers.`}
         />
-        {data.interventions.length > 0 && <p className="text-caption text-secondary">{plural(data.interventions.length, 'intervention is', 'interventions are')} already logged.</p>}
+        {data.interventions.length > 0 && (
+          <p className="text-caption text-secondary">{plural(data.interventions.length, 'intervention is', 'interventions are')} already logged.</p>
+        )}
       </form>
     </Dialog>
   )

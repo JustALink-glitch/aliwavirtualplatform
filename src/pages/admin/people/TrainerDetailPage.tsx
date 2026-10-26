@@ -136,7 +136,7 @@ function TrainerDetail({
       <PageHeader
         breadcrumb={[{ label: 'Trainers', to: '/admin/trainers' }, { label: name }]}
         title={name}
-        badge={<StatusBadge member={member} />}
+        badge={member.status === 'active' ? undefined : <StatusBadge member={member} />}
         description={meta}
         actions={
           invited ? (
@@ -307,7 +307,7 @@ function TrainerDetail({
           )}
         </div>
 
-        <div className="flex w-[300px] shrink-0 flex-col gap-4 max-lg:w-full">
+        <div className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
           <Panel aria-labelledby="details-title" className="gap-0">
             <PanelHeader id="details-title" title="Details" />
             <dl className="mt-2 flex flex-col">
@@ -336,7 +336,7 @@ function TrainerDetail({
         </div>
       </div>
 
-      {history.length > 0 && (
+      {history.length > 0 && member.status !== 'active' && (
         <Panel aria-labelledby="history-title">
           <PanelHeader id="history-title" title="Invitation history" />
           <ol>

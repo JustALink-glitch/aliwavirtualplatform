@@ -47,13 +47,19 @@ export function NextSteps({ title, steps }: { title: string; steps: { title: str
 }
 
 /** Label / value rows (A1.02 "Programme details"). */
-export function DetailList({ items }: { items: { label: string; value: ReactNode }[] }) {
+export function DetailList({
+  items,
+  compact,
+}: {
+  items: { label: string; value: ReactNode }[]
+  /** Narrow side-panel version: short labels, no dividers (B1.04). */ compact?: boolean
+}) {
   return (
-    <dl>
+    <dl className={compact ? 'flex flex-col gap-2 pt-1' : undefined}>
       {items.map((item) => (
-        <div key={item.label} className="flex gap-4 border-b border-default py-2.5 last:border-b-0">
-          <dt className="w-40 shrink-0 text-body text-secondary max-md:w-32">{item.label}</dt>
-          <dd className="min-w-0 text-body-strong break-words text-primary">{item.value}</dd>
+        <div key={item.label} className={compact ? 'flex gap-3' : 'flex gap-4 border-b border-default py-2.5 last:border-b-0'}>
+          <dt className={compact ? 'w-24 shrink-0 text-caption text-secondary pt-px' : 'w-40 shrink-0 text-body text-secondary max-md:w-32'}>{item.label}</dt>
+          <dd className={compact ? 'min-w-0 text-body break-words text-primary' : 'min-w-0 text-body-strong break-words text-primary'}>{item.value}</dd>
         </div>
       ))}
     </dl>

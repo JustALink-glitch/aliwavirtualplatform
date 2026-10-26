@@ -5,6 +5,8 @@ export interface Metric {
   value: ReactNode
   context: ReactNode
   icon: ReactNode
+  /** Warning tile, e.g. Needs attention when someone is flagged (O1.01). */
+  tone?: 'warning'
 }
 
 /** Metric strip (A1.02, A3.02): one panel, three or four metrics separated by dividers. */
@@ -18,7 +20,11 @@ export function Metrics({ items }: { items: Metric[] }) {
     >
       {items.map((item) => (
         <div key={item.label} className="flex gap-3 bg-surface px-5 py-4">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-brand-subtle text-icon-brand">{item.icon}</span>
+          <span
+            className={`flex size-9 shrink-0 items-center justify-center rounded-md ${item.tone === 'warning' ? 'bg-warning-bg text-warning-fg' : 'bg-brand-subtle text-icon-brand'}`}
+          >
+            {item.icon}
+          </span>
           <div className="flex min-w-0 flex-col gap-1">
             <span className="text-caption-strong text-secondary">{item.label}</span>
             <span className="text-metric-large text-primary">{item.value}</span>

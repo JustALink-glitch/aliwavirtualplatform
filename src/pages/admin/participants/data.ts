@@ -24,6 +24,10 @@ export interface ParticipantSummary {
     cohort: { id: string; name: string; status: CohortStatus }
     programmeName: string
     attendance: { present: number; recorded: number; rate: number } | null
+    /** Published work due so far, handed in, overdue, and due in the next 7 days. */
+    assignments?: { due: number; submitted: number; overdue: number; dueThisWeek: number }
+    /** Open Needs attention flags. */
+    flags?: number
   } | null
 }
 
@@ -87,6 +91,31 @@ export function useParticipants(cohortId?: string) {
         `/v1/participants${cohortId ? `?cohortId=${cohortId}` : ''}`,
         { signal },
       ),
+  })
+}
+
+export interface LearningAssignment {
+  id: string
+  title: string
+  course: string
+  dueAt: string
+  submittedAt: string | null
+  status: 'graded' | 'late' | 'submitted' | 'overdue' | 'not_submitted'
+  grade: string | null
+}
+
+/** B1.04 Attendance and Assignments: their sessions and work in a cohort. */
+export function useParticipantLearning(id: string, cohortId: string | undefined) {
+  return useQuery({
+    enabled: Boolean(cohortId),
+    queryKey: [...keys.detail(id), 'learning', cohortId],
+    queryFn: ({ signal }) =>
+      api<{
+        cohortId: string
+        attendance: { present: number; recorded: number }
+        sessions: { id: string; startsAt: string; course: string; mark: string | null }[]
+        assignments: LearningAssignment[]
+      }>(`/v1/participants/${id}/learning?cohortId=${cohortId}`, { signal }),
   })
 }
 

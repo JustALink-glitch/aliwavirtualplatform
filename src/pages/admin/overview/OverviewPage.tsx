@@ -96,7 +96,7 @@ export function OverviewPage() {
         {header}
         <div aria-busy="true" aria-label="Loading overview" className="flex flex-col gap-4">
           <div className="h-[104px] animate-pulse rounded-lg bg-skeleton" />
-          <div className="grid grid-cols-[minmax(0,1fr)_344px] gap-4 max-xl:grid-cols-1">
+          <div className="grid grid-cols-[minmax(0,1fr)_356px] gap-4 max-xl:grid-cols-1">
             <div className="h-[280px] animate-pulse rounded-lg bg-skeleton" />
             <div className="h-[280px] animate-pulse rounded-lg bg-skeleton" />
           </div>
@@ -162,15 +162,16 @@ export function OverviewPage() {
             label: 'Needs attention',
             icon: <InfoTriangleIcon size={18} />,
             value: d.needsAttention.people,
+            tone: d.needsAttention.people ? 'warning' : undefined,
             context: d.needsAttention.people ? `Participants across ${plural(d.needsAttention.cohorts, 'cohort')}` : 'No one flagged',
           },
         ]}
       />
-      <div className="grid grid-cols-[minmax(0,1fr)_344px] items-start gap-4 max-xl:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_356px] items-start gap-4 max-xl:grid-cols-1">
         <AttentionPanel timeZone={d.timeZone} />
         <ActivityPanel data={d} />
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_344px] items-start gap-4 max-xl:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_356px] items-start gap-4 max-xl:grid-cols-1">
         <CohortsPanel cohorts={cohorts.data ?? []} loading={cohorts.isPending} data={d} />
         <UpcomingPanel timeZone={d.timeZone} />
       </div>
@@ -188,9 +189,10 @@ function AttentionPanel({ timeZone }: { timeZone: string }) {
   return (
     <Panel className="gap-0">
       <div className="flex items-start justify-between gap-3 max-md:flex-col">
-        <PanelHeader title="Needs attention" description="Who needs follow-up, why, and what has been done." />
+        <PanelHeader className="min-w-0" title="Needs attention" description="Who needs follow-up, why, and what has been done." />
         {rows.length > 0 && (
           <FilterChips
+            nowrap
             label="Signal"
             value={signal}
             onChange={setSignal}
@@ -306,7 +308,7 @@ function ActivityPanel({ data: d }: { data: Overview }) {
                   aria-label={`Week of ${formatDate(w.weekOf)}: ${w.present} present, ${w.excused} excused, ${w.absent} absent${w.rate !== null ? `, ${w.rate}%` : ''}`}
                 >
                   {w.rate !== null && <span className="text-chart-label text-secondary tabular-nums">{w.rate}%</span>}
-                  <span className="flex w-full max-w-6 flex-col-reverse overflow-hidden rounded-t-xs" style={{ height: `${(total / max) * 120}px` }}>
+                  <span className="flex w-full max-w-4 flex-col-reverse overflow-hidden rounded-t-xs" style={{ height: `${(total / max) * 120}px` }}>
                     <span className="bg-chart-present" style={{ height: `${total ? (w.present / total) * 100 : 0}%` }} />
                     <span className="bg-chart-excused" style={{ height: `${total ? (w.excused / total) * 100 : 0}%` }} />
                     <span className="bg-chart-absent" style={{ height: `${total ? (w.absent / total) * 100 : 0}%` }} />
@@ -331,11 +333,11 @@ function ActivityPanel({ data: d }: { data: Overview }) {
 
 const cohortColumns: Column[] = [
   { label: 'Cohort' },
-  { label: 'Status', width: 104 },
-  { label: 'Participants', width: 96, align: 'right', hideBelow: 'lg' },
-  { label: 'Delivery', width: 128, hideBelow: 'lg' },
-  { label: 'Attendance', width: 92, align: 'right' },
-  { label: 'Next session', width: 124, hideBelow: 'xl' },
+  { label: 'Status', width: 92 },
+  { label: 'Participants', width: 88, align: 'right', hideBelow: 'lg' },
+  { label: 'Delivery', width: 124, hideBelow: 'lg' },
+  { label: 'Attendance', width: 84, align: 'right' },
+  { label: 'Next session', width: 112, hideBelow: 'xl' },
 ]
 
 const statusBadge: Record<string, { tone: 'success' | 'info' | 'neutral'; label: string }> = {
@@ -484,7 +486,7 @@ function SetupView({ data: d, header }: { data: Overview; header: ReactNode }) {
   return (
     <>
       {header}
-      <div className="grid grid-cols-[minmax(0,1fr)_344px] items-start gap-4 max-xl:grid-cols-1">
+      <div className="grid grid-cols-[minmax(0,1fr)_356px] items-start gap-4 max-xl:grid-cols-1">
         <div className="flex min-w-0 flex-col gap-4">
           <Panel className="gap-0">
             <div className="flex items-start justify-between gap-4">

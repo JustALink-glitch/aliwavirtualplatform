@@ -16,7 +16,7 @@ import { initials } from '@/lib/people'
 import type { CohortSummary } from '@/pages/admin/programmes/data'
 import { AddParticipantDialog } from './AddParticipantDialog'
 import { useParticipants, type EnrolmentStatus } from './data'
-import { ParticipantBadge } from './ParticipantBadge'
+import { AssignmentsSummary, ParticipantBadge } from './ParticipantBadge'
 
 type Filter = 'all' | 'active' | 'deferred' | 'withdrawn'
 const inFilter = (status: EnrolmentStatus, filter: Filter) =>
@@ -47,7 +47,8 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
   const all = query.data?.participants ?? []
   const term = search.trim().toLowerCase()
   const visible = all.filter(
-    (p) => p.enrolment && inFilter(p.enrolment.status, filter) && (!term || `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) || p.email.includes(term)),
+    (p) =>
+      p.enrolment && inFilter(p.enrolment.status, filter) && (!term || `${p.firstName} ${p.lastName}`.toLowerCase().includes(term) || p.email.includes(term)),
   )
   const paged = paginate(visible, page)
   const count = (f: Filter) => all.filter((p) => p.enrolment && inFilter(p.enrolment.status, f)).length
@@ -63,7 +64,12 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
     </>
   )
 
-  if (query.isPending) return <Panel aria-busy="true" aria-label="Loading participants" className="h-[200px]"><span className="sr-only">Loading</span></Panel>
+  if (query.isPending)
+    return (
+      <Panel aria-busy="true" aria-label="Loading participants" className="h-[200px]">
+        <span className="sr-only">Loading</span>
+      </Panel>
+    )
   if (query.isError) {
     return (
       <Panel>
@@ -91,10 +97,16 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
       ) : (
         <>
           <div className="flex items-center gap-3 max-lg:flex-wrap max-md:flex-col max-md:items-stretch">
-            <SearchField aria-label="Search participants in this cohort" placeholder="Search participants in this cohort" width={300} value={search} onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(1)
-            }} />
+            <SearchField
+              aria-label="Search participants in this cohort"
+              placeholder="Search participants in this cohort"
+              width={300}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
             <FilterChips
               label="Enrolment"
               value={filter}
@@ -128,19 +140,28 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
                           </span>
                         </Cell>
                         <Cell>
-                          <ParticipantBadge memberStatus={p.status} invitationExpiresAt={p.invitationExpiresAt} enrolmentStatus={p.enrolment?.status} />
+                          <ParticipantBadge
+                            memberStatus={p.status}
+                            invitationExpiresAt={p.invitationExpiresAt}
+                            enrolmentStatus={p.enrolment?.status}
+                            flags={p.enrolment?.flags}
+                          />
                         </Cell>
                         <Cell align="right" hideBelow="xl">
                           <Percent value={p.enrolment?.attendance?.rate} />
                         </Cell>
-                        <Cell hideBelow="xl" className="text-muted">
-                          —
+                        <Cell hideBelow="xl">
+                          <AssignmentsSummary value={p.enrolment?.assignments} />
                         </Cell>
                         <Cell hideBelow="lg" className={p.lastSignInAt ? undefined : 'text-muted'}>
                           {p.lastSignInAt ? relativeDay(p.lastSignInAt, timeZone) : 'Never'}
                         </Cell>
                         <Cell>
-                          <Link to={`/admin/participants/${p.id}`} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-caption-strong text-brand-text">
+                          <Link
+                            to={`/admin/participants/${p.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-caption-strong text-brand-text"
+                          >
                             View
                             <ChevronRightIcon size={14} />
                           </Link>
@@ -160,7 +181,12 @@ export function CohortParticipantsList({ cohort }: { cohort: CohortSummary }) {
                           </span>
                           <span className="truncate text-caption text-secondary">{p.email}</span>
                         </span>
-                        <ParticipantBadge memberStatus={p.status} invitationExpiresAt={p.invitationExpiresAt} enrolmentStatus={p.enrolment?.status} />
+                        <ParticipantBadge
+                          memberStatus={p.status}
+                          invitationExpiresAt={p.invitationExpiresAt}
+                          enrolmentStatus={p.enrolment?.status}
+                          flags={p.enrolment?.flags}
+                        />
                       </Link>
                     </li>
                   ))}

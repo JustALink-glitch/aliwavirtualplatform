@@ -46,7 +46,8 @@ export function NeedsAttentionPage() {
   const query = useAttention()
   const navigate = useNavigate()
   const [signal, setSignal] = useState<SignalFilter>('all')
-  const [cohort, setCohort] = useState('all')
+  // Opened from a cohort's "View all" link: start filtered to that cohort.
+  const [cohort, setCohort] = useState(() => new URLSearchParams(window.location.search).get('cohort') ?? 'all')
   const [followUp, setFollowUp] = useState<FollowUp>('any')
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -95,11 +96,20 @@ export function NeedsAttentionPage() {
         </Panel>
       ) : query.isError ? (
         <Panel>
-          <StatePanel kind="error" title="Couldn’t check participants" description="Check your connection and try again." action={{ label: 'Try again', onClick: () => void query.refetch() }} />
+          <StatePanel
+            kind="error"
+            title="Couldn’t check participants"
+            description="Check your connection and try again."
+            action={{ label: 'Try again', onClick: () => void query.refetch() }}
+          />
         </Panel>
       ) : rows.length === 0 ? (
         <Panel className="py-12">
-          <EmptyState icon={<CheckCircleIcon size={24} />} title="No one needs attention" body="Everyone in your running cohorts is within the rules. Participants appear here as soon as one matches." />
+          <EmptyState
+            icon={<CheckCircleIcon size={24} />}
+            title="No one needs attention"
+            body="Everyone in your running cohorts is within the rules. Participants appear here as soon as one matches."
+          />
         </Panel>
       ) : (
         <>
@@ -179,7 +189,11 @@ export function NeedsAttentionPage() {
                             </span>
                           </Cell>
                           <Cell align="right">
-                            <Link to={to} onClick={(e) => e.stopPropagation()} className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline">
+                            <Link
+                              to={to}
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline"
+                            >
                               Review
                               <ChevronRightIcon size={14} />
                             </Link>
@@ -205,7 +219,12 @@ export function NeedsAttentionPage() {
                 </ul>
               </>
             )}
-            <TableFooter summary={`${plural(visible.length, 'participant')} · oldest unresolved first`} page={paged.page} pageCount={paged.pageCount} onPage={setPage} />
+            <TableFooter
+              summary={`${plural(visible.length, 'participant')} · oldest unresolved first`}
+              page={paged.page}
+              pageCount={paged.pageCount}
+              onPage={setPage}
+            />
           </Panel>
         </>
       )}
@@ -230,7 +249,8 @@ export function InterventionsPage() {
   const timeZone = query.data?.timeZone
   const visible = all.filter((i) => filter === 'all' || i.outcome === filter)
   const paged = paginate(visible, page, 10)
-  const when = (at: string) => `${formatDay(at, timeZone)}, ${new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(at))}`
+  const when = (at: string) =>
+    `${formatDay(at, timeZone)}, ${new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone }).format(new Date(at))}`
   const by = (i: (typeof all)[number]) => (i.by ? `${i.by.name}${i.by.trainer ? ' (trainer)' : ''}` : 'Someone who has left')
 
   return (
@@ -247,7 +267,16 @@ export function InterventionsPage() {
               onClick={() =>
                 downloadCsv('interventions.csv', [
                   ['Participant', 'Cohort', 'How', 'By', 'Outcome', 'When', 'Review on', 'Note'],
-                  ...all.map((i) => [i.participant.name, i.cohort, methodLabel[i.method], by(i), outcomeLabel[i.outcome], when(i.at), i.reviewOn ?? '', i.notes ?? '']),
+                  ...all.map((i) => [
+                    i.participant.name,
+                    i.cohort,
+                    methodLabel[i.method],
+                    by(i),
+                    outcomeLabel[i.outcome],
+                    when(i.at),
+                    i.reviewOn ?? '',
+                    i.notes ?? '',
+                  ]),
                 ])
               }
             >
@@ -266,7 +295,11 @@ export function InterventionsPage() {
         </Panel>
       ) : all.length === 0 ? (
         <Panel className="py-12">
-          <EmptyState icon={<CheckCircleIcon size={24} />} title="No interventions yet" body="When an admin or trainer records a call, email, message or visit, it appears here." />
+          <EmptyState
+            icon={<CheckCircleIcon size={24} />}
+            title="No interventions yet"
+            body="When an admin or trainer records a call, email, message or visit, it appears here."
+          />
         </Panel>
       ) : (
         <>
@@ -279,7 +312,11 @@ export function InterventionsPage() {
             }}
             options={[
               { value: 'all', label: 'All', count: all.length },
-              ...(['awaiting_response', 'reached', 'no_response', 'resolved'] as const).map((o) => ({ value: o, label: outcomeLabel[o], count: all.filter((i) => i.outcome === o).length })),
+              ...(['awaiting_response', 'reached', 'no_response', 'resolved'] as const).map((o) => ({
+                value: o,
+                label: outcomeLabel[o],
+                count: all.filter((i) => i.outcome === o).length,
+              })),
             ]}
           />
           <Panel className="gap-0 max-md:py-2">

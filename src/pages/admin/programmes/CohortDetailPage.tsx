@@ -4,9 +4,9 @@ import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
-import { BookOpenIcon, CalendarIcon, ChartIcon, ChevronRightIcon, InfoTriangleIcon, UserGroupIcon, UserIcon } from '@/components/ui/icons'
+import { BookOpenIcon, CalendarIcon, ChartIcon, ChevronRightIcon, DownloadIcon, InfoTriangleIcon, UserGroupIcon, UserIcon } from '@/components/ui/icons'
 import { Metrics } from '@/components/ui/Metrics'
-import { EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
+import { Badge, EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { Tabs } from '@/components/ui/Tabs'
 import { Cell, Row, Stacked, Table, type Column } from '@/components/ui/Table'
 import { ApiError } from '@/lib/api'
@@ -19,10 +19,13 @@ import { deliveryLabel } from './labels'
 import { CohortParticipantsList } from '@/pages/admin/participants/CohortParticipantsList'
 import { CohortSessionsList } from '@/pages/admin/sessions/CohortSessionsList'
 import { UpcomingSessions } from '@/pages/admin/sessions/UpcomingSessions'
+import { describeFlag, followUpLine, signalOf, useAttention, type Signal } from '@/pages/admin/attention/data'
+import { useAuth } from '@/auth/useAuth'
 
 interface CohortContext {
   cohort: CohortSummary
   courses: CohortCourse[]
+  trainerStats: Record<string, { held: number; reports: number }>
 }
 
 /** One row per trainer across the cohort's courses (A3.05b). */
@@ -104,19 +107,19 @@ export function CohortLayout() {
               </Button>
               {cohort.status !== 'completed' && (
                 <>
-                  <Button variant="secondary" onClick={() => navigate(`/admin/participants/import?cohort=${cohort.id}`)}>
+                  <Button variant="secondary" icon={<DownloadIcon size={16} />} onClick={() => navigate(`/admin/participants/import?cohort=${cohort.id}`)}>
                     Import participants
                   </Button>
-                  <Button onClick={() => navigate(`/admin/courses/sessions/new?cohort=${cohort.id}`)}>Schedule session</Button>
+                  <Button icon={<CalendarIcon size={16} />} onClick={() => navigate(`/admin/courses/sessions/new?cohort=${cohort.id}`)}>
+                    Schedule session
+                  </Button>
                 </>
               )}
             </>
           )
         }
       />
-      {archived && (
-        <AlertBanner title="This cohort is archived">It’s read-only and hidden from lists. Restore it to make changes.</AlertBanner>
-      )}
+      {archived && <AlertBanner title="This cohort is archived">It’s read-only and hidden from lists. Restore it to make changes.</AlertBanner>}
       {cohort.status === 'completed' && (
         <AlertBanner title={`This cohort ended on ${formatDate(cohort.endsOn, { year: true })}`}>
           Attendance, grades and session reports are locked once it ends.
@@ -137,7 +140,7 @@ export function CohortLayout() {
           { label: 'Trainers', to: `/admin/cohorts/${cohort.id}/trainers`, count: trainerCount },
         ]}
       />
-      <Outlet context={{ cohort, courses } satisfies CohortContext} />
+      <Outlet context={{ cohort, courses, trainerStats: query.data.trainerStats ?? {} } satisfies CohortContext} />
       <ArchiveCohortDialog open={archiveOpen} onClose={() => setArchiveOpen(false)} cohort={cohort} />
     </>
   )
@@ -164,14 +167,30 @@ export function CohortOverview() {
             value: cohort.attendance4w === null ? '—' : `${cohort.attendance4w}%`,
             context:
               cohort.attendance4w === null
-                ? cohort.attendanceAll === null ? 'Nothing recorded yet' : `Nothing in 4 weeks · ${cohort.attendanceAll}% overall`
+                ? cohort.attendanceAll === null
+                  ? 'Nothing recorded yet'
+                  : `Nothing in 4 weeks · ${cohort.attendanceAll}% overall`
                 : `Present ÷ recorded${cohort.attendanceAll !== null ? ` · ${cohort.attendanceAll}% overall` : ''}`,
           },
-          { label: 'Needs attention', icon: <InfoTriangleIcon size={18} />, value: '—', context: 'Checked once sessions are held' },
+          cohort.status === 'active'
+            ? {
+                label: 'Needs attention',
+                icon: <InfoTriangleIcon size={18} />,
+                value: cohort.needsAttention ?? 0,
+                tone: cohort.needsAttention ? ('warning' as const) : undefined,
+                context: cohort.needsAttention ? 'Participants in this cohort' : 'No one flagged',
+              }
+            : {
+                label: 'Needs attention',
+                icon: <InfoTriangleIcon size={18} />,
+                value: '—',
+                context: cohort.status === 'completed' ? 'Cohort has ended' : 'Checked once sessions are held',
+              },
         ]}
       />
       <div className="flex items-start gap-4 max-lg:flex-col">
         <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
+          {cohort.status === 'active' && <CohortAttention cohortId={cohort.id} />}
           <UpcomingSessions cohort={cohort} />
         </div>
         <div className="flex w-[356px] shrink-0 flex-col gap-4 max-lg:w-full">
@@ -186,9 +205,7 @@ export function CohortOverview() {
               </Link>
             </div>
             {trainers.length === 0 ? (
-              <p className="py-2 text-body text-secondary">
-                No trainers yet. A course’s default lead trainer joins automatically when the course is added.
-              </p>
+              <p className="py-2 text-body text-secondary">No trainers yet. A course’s default lead trainer joins automatically when the course is added.</p>
             ) : (
               <ul>
                 {trainers.map((t) => (
@@ -232,6 +249,58 @@ export function CohortOverview() {
         </div>
       </div>
     </>
+  )
+}
+
+const signalBadge: Record<Signal, { label: string; tone: 'warning' | 'neutral' }> = {
+  attendance: { label: 'Attendance', tone: 'warning' },
+  assignments: { label: 'Assignments', tone: 'warning' },
+  activity: { label: 'Activity', tone: 'neutral' },
+}
+
+/** A3.02 Needs attention: participants in this cohort who match a follow-up rule. */
+function CohortAttention({ cohortId }: { cohortId: string }) {
+  const { state } = useAuth()
+  const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
+  const query = useAttention()
+  const rows = (query.data?.participants ?? []).filter((r) => r.cohort.id === cohortId)
+  if (query.isPending || query.isError || rows.length === 0) return null
+  return (
+    <Panel aria-labelledby="cohort-attention-title" className="gap-0">
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <PanelHeader id="cohort-attention-title" title="Needs attention" description="Participants in this cohort who match a follow-up rule." />
+        </div>
+        <Link to={`/admin/needs-attention?cohort=${cohortId}`} className="inline-flex items-center gap-1 text-caption-strong text-brand-text hover:underline">
+          View all {rows.length}
+          <ChevronRightIcon size={14} />
+        </Link>
+      </div>
+      <ul className="mt-2">
+        {rows.slice(0, 3).map((r) => {
+          const f = r.flags[0]!
+          const why = describeFlag(f, timeZone)
+          const badge = signalBadge[signalOf[f.rule]]
+          return (
+            <li key={r.enrolmentId} className="border-b border-default last:border-b-0">
+              <Link to={`/admin/participants/${r.participant.id}`} className="flex items-center gap-3 py-3 hover:bg-surface-hover">
+                <Avatar size={32} initials={initials(r.participant.name)} seed={r.participant.id} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex items-start justify-between gap-2">
+                    <span className="truncate text-body-strong text-primary">{r.participant.name}</span>
+                    <Badge tone={badge.tone}>{badge.label}</Badge>
+                  </span>
+                  <span className="truncate text-body text-primary">{why.title}</span>
+                  <span className="truncate text-caption text-secondary">{why.detail}</span>
+                  <span className="truncate text-caption text-secondary">{followUpLine(r.lastIntervention, timeZone)}</span>
+                </span>
+                <ChevronRightIcon size={16} className="shrink-0 text-icon-muted" />
+              </Link>
+            </li>
+          )
+        })}
+      </ul>
+    </Panel>
   )
 }
 
@@ -305,8 +374,8 @@ export function CohortCourses() {
                   <Cell align="right" className="text-body-strong">
                     {course.plannedSessions ? `${course.heldSessions} of ${course.plannedSessions}` : course.heldSessions}
                   </Cell>
-                  <Cell align="right" hideBelow="xl" className="text-muted">
-                    —
+                  <Cell align="right" hideBelow="xl" className={course.assignments ? undefined : 'text-muted'}>
+                    {course.assignments || '—'}
                   </Cell>
                 </Row>
               )
@@ -328,7 +397,7 @@ const trainerColumns: Column[] = [
 
 /** A3.05b Trainers tab. */
 export function CohortTrainers() {
-  const { courses } = useOutletContext<CohortContext>()
+  const { courses, trainerStats } = useOutletContext<CohortContext>()
   const trainers = trainersOf(courses)
   return (
     <Panel aria-labelledby="trainers-tab-title">
@@ -351,11 +420,11 @@ export function CohortTrainers() {
               </Cell>
               <Cell>{t.lead.length ? 'Lead' : 'Assistant'}</Cell>
               <Cell hideBelow="lg">{[...t.lead, ...t.assistant].join(', ')}</Cell>
-              <Cell align="right" hideBelow="xl" className="text-muted">
-                —
+              <Cell align="right" hideBelow="xl">
+                {trainerStats[t.id]?.held ?? 0}
               </Cell>
-              <Cell align="right" hideBelow="xl" className="text-muted">
-                —
+              <Cell align="right" hideBelow="xl">
+                {trainerStats[t.id]?.reports ?? 0}
               </Cell>
             </Row>
           ))}
