@@ -1,10 +1,12 @@
 import type { FormEvent } from 'react'
 import { AlertBanner } from '@/components/ui/AlertBanner'
-import { Badge, Panel, PanelHeader } from '@/components/ui/Page'
+import { useSearchParams } from 'react-router'
+import { Panel, PanelHeader } from '@/components/ui/Page'
 import { useAttendanceSettings, useSaveAttendanceSettings, type AttendanceSettings } from './data'
 import { NumberBox, RadioList, SaveBar, SettingRow, SettingsLoader, SettingsSection } from './SettingsBits'
 import { SettingsTitle } from './SettingsLayout'
 import { useSettingsForm } from './settingsForm'
+import { ZoomConnection, zoomResults } from './ZoomConnection'
 
 type Draft = {
   joinLinks: AttendanceSettings['joinLinks']
@@ -37,6 +39,9 @@ function AttendanceForm({ settings }: { settings: AttendanceSettings }) {
   const save = useSaveAttendanceSettings()
   const form = useSettingsForm(toDraft(settings))
   const { draft, set, errors } = form
+  // Back from Zoom's approval screen.
+  const [params] = useSearchParams()
+  const back = zoomResults[params.get('zoom') ?? '']
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -66,28 +71,15 @@ function AttendanceForm({ settings }: { settings: AttendanceSettings }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
       {form.notice && <AlertBanner tone={form.notice.tone} title={form.notice.title} />}
+      {back && !form.notice && (
+        <AlertBanner tone={back.tone} title={back.title}>
+          {back.body}
+        </AlertBanner>
+      )}
 
       <Panel aria-labelledby="zoom-title" className="gap-0">
         <PanelHeader id="zoom-title" title="Zoom" />
-        <div className="flex items-center gap-3 border-b border-default py-3.5 max-md:flex-wrap">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-surface-subtle text-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-              <rect x="3" y="6" width="13" height="12" rx="2" />
-              <path d="M16 10.5 21 7.5v9l-5-3" />
-            </svg>
-          </span>
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-body-strong text-primary">
-              {settings.zoom.connected ? `Connected to ${settings.zoom.email ?? 'Zoom'}` : 'Zoom isn’t connected yet'}
-            </span>
-            <span className="text-caption text-secondary">
-              {settings.zoom.connected
-                ? 'Attendance imports when each meeting ends.'
-                : 'Connecting your organisation’s Zoom account comes in a later update. Until then, trainers mark attendance on the session register.'}
-            </span>
-          </div>
-          <Badge tone={settings.zoom.connected ? 'success' : 'neutral'}>{settings.zoom.connected ? 'Connected' : 'Not connected'}</Badge>
-        </div>
+        <ZoomConnection zoom={settings.zoom} />
         <RadioList
           label="How participants join"
           value={draft.joinLinks}

@@ -16,6 +16,8 @@ export interface Session {
   location: string | null
   joinUrl: string | null
   zoomMeetingId: string | null
+  /** Where Zoom is with this session (C1.03, C2.01). */
+  zoom?: { managed: boolean; pending: boolean; problem: string | null; importedAt: string | null; unmatched: number }
   trainer: { id: string; name: string; isLead: boolean } | null
   series: { id: string; weekdays: number[]; sessions: number } | null
   number: number | null

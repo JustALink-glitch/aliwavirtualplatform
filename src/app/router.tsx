@@ -39,6 +39,7 @@ import { FeedbackPage, GradesPage } from '@/pages/participant/GradesPage'
 import { CoursePage, MyCoursesPage } from '@/pages/participant/MyCoursesPage'
 import { MySessionPage, MySessionsPage } from '@/pages/participant/MySessionsPage'
 import { SettingsPage } from '@/pages/participant/SettingsPage'
+import { ZoomMatchPage } from '@/pages/admin/sessions/ZoomMatchPage'
 import { NotificationsPage } from '@/pages/shell/Notifications'
 import { SearchPage } from '@/pages/shell/Search'
 import { MyAssignmentPage } from '@/pages/participant/MyAssignmentPage'
@@ -117,6 +118,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'courses/sessions/:id/edit', element: <EditSessionPage /> },
     { path: 'courses/sessions/:id/attendance', element: <AttendancePage /> },
     { path: 'courses/sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
+    { path: 'courses/sessions/:id/attendance/zoom', element: <ZoomMatchPage /> },
     { path: 'courses/sessions/:id/feedback', element: <SessionFeedbackPage area="admin" /> },
     { path: 'courses/new', element: <NewCoursePage /> },
     { path: 'courses/assignments', element: <AdminAssignmentsPage /> },
@@ -163,6 +165,7 @@ const built: Partial<Record<Area, RouteObject[]>> = {
     { path: 'sessions/:id/edit', element: <EditSessionPage /> },
     { path: 'sessions/:id/attendance', element: <AttendancePage /> },
     { path: 'sessions/:id/attendance/history', element: <AttendanceHistoryPage /> },
+    { path: 'sessions/:id/attendance/zoom', element: <ZoomMatchPage /> },
     { path: 'sessions/:id/feedback', element: <SessionFeedbackPage area="trainer" /> },
     { path: 'cohorts', element: <MyCohortsPage /> },
     {

@@ -18,6 +18,7 @@ export interface RegisterRow {
 
 export interface Register {
   status: 'scheduled' | 'in_progress' | 'held' | 'cancelled'
+  zoom?: { meeting: boolean; importedAt: string | null; unmatched: number; problem: string | null }
   counts: { present: number; absent: number; excused: number; notRecorded: number }
   expected: number
   rate: number | null
@@ -75,4 +76,37 @@ export function downloadCsv(name: string, rows: string[][]) {
   a.download = name
   a.click()
   URL.revokeObjectURL(url)
+}
+
+export interface ZoomAttendee {
+  id: string
+  name: string
+  email: string | null
+  joinedAt: string | null
+  minutes: number
+  suggestedMemberId: string | null
+}
+
+/** C2.04 / T4.04 Zoom attendees Synqop couldn't match. */
+export function useZoomUnmatched(sessionId: string) {
+  return useQuery({
+    queryKey: [...key(sessionId), 'zoom'],
+    queryFn: ({ signal }) =>
+      api<{ attendees: ZoomAttendee[]; participants: { memberId: string; name: string; status: Mark | null; source: RegisterRow['source'] }[] }>(
+        `/v1/sessions/${sessionId}/attendance/zoom`,
+        { signal },
+      ),
+  })
+}
+
+export function useSaveZoomMatches(sessionId: string) {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { matches: { id: string; memberId: string }[]; ignore: string[] }) =>
+      api<{ matched: number; ignored: number; kept: number }>(`/v1/sessions/${sessionId}/attendance/zoom`, { method: 'POST', body }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: key(sessionId) })
+      void client.invalidateQueries({ queryKey: ['sessions'] })
+    },
+  })
 }

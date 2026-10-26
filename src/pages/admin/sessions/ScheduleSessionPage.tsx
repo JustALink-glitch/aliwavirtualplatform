@@ -316,7 +316,7 @@ export function ScheduleSessionPage() {
                   value={joinUrl}
                   onChange={(e) => set(setJoinUrl, 'joinUrl')(e.target.value)}
                   error={errors.joinUrl}
-                  helper="Participants join from this link. Once Zoom is connected in Settings, Synqop creates a meeting for each session and imports attendance automatically."
+                  helper="Leave empty when Zoom is connected: Synqop creates a meeting, gives each participant their own link and imports attendance. Paste a link to use another meeting instead."
                 />
               )}
             </FormSection>

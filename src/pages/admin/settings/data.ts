@@ -105,7 +105,7 @@ export const useProgrammeSetup = () =>
 export const useSaveProgrammeSetup = () => useSave<ProgrammeSetup>('/v1/settings/programme-setup', 'programme-setup', [['assignments'], ['sessions']])
 
 export interface AttendanceSettings {
-  zoom: { connected: boolean; email: string | null }
+  zoom: { available: boolean; connected: boolean; email: string | null; connectedAt: string | null; problem: string | null; lastImportAt: string | null }
   joinLinks: 'personal' | 'shared'
   presentMinPct: number
   late: { enabled: boolean; minutes: number }
@@ -172,5 +172,16 @@ export function useDeletion() {
         input ? { method: 'POST', body: { exported: true, confirmName: input.confirmName } } : { method: 'DELETE' },
       ),
     onSuccess: (data) => client.setQueryData<PrivacyView>(privacyKey, (old) => (old ? { ...old, ...data } : old)),
+  })
+}
+
+/** F1.07 Starts Zoom's approval screen; Zoom sends the browser back to this page. */
+export const useConnectZoom = () => useMutation({ mutationFn: () => api<{ url: string }>('/v1/zoom/connect', { method: 'POST' }) })
+
+export function useDisconnectZoom() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: () => api<null>('/v1/zoom/connection', { method: 'DELETE' }),
+    onSuccess: () => client.invalidateQueries({ queryKey: [...keys.all, 'attendance'] }),
   })
 }

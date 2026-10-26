@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useLocation, useParams } from 'react-router'
 import { useAuth } from '@/auth/useAuth'
 import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
@@ -74,7 +74,11 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
   const [pending, setPending] = useState<Record<string, Mark>>({})
   const [filter, setFilter] = useState<Filter>('all')
   const [editing, setEditing] = useState<RegisterRow | null>(null)
-  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; title: string; body?: string } | null>(null)
+  // Back from C2.04 with what was matched.
+  const matched = (useLocation().state as { zoomMatched?: string } | null)?.zoomMatched
+  const [notice, setNotice] = useState<{ tone: 'success' | 'error'; title: string; body?: string } | null>(
+    matched ? { tone: 'success', title: 'Zoom matches saved', body: matched } : null,
+  )
 
   const open = data.status === 'in_progress' || data.status === 'held'
   const unmarked = data.register.filter((r) => !r.status)
@@ -190,11 +194,39 @@ function AttendanceView({ session: s, data }: { session: Session; data: Register
         ]}
       />
 
-      {open && unmarked.length > 0 && (
-        <AlertBanner title={s.mode === 'in_person' ? 'In-person session — attendance is marked by hand' : 'Mark who attended'}>
+      {data.zoom && data.zoom.unmatched > 0 && (
+        <AlertBanner tone="warning" title={`${plural(data.zoom.unmatched, 'Zoom attendee')} couldn’t be matched`}>
+          Zoom couldn’t link {data.zoom.unmatched === 1 ? 'this name' : 'these names'} to anyone in {s.cohort.name} by email.{' '}
+          <Link to="zoom" className="font-medium underline">
+            Match Zoom attendees
+          </Link>
+        </AlertBanner>
+      )}
+      {data.zoom?.problem && (
+        <AlertBanner tone="warning" title="Zoom attendance didn’t import">
+          {data.zoom.problem} You can mark the register by hand.
+        </AlertBanner>
+      )}
+      {data.zoom?.importedAt && !data.zoom.unmatched && (
+        <AlertBanner tone="success" title={`Imported from Zoom · ${formatDay(data.zoom.importedAt, timeZone)}, ${formatTime(data.zoom.importedAt, timeZone)}`}>
+          Present means in the meeting for at least the share set in Settings › Attendance & Zoom. Hand-made marks were kept.
+        </AlertBanner>
+      )}
+      {open && unmarked.length > 0 && !data.zoom?.importedAt && (
+        <AlertBanner
+          title={
+            s.mode === 'in_person'
+              ? 'In-person session — attendance is marked by hand'
+              : data.zoom?.meeting
+                ? 'Attendance comes from Zoom'
+                : 'Mark who attended'
+          }
+        >
           {s.mode === 'in_person'
             ? 'Trainers usually do this during the session. You can mark or correct it here too.'
-            : 'Zoom isn’t connected yet, so mark attendance by hand. Once it is, attendance imports when each meeting ends.'}
+            : data.zoom?.meeting
+              ? 'It imports a few minutes after the meeting ends. You can still mark anyone by hand; Zoom won’t change those marks.'
+              : 'This session uses a pasted link, so mark attendance by hand. With Zoom connected, sessions without a link get a meeting and attendance imports by itself.'}
         </AlertBanner>
       )}
 

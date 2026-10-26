@@ -121,6 +121,19 @@ function SessionView({ data }: { data: SessionDetail }) {
           {s.cancelled.reason ? `Reason: ${s.cancelled.reason}. ` : ''}Cancelled sessions don’t count towards attendance or delivery, and need no report.
         </AlertBanner>
       )}
+      {s.zoom?.problem && !s.cancelled && (
+        <AlertBanner tone="warning" title="Zoom needs a look">
+          {s.zoom.problem}
+        </AlertBanner>
+      )}
+      {s.zoom && s.zoom.unmatched > 0 && can.attendance && (
+        <AlertBanner tone="warning" title={`${s.zoom.unmatched} Zoom ${s.zoom.unmatched === 1 ? 'attendee' : 'attendees'} to match`}>
+          Zoom couldn’t link {s.zoom.unmatched === 1 ? 'this name' : 'these names'} to anyone in {s.cohort.name}.{' '}
+          <Link to="attendance/zoom" className="font-medium underline">
+            Match Zoom attendees
+          </Link>
+        </AlertBanner>
+      )}
       {trainerArea && can.report && reportOverdue && (
         <AlertBanner tone="warning" title="Your session report is overdue">
           It was due {reportDue}. Admins can see it’s late — a late report still counts.
@@ -287,7 +300,7 @@ function details(data: SessionDetail, when: string, paths: ReturnType<typeof use
     </>
   ) : s.mode === 'online' ? (
     <>
-      Online · <span className="font-normal text-muted">no meeting link yet</span>
+      Online · <span className="font-normal text-muted">{s.zoom?.pending ? 'Zoom meeting being created…' : 'no meeting link yet'}</span>
     </>
   ) : (
     whereLabel(s)
