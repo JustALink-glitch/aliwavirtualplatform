@@ -18,7 +18,7 @@ cp .env.example .env.local   # API URL, Supabase URL and publishable key
 npm run dev                  # http://localhost:5173
 ```
 
-The API (`aliwabackend`, branch `synqop-v1`) must be running for sign-in to complete.
+The API (`synqopbackend`, branch `synqop-v1`) must be running for sign-in to complete.
 
 ## Structure
 

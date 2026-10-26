@@ -1,4 +1,4 @@
-// Same rules as the API (aliwabackend/src/lib/schedule.ts), for the live preview on C1.02.
+// Same rules as the API (synqopbackend/src/lib/schedule.ts), for the live preview on C1.02.
 /**
  * Calendar maths for scheduling (C1.02). Works on plain dates ("2026-10-21") so time zones
  * never shift a day; times are attached in the database using the organisation's time zone.
