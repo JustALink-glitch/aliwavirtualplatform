@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api, ApiError, onSessionExpired } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
+import { hadStoredSession, supabase } from '@/lib/supabase'
 import { AuthContext, type AuthContextValue, type AuthState, type Me, type NoAccessReason } from './useAuth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -13,7 +13,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signingOut = useRef(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth.getSession().then(({ data }) => {
+      // A stored session that couldn't be restored has ended (X1.03).
+      if (!data.session && hadStoredSession) setExpired(true)
+      setSession(data.session)
+    })
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next)
       if (event === 'SIGNED_IN') setExpired(false)

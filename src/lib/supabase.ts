@@ -12,6 +12,18 @@ import { env } from './env'
  */
 export const initialUrl = new URL(window.location.href)
 
+/**
+ * Whether the browser held a session when the app opened, read before Supabase can drop an expired one.
+ * If it then turns out to have no session, the session ended rather than never existing (X1.03).
+ */
+export const hadStoredSession = (() => {
+  try {
+    return Object.keys(localStorage).some((k) => k.startsWith('sb-') && k.endsWith('-auth-token'))
+  } catch {
+    return false
+  }
+})()
+
 export const supabase = createClient(env.supabaseUrl, env.supabaseKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
