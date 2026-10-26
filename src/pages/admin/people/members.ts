@@ -21,6 +21,29 @@ export interface Member {
 
 export interface MemberDetail extends Member {
   invitedBy: string | null
+  phone?: string | null
+  lastActiveAt?: string | null
+  deactivatedAt?: string | null
+}
+
+/** B2.02 What a trainer teaches, per cohort. */
+export interface Assignment {
+  cohortCourseId: string
+  course: { id: string; name: string }
+  cohort: { id: string; name: string; status: string }
+  lead: boolean
+  held: number
+  planned: number
+  nextSessionAt: string | null
+}
+
+export interface TrainerReport {
+  sessionId: string
+  course: string
+  cohort: string
+  number: number
+  startsAt: string
+  status: 'submitted' | 'overdue' | 'due'
 }
 
 export interface HistoryEntry {
@@ -48,7 +71,8 @@ export function useMembers(roles: Role[]) {
 export function useMember(id: string) {
   return useQuery({
     queryKey: memberKeys.detail(id),
-    queryFn: ({ signal }) => api<{ member: MemberDetail; history: HistoryEntry[] }>(`/v1/members/${id}`, { signal }),
+    queryFn: ({ signal }) =>
+      api<{ member: MemberDetail; history: HistoryEntry[]; assignments?: Assignment[]; reports?: TrainerReport[] }>(`/v1/members/${id}`, { signal }),
     retry: (count, error) => (error as { status?: number }).status !== 404 && count < 2,
   })
 }
@@ -133,3 +157,32 @@ export function useInvitationAction() {
     onSuccess: () => client.invalidateQueries({ queryKey: memberKeys.all }),
   })
 }
+
+const useMemberMutation = <T, R>(fn: (input: T) => Promise<R>) => {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: async () => {
+      await Promise.all([
+        client.invalidateQueries({ queryKey: memberKeys.all }),
+        client.invalidateQueries({ queryKey: ['cohorts'] }),
+        client.invalidateQueries({ queryKey: ['courses'] }),
+      ])
+    },
+  })
+}
+
+/** B2.04 Assign to a course in a cohort. */
+export const useAssignTrainer = (id: string) =>
+  useMemberMutation((input: { cohortId: string; courseId: string; role: 'lead' | 'assistant' }) =>
+    api<{ course: string; cohort: string; replaced: string | null }>(`/v1/members/${id}/assignments`, { method: 'POST', body: input }),
+  )
+export const useUnassignTrainer = (id: string) =>
+  useMemberMutation((cohortCourseId: string) => api(`/v1/members/${id}/assignments/${cohortCourseId}`, { method: 'DELETE' }))
+/** B2.05 Edit details. */
+export const useEditMember = (id: string) =>
+  useMemberMutation((input: { fullName: string; email: string; phone: string | null }) => api(`/v1/members/${id}`, { method: 'PATCH', body: input }))
+/** B2.06 Deactivate, and back. */
+export const useDeactivateMember = (id: string) =>
+  useMemberMutation((notify: boolean) => api(`/v1/members/${id}/deactivate`, { method: 'POST', body: { notify } }))
+export const useReactivateMember = (id: string) => useMemberMutation(() => api(`/v1/members/${id}/reactivate`, { method: 'POST' }))

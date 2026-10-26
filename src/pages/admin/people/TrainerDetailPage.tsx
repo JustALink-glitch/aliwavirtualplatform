@@ -5,16 +5,22 @@ import { StatePanel } from '@/components/StatePanel'
 import { AlertBanner } from '@/components/ui/AlertBanner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
-import { BookOpenIcon, MailIcon, PlusIcon } from '@/components/ui/icons'
-import { DetailList } from '@/components/ui/FormLayout'
-import { EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
+import { BookOpenIcon, MailIcon, PencilIcon, PlusIcon } from '@/components/ui/icons'
+import { Badge, EmptyState, PageHeader, Panel, PanelHeader } from '@/components/ui/Page'
 import { ApiError } from '@/lib/api'
 import { formatDay, formatTime } from '@/lib/format'
 import { roleLabel } from '@/lib/people'
+import { useRemind } from '@/pages/reports/data'
+import { Cell, Row, Table } from '@/components/ui/Table'
+import { AssignDialog, DeactivateDialog, EditDialog } from './TrainerDialogs'
 import {
   fullNameOf,
   invitationExpired,
   useMember,
+  useReactivateMember,
+  useUnassignTrainer,
+  type Assignment,
+  type TrainerReport,
   useResendInvitation,
   useRevokeInvitation,
   type HistoryEntry,
@@ -45,10 +51,20 @@ export function TrainerDetailPage() {
       </>
     )
   }
-  return <TrainerDetail member={query.data.member} history={query.data.history} />
+  return <TrainerDetail member={query.data.member} history={query.data.history} assignments={query.data.assignments ?? []} reports={query.data.reports ?? []} />
 }
 
-function TrainerDetail({ member, history }: { member: MemberDetail; history: HistoryEntry[] }) {
+function TrainerDetail({
+  member,
+  history,
+  assignments,
+  reports,
+}: {
+  member: MemberDetail
+  history: HistoryEntry[]
+  assignments: Assignment[]
+  reports: TrainerReport[]
+}) {
   const { state } = useAuth()
   const navigate = useNavigate()
   const timeZone = state.status === 'signed-in' ? state.me.organisation?.timeZone : undefined
@@ -58,6 +74,14 @@ function TrainerDetail({ member, history }: { member: MemberDetail; history: His
   const revoke = useRevokeInvitation(member.id)
   const [confirmRevoke, setConfirmRevoke] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [dialog, setDialog] = useState<'assign' | 'edit' | 'deactivate' | null>(null)
+  const reactivate = useReactivateMember(member.id)
+  const unassign = useUnassignTrainer(member.id)
+  const deactivated = member.status === 'deactivated'
+  const done = (title: string) => {
+    setDialog(null)
+    setNotice({ tone: 'success', title, body: '' })
+  }
 
   const name = fullNameOf(member)
   const invited = member.status === 'invited'
@@ -120,69 +144,197 @@ function TrainerDetail({ member, history }: { member: MemberDetail; history: His
               <Button variant="secondary" onClick={() => setConfirmRevoke(true)} disabled={resend.isPending}>
                 Revoke invitation
               </Button>
+              <Button variant="secondary" icon={<PencilIcon size={16} />} onClick={() => setDialog('edit')}>
+                Edit
+              </Button>
               <Button icon={<MailIcon size={16} />} onClick={onResend} disabled={resend.isPending}>
                 {resend.isPending ? 'Sending…' : 'Resend invitation'}
               </Button>
             </>
-          ) : undefined
+          ) : deactivated ? (
+            <Button
+              onClick={() =>
+                reactivate.mutate(undefined, {
+                  onSuccess: () => done(`${name} can sign in again`),
+                  onError: () => setNotice({ tone: 'error', title: 'Couldn’t reactivate', body: 'Try again.' }),
+                })
+              }
+              disabled={reactivate.isPending}
+            >
+              {reactivate.isPending ? 'Reactivating…' : 'Reactivate'}
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" icon={<PencilIcon size={16} />} onClick={() => setDialog('edit')}>
+                Edit
+              </Button>
+              <Button icon={<PlusIcon size={16} />} onClick={() => setDialog('assign')}>
+                Assign to course
+              </Button>
+            </>
+          )
         }
       />
 
       {notice && (
         <AlertBanner tone={notice.tone} title={notice.title}>
-          {notice.body}
+          {notice.body || undefined}
+        </AlertBanner>
+      )}
+      {deactivated && (
+        <AlertBanner title={`${member.firstName} is deactivated`}>
+          They can’t sign in{member.deactivatedAt ? ` since ${formatDay(member.deactivatedAt, timeZone)}` : ''}. Their courses are kept, so reactivating brings
+          everything back.
         </AlertBanner>
       )}
 
-      {invited && !notice && member.invitationExpiresAt && (
-        expired ? (
+      {invited &&
+        !notice &&
+        member.invitationExpiresAt &&
+        (expired ? (
           <AlertBanner tone="warning" title={`${member.firstName}’s invitation link has expired`}>
             It expired {when(member.invitationExpiresAt)}. Resend to email a new link that lasts 72 hours.
           </AlertBanner>
         ) : (
           <AlertBanner title={`Waiting for ${member.firstName} to set a password`}>
-            The invitation link expires {when(member.invitationExpiresAt)} — 72 hours after it was sent. Resending sends a new link and
-            cancels the old one.
+            The invitation link expires {when(member.invitationExpiresAt)} — 72 hours after it was sent. Resending sends a new link and cancels the old one.
           </AlertBanner>
-        )
-      )}
+        ))}
 
-      <Panel aria-labelledby="teaching-title">
-        <PanelHeader
-          id="teaching-title"
-          title="Teaching"
-          description={invited ? `Courses ${member.firstName} will lead or assist once signed in.` : `Courses ${member.firstName} leads or assists.`}
-        />
-        {member.teaching.courses.length > 0 ? (
-          <DetailList
-            items={[
-              { label: 'Courses', value: member.teaching.courses.map((c) => c.name).join(', ') },
-              {
-                label: 'Cohorts',
-                value: member.teaching.cohorts.map((c, i) => (
-                  <span key={c.id}>
-                    {i > 0 && ', '}
-                    <Link to={`/admin/cohorts/${c.id}`} className="hover:underline">
-                      {c.name}
-                    </Link>
-                  </span>
-                )),
-              },
-            ]}
-          />
-        ) : (
-          <EmptyState
-            icon={<BookOpenIcon size={24} />}
-            title="Not assigned to a course yet"
-            body={`Choose ${member.firstName} as a course’s lead trainer when you add it to a programme.${invited ? ' They’ll see the course after they sign in for the first time.' : ''}`}
-            actions={
-              <Button icon={<PlusIcon size={16} />} onClick={() => navigate('/admin/courses/new')}>
-                Add course
-              </Button>
-            }
-          />
-        )}
-      </Panel>
+      <div className="flex items-start gap-4 max-lg:flex-col">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 max-lg:w-full">
+          <Panel aria-labelledby="teaching-title" className="gap-3">
+            <PanelHeader
+              id="teaching-title"
+              title="Teaching"
+              description={
+                invited ? `Courses ${member.firstName} will lead or assist once signed in.` : `Courses ${member.firstName} leads or assists, by cohort.`
+              }
+            />
+            {assignments.length > 0 ? (
+              <Table
+                columns={[
+                  { label: 'Course' },
+                  { label: 'Role', width: 100 },
+                  { label: 'Sessions held', width: 120, align: 'right', hideBelow: 'lg' },
+                  { label: 'Next session', width: 170, hideBelow: 'lg' },
+                  { label: '', width: 90 },
+                ]}
+              >
+                {assignments.map((a) => (
+                  <Row key={a.cohortCourseId}>
+                    <Cell>
+                      <Link to={`/admin/cohorts/${a.cohort.id}/courses`} className="flex min-w-0 flex-col">
+                        <span className="truncate text-body-strong text-primary">{a.course.name}</span>
+                        <span className="truncate text-caption text-secondary">{a.cohort.name}</span>
+                      </Link>
+                    </Cell>
+                    <Cell>{a.lead ? 'Lead' : 'Assistant'}</Cell>
+                    <Cell align="right" hideBelow="lg" className="font-medium">
+                      {a.held} of {a.planned}
+                    </Cell>
+                    <Cell hideBelow="lg">{a.nextSessionAt ? when(a.nextSessionAt) : '—'}</Cell>
+                    <Cell align="right">
+                      {!deactivated && (
+                        <button
+                          type="button"
+                          aria-label={`Take ${member.firstName} off ${a.course.name} in ${a.cohort.name}`}
+                          onClick={() =>
+                            unassign.mutate(a.cohortCourseId, {
+                              onSuccess: () => done(`${member.firstName} was taken off ${a.course.name} in ${a.cohort.name}`),
+                            })
+                          }
+                          className="text-caption-strong text-secondary hover:text-error-fg hover:underline"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </Cell>
+                  </Row>
+                ))}
+              </Table>
+            ) : (
+              <EmptyState
+                icon={<BookOpenIcon size={24} />}
+                title="Not assigned to a course yet"
+                body={`Assign ${member.firstName} to a course in a cohort to give them its sessions, participants and assignments.${invited ? ' They’ll see it after they sign in for the first time.' : ''}`}
+                actions={
+                  deactivated ? undefined : (
+                    <Button icon={<PlusIcon size={16} />} onClick={() => setDialog('assign')}>
+                      Assign to course
+                    </Button>
+                  )
+                }
+              />
+            )}
+          </Panel>
+
+          {reports.length > 0 && (
+            <Panel aria-labelledby="reports-title" className="gap-3">
+              <PanelHeader id="reports-title" title="Session reports" description="Their latest sessions and whether the report is in." />
+              <Table
+                columns={[{ label: 'Session' }, { label: 'Held', width: 130, hideBelow: 'lg' }, { label: 'Report', width: 120 }, { label: '', width: 90 }]}
+              >
+                {reports.map((r) => (
+                  <Row key={r.sessionId}>
+                    <Cell>
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-body-strong text-primary">{r.course}</span>
+                        <span className="truncate text-caption text-secondary">
+                          {r.cohort} · Session {r.number}
+                        </span>
+                      </span>
+                    </Cell>
+                    <Cell hideBelow="lg">{formatDay(r.startsAt, timeZone)}</Cell>
+                    <Cell>
+                      <Badge tone={r.status === 'submitted' ? 'success' : r.status === 'overdue' ? 'error' : 'neutral'}>
+                        {r.status === 'submitted' ? 'Submitted' : r.status === 'overdue' ? 'Overdue' : 'Due'}
+                      </Badge>
+                    </Cell>
+                    <Cell align="right">
+                      {r.status === 'overdue' && !deactivated ? (
+                        <RemindButton sessionId={r.sessionId} onSent={(to) => setNotice({ tone: 'success', title: `Reminder sent to ${to}`, body: '' })} />
+                      ) : (
+                        <Link to={`/admin/courses/reports/${r.sessionId}`} className="text-body-strong text-brand-text hover:underline">
+                          View
+                        </Link>
+                      )}
+                    </Cell>
+                  </Row>
+                ))}
+              </Table>
+            </Panel>
+          )}
+        </div>
+
+        <div className="flex w-[300px] shrink-0 flex-col gap-4 max-lg:w-full">
+          <Panel aria-labelledby="details-title" className="gap-0">
+            <PanelHeader id="details-title" title="Details" />
+            <dl className="mt-2 flex flex-col">
+              {[
+                ['Email', member.email],
+                ['Phone', member.phone ?? '—'],
+                ['Role', roleLabel[member.role]],
+                ['Last signed in', member.lastActiveAt ? when(member.lastActiveAt) : invited ? 'Not yet' : '—'],
+              ].map(([label, value]) => (
+                <div key={label} className="flex gap-3 border-b border-default py-3 text-body last:border-b-0">
+                  <dt className="w-[110px] shrink-0 text-secondary">{label}</dt>
+                  <dd className="min-w-0 text-body-strong break-words text-primary">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            {member.status === 'active' && (
+              <button type="button" onClick={() => setDialog('deactivate')} className="self-start pt-3 text-caption-strong text-error-fg hover:underline">
+                Deactivate {member.firstName}
+              </button>
+            )}
+          </Panel>
+          <Panel aria-labelledby="sees-title" className="gap-1">
+            <PanelHeader id="sees-title" title={`What ${member.firstName} can see`} />
+            <p className="text-body text-secondary">Participants, sessions and assignments in the cohorts they teach. Nothing from other cohorts.</p>
+          </Panel>
+        </div>
+      </div>
 
       {history.length > 0 && (
         <Panel aria-labelledby="history-title">
@@ -217,7 +369,24 @@ function TrainerDetail({ member, history }: { member: MemberDetail; history: His
           </>
         }
       />
+      {dialog === 'assign' && <AssignDialog member={member} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === 'edit' && <EditDialog member={member} onClose={() => setDialog(null)} onDone={done} />}
+      {dialog === 'deactivate' && <DeactivateDialog member={member} assignments={assignments} onClose={() => setDialog(null)} onDone={done} />}
     </>
+  )
+}
+
+function RemindButton({ sessionId, onSent }: { sessionId: string; onSent: (to: string) => void }) {
+  const remind = useRemind(sessionId)
+  return (
+    <button
+      type="button"
+      disabled={remind.isPending}
+      onClick={() => remind.mutate(undefined, { onSuccess: (r) => onSent(r.to) })}
+      className="text-body-strong text-brand-text hover:underline disabled:text-disabled"
+    >
+      {remind.isPending ? 'Sending…' : 'Remind'}
+    </button>
   )
 }
 
